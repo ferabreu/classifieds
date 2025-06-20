@@ -1,0 +1,20 @@
+version: "3.8"
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: "your-secret-key"
+      MAIL_SERVER: "your.smtp.server"
+      MAIL_PORT: "587"
+      MAIL_USE_TLS: "true"
+      MAIL_USERNAME: "your_smtp_username"
+      MAIL_PASSWORD: "your_smtp_password"
+      MAIL_DEFAULT_SENDER: "no-reply@classifieds.io"
+      # LDAP_SERVER: ""      # Uncomment for LDAP
+      # LDAP_DOMAIN: ""
+    volumes:
+      - classifieds_instance:/app/instance
+volumes:
+  classifieds_instance:

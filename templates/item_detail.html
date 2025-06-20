@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ item.title }}</h2>
+    <p><strong>Type:</strong> {{ item.type.name }}</p>
+    <p><strong>Category:</strong> {{ item.category.name }}</p>
+    <p><strong>Description:</strong> {{ item.description }}</p>
+    <p><strong>Price:</strong> {% if item.price == 0 %}Free{% else %}${{ item.price }}{% endif %}</p>
+    <p><strong>Posted by:</strong> {{ item.owner.first_name }} {{ item.owner.last_name }}</p>
+    {% if current_user.is_authenticated and (current_user.id == item.user_id or current_user.is_admin) %}
+        <a href="{{ url_for('items.edit_item', item_id=item.id) }}" class="btn btn-warning">Edit</a>
+        <form action="{{ url_for('items.delete_item', item_id=item.id) }}" method="post" style="display:inline;">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

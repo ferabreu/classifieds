@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container my-4">
+    <h2>
+        {% if selected_type %}{{ selected_type.name }}s{% else %}All Items{% endif %}
+        {% if selected_category %}in {{ selected_category.name }}{% endif %}
+    </h2>
+    {% if current_user.is_authenticated %}
+    <div class="mb-3">
+        <a href="{{ url_for('items.create_item') }}" class="btn btn-success">+ Post New Item</a>
+    </div>
+    {% endif %}
+    <div class="row">
+        {% for item in items %}
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.title }}</h5>
+                    <p class="card-text">{{ item.description[:80] }}...</p>
+                    <p class="card-text"><strong>
+                        {% if item.price == 0 %}Free{% else %}${{ item.price }}{% endif %}
+                    </strong></p>
+                    <a href="{{ url_for('items.item_detail', item_id=item.id) }}" class="btn btn-primary">View</a>
+                    {% if current_user.is_authenticated and (current_user.id == item.user_id or current_user.is_admin) %}
+                        <a href="{{ url_for('items.edit_item', item_id=item.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                        <form action="{{ url_for('items.delete_item', item_id=item.id) }}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% if items|length == 0 %}
+        <div class="col-12"><p>No items found.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
