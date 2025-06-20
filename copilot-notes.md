@@ -16,19 +16,18 @@ This is a Flask-based classified ads application. The main goals are:
 - `static/` and `templates/`: For static assets and HTML templates.
 
 ## What We’ve Done So Far
-- [x] Defined all database models (`User`, `Type`, `Category`, `Item`) with proper relationships and constraints.
-- [x] Set up `app.py` with correct model imports at the top, eliminating circular imports.
-- [x] Implemented the application factory pattern (`create_app` function).
-- [x] Registered blueprints for routes: `auth`, `items`, `users`, `admin`.
-- [x] Set up Flask-Login with user loader and login view.
-- [x] Set up Flask-Mail.
-- [x] Added CLI command `init-db` to initialize the database and create default admin, types, and categories.
-- [x] Ensured sidebar data (types) is injected via `before_request`.
-- [x] Implemented authentication and registration routes (`routes/auth.py`), including login, logout, registration, forgot password, reset password, and LDAP support.
-- [x] Implemented item creation, editing, and deletion routes (`routes/items.py`), including UI logic for creating new classified ads.
-- [ ] Implemented admin management views.
-- [ ] Wrote unit tests.
-- [ ] Wrote deployment scripts/instructions.
+- [x] Defined all primary database models (`User`, `Type`, `Category`, `Item`) in `models.py` with proper relationships and constraints.
+- [x] Set up `app.py` as the Flask application entry, using the application factory pattern and correct import order to avoid circular dependencies.
+- [x] Registered blueprints for main routes under `routes/` (authentication, items, users, admin).
+- [x] Integrated Flask-Login with a custom user loader and login view.
+- [x] Added Flask-Mail setup for email notifications.
+- [x] Implemented CLI command (`init-db`) for database initialization and creation of default admin/types/categories.
+- [x] Used Flask's `before_request` to inject sidebar/type data into templates.
+- [x] Implemented authentication and registration routes (login, logout, registration, forgot/reset password, LDAP support) in `routes/auth.py`.
+- [x] Implemented item listing, creation, editing, and deletion in `routes/items.py`, with corresponding templates.
+- [ ] Admin management views for users, types, and categories are not yet finished.
+- [ ] Unit tests are not written.
+- [ ] Deployment scripts/instructions (e.g., Docker, systemd service) are not yet finalized.
 
 ## Open Questions / Next Steps
 - What are the requirements for the user interface for searching and filtering classified ads?
