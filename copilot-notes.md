@@ -25,9 +25,9 @@ This is a Flask-based classified ads application. The main goals are:
 - [x] Used Flask's `before_request` to inject sidebar/type data into templates.
 - [x] Implemented authentication and registration routes (login, logout, registration, forgot/reset password, LDAP support) in `routes/auth.py`.
 - [x] Implemented item listing, creation, editing, and deletion in `routes/items.py`, with corresponding templates.
-- [ ] Admin management views for users, types, and categories are not yet finished.
+- [x] Implemented admin management views for users (list, edit, delete), types (full CRUD), and categories (full CRUD). Admins can also delete any item.
 - [ ] Unit tests are not written.
-- [ ] Deployment scripts/instructions (e.g., Docker, systemd service) are not yet finalized.
+- [x] Deployment scripts and instructions are complete. The repo includes a Dockerfile and docker-compose.yml for containerized deployment, with detailed usage instructions and environment variable documentation in the README. No systemd or NGINX configuration is provided at this stage, but can be added if needed later.
 
 ## Open Questions / Next Steps
 - What are the requirements for the user interface for searching and filtering classified ads?

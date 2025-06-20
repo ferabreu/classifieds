@@ -59,9 +59,6 @@ def edit_user(user_id):
 @admin_required
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
-    if user.email == "admin@classifieds.io":
-        flash("Cannot delete the default admin.", "danger")
-        return redirect(url_for('admin.users'))
     admins = User.query.filter_by(is_admin=True).count()
     if admins == 1 and user.is_admin:
         flash("Must have at least one admin.", "danger")

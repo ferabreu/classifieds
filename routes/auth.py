@@ -89,18 +89,21 @@ def forgot_password():
         if user and not user.is_ldap_user:
             token = generate_reset_token(user.email)
             reset_url = url_for('auth.reset_password', token=token, _external=True)
-            # Send email
-            msg = Message(
-                subject="Password Reset Request",
-                recipients=[user.email],
-                body=f"Click the link to reset your password: {reset_url}"
-            )
-            from app import mail
-            try:
-                mail.send(msg)
-                flash("If the account exists, a reset link has been sent to your email.", "info")
-            except Exception as e:
-                flash(f"Failed to send reset email. Error: {str(e)}", "danger")
+            if not current_app.config.get("MAIL_SERVER"):
+                # In development or if mail is not configured, just flash the reset link
+                flash(f"[DEV] Password reset link: {reset_url}", "info")
+            else:
+                msg = Message(
+                    subject="Password Reset Request",
+                    recipients=[user.email],
+                    body=f"Click the link to reset your password: {reset_url}"
+                )
+                from app import mail
+                try:
+                    mail.send(msg)
+                    flash("If the account exists, a reset link has been sent to your email.", "info")
+                except Exception as e:
+                    flash(f"Failed to send reset email. Error: {str(e)}", "danger")
         else:
             flash("If that account exists, a reset link has been sent.", "info")
         return redirect(url_for('auth.login'))

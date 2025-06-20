@@ -13,7 +13,7 @@ class Config:
     LDAP_DOMAIN = os.environ.get('LDAP_DOMAIN', '')
 
     # Flask-Mail config (for password reset)
-    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'localhost')
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', '')  # CHANGED: default is blank
     MAIL_PORT = int(os.environ.get('MAIL_PORT', 25))
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'false').lower() in ['1', 'true', 'yes']
     MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'false').lower() in ['1', 'true', 'yes']
