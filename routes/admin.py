@@ -33,6 +33,13 @@ def users():
     users = User.query.order_by(User.email).all()
     return render_template('admin_users.html', users=users)
 
+@admin_bp.route('/users/profile/<int:user_id>')
+@login_required
+@admin_required
+def user_profile(user_id):
+    user = User.query.get_or_404(user_id)
+    return render_template('user_profile.html', user=user)
+
 @admin_bp.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -44,7 +51,7 @@ def edit_user(user_id):
             admins = User.query.filter_by(is_admin=True).count()
             if admins == 1 and user.is_admin:
                 flash("Cannot remove the last administrator.", "danger")
-                return redirect(url_for('admin.users'))
+                return redirect(url_for('admin.edit_user', user_id=user.id))
         user.email = form.email.data
         user.first_name = form.first_name.data
         user.last_name = form.last_name.data

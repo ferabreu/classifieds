@@ -2,7 +2,7 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Edit Profile</h2>
-    <form method="POST">
+    <form method="post">
         {{ form.hidden_tag() }}
         <div class="mb-3">
             {{ form.email.label }} {{ form.email(class="form-control") }}
@@ -13,12 +13,15 @@
         <div class="mb-3">
             {{ form.last_name.label }} {{ form.last_name(class="form-control") }}
         </div>
-        {% if admin_panel %}
-        <div class="mb-3">
+        {% if admin_panel and form.is_admin %}
+          <div class="mb-3">
             {{ form.is_admin.label }} {{ form.is_admin() }}
-        </div>
+            <small class="form-text text-muted">
+              You may demote yourself or other admins, but there must always be at least one administrator in the system.
+            </small>
+          </div>
         {% endif %}
-        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
     </form>
 </div>
 {% endblock %}

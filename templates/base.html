@@ -13,7 +13,9 @@
             <ul class="navbar-nav ms-auto">
                 {% if current_user.is_authenticated %}
                 <li class="nav-item">
-                    <span class="nav-link">Logged in as {{ current_user.first_name }} {{ current_user.last_name }}</span>
+                    <a class="nav-link" href="{{ url_for('users.user_profile', user_id=current_user.id) }}">
+                        {{ current_user.email }}
+                    </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
