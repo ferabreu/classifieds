@@ -67,8 +67,9 @@ def edit_user(user_id):
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     admins = User.query.filter_by(is_admin=True).count()
+    # If the user to be deleted is an admin and is the last admin, prevent deletion
     if admins == 1 and user.is_admin:
-        flash("Must have at least one admin.", "danger")
+        flash("Must have at least one admin user in the system.", "danger")
         return redirect(url_for('admin.users'))
     db.session.delete(user)
     db.session.commit()

@@ -22,11 +22,9 @@
                 <td>{% if user.is_ldap_user %}Yes{% else %}No{% endif %}</td>
                 <td>
                     <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="btn btn-warning btn-sm">Edit</a>
-                    {% if user.email != "admin@classifieds.io" %}
                     <form method="post" action="{{ url_for('admin.delete_user', user_id=user.id) }}" style="display:inline;">
                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this user?')">Delete</button>
                     </form>
-                    {% endif %}
                 </td>
             </tr>
         {% endfor %}
