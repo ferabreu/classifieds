@@ -47,7 +47,7 @@ def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     form = UserEditForm(obj=user)
     if form.validate_on_submit():
-        if user.email != "admin@classifieds.io" and form.is_admin.data is False:
+        if form.is_admin.data is False:
             admins = User.query.filter_by(is_admin=True).count()
             if admins == 1 and user.is_admin:
                 flash("Cannot remove the last administrator.", "danger")
