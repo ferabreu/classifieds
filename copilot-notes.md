@@ -1,6 +1,7 @@
 # Copilot Project Notes
 
 ## Project Overview
+
 This is a Flask-based classified ads application. The main goals are:
 - User registration and authentication (with optional LDAP support)
 - Posting, viewing, and managing classified ads (Goods and Services)
@@ -9,13 +10,15 @@ This is a Flask-based classified ads application. The main goals are:
 - Organized project structure with blueprints for routes
 
 ## Key Files and Structure
+
 - `app.py`: Flask application factory. Handles app initialization, blueprint registration, CLI commands (including DB initialization), and sets up Flask-Login and Flask-Mail.
 - `models.py`: SQLAlchemy models for `User`, `Type`, `Category`, and `Item`. Manages relationships and includes password hashing for users.
 - `config.py`: Holds configuration (`Config` class) including database URI logic.
 - `routes/`: Contains blueprints for authentication, items, users, and admin.
 - `static/` and `templates/`: For static assets and HTML templates.
 
-## What We’ve Done So Far
+## Completed Features
+
 - [x] Defined all primary database models (`User`, `Type`, `Category`, `Item`) in `models.py` with proper relationships and constraints.
 - [x] Set up `app.py` as the Flask application entry, using the application factory pattern and correct import order to avoid circular dependencies.
 - [x] Registered blueprints for main routes under `routes/` (authentication, items, users, admin).
@@ -26,8 +29,8 @@ This is a Flask-based classified ads application. The main goals are:
 - [x] Implemented authentication and registration routes (login, logout, registration, forgot/reset password, LDAP support) in `routes/auth.py`.
 - [x] Implemented item listing, creation, editing, and deletion in `routes/items.py`, with corresponding templates.
 - [x] Implemented admin management views for users (list, edit, delete), types (full CRUD), and categories (full CRUD). Admins can also delete any item.
-- [ ] Unit tests are not written.
 - [x] Deployment scripts and instructions are complete. The repo includes a Dockerfile and docker-compose.yml for containerized deployment, with detailed usage instructions and environment variable documentation in the README. No systemd or NGINX configuration is provided at this stage, but can be added if needed later.
+- [x] Implement admin dashboard and management views.
 
 ## Security Review Recommendations (2025-06-23)
 
@@ -69,102 +72,100 @@ This is a Flask-based classified ads application. The main goals are:
 - Consider adding unit and integration tests for all authentication, authorization, and CSRF flows.
 - Always use secure cookies and set proper cookie flags (`Secure`, `HttpOnly`, `SameSite`) in production.
 
----
-
 For a deeper or more up-to-date review, search the full codebase for `csrf`, `user`, `session`, and `form`.  
 See: https://github.com/ferabreu/classifieds/search?q=csrf+OR+user+OR+session+OR+form
 
 ## Open Questions / Next Steps
+
 - What are the requirements for the user interface for searching and filtering classified ads?
 - What should the user profile and dashboard pages include?
 - What are the admin-specific features needed (e.g. managing categories/types/users)?
-- Should ads support images or attachments?
 - Which email features are essential (e.g., ad notifications, password reset)?
 - What tests and deployment instructions are needed?
 
-## Relevant Code Snippets
-
-```python
-# app.py: Import models at the top to avoid circular dependencies
-from models import db, Type, User, Category
-```
-
-```python
-# app.py: Flask application factory pattern
-def create_app():
-    app = Flask(...)
-    ...
-    db.init_app(app)
-    login_manager.init_app(app)
-    ...
-    return app
-```
-
-```python
-# models.py: User password hashing
-class User(UserMixin, db.Model):
-    ...
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-```
-
-```python
-# app.py: CLI command for initializing database with default admin, types, and categories
-@app.cli.command("init-db")
-def init_db():
-    ...
-```
-
-```python
-# routes/auth.py: Authentication and registration routes implemented
-@auth_bp.route('/login', methods=['GET', 'POST'])
-def login():
-    ...
-@auth_bp.route('/register', methods=['GET', 'POST'])
-def register():
-    ...
-@auth_bp.route('/logout')
-@login_required
-def logout():
-    ...
-@auth_bp.route('/forgot', methods=['GET', 'POST'])
-def forgot_password():
-    ...
-@auth_bp.route('/reset/<token>', methods=['GET', 'POST'])
-def reset_password(token):
-    ...
-```
-
-```python
-# routes/items.py: Item creation, editing, and deletion routes implemented
-@items_bp.route('/new', methods=['GET', 'POST'])
-@login_required
-def create_item():
-    ...
-@items_bp.route('/edit/<int:item_id>', methods=['GET', 'POST'])
-@login_required
-def edit_item(item_id):
-    ...
-@items_bp.route('/delete/<int:item_id>', methods=['POST'])
-@login_required
-def delete_item(item_id):
-    ...
-```
-
-## Last Copilot Chat Context
-- Confirmed the proper way to import SQLAlchemy models to avoid circular imports.
-- Provided and reviewed the full `app.py` and `models.py` files, ensuring best practices for app factory and blueprint organization.
-- Discussed statelessness and session limitations in Copilot Chat.
-- Shared strategies for maintaining project continuity over multi-day sessions.
-- Reviewed `routes/auth.py` and confirmed authentication and registration routes are implemented.
-- Reviewed `routes/items.py` and confirmed item creation, editing, and deletion routes are implemented.
-- Updated project notes to accurately reflect completed features.
-
 ## TODO (Short-Term)
-- Implement admin dashboard and management views.
-- Add basic tests for models and routes.
-- Write deployment scripts/instructions.
 
----
+- Add support for images or attachments in items.
+- Add basic tests for models and routes.
+- Add unit tests.
+
+## Internationalization (i18n) Guidance
+
+To prepare the application for multilingual support, consider the following steps:
+
+### 1. Use Flask-Babel for i18n
+
+- Install Flask-Babel:
+  ```
+  pip install Flask-Babel
+  ```
+- Initialize Babel in your application:
+  ```python
+  from flask_babel import Babel
+
+  app = Flask(__name__)
+  babel = Babel(app)
+  app.config['BABEL_DEFAULT_LOCALE'] = 'en'
+  app.config['BABEL_DEFAULT_TIMEZONE'] = 'UTC'
+  ```
+
+### 2. Mark Strings for Translation
+
+- In Python:
+  ```python
+  from flask_babel import _
+  flash(_("Your item has been created!"), "success")
+  ```
+- In templates:
+  ```jinja
+  {{ _("Welcome to Classifieds!") }}
+  ```
+
+### 3. Extract and Manage Translations
+
+- Extract messages:
+  ```
+  pybabel extract -F babel.cfg -o messages.pot .
+  ```
+- Initialize a new language:
+  ```
+  pybabel init -i messages.pot -d translations -l pt_BR
+  ```
+- Update and compile translations:
+  ```
+  pybabel update -i messages.pot -d translations
+  pybabel compile -d translations
+  ```
+
+### 4. Language Selection
+
+- Babel can auto-detect user locale or you can offer a language switcher.
+  ```python
+  @babel.localeselector
+  def get_locale():
+      # Use user preference, browser, or default
+      return request.accept_languages.best_match(['en', 'pt_BR'])
+  ```
+
+### 5. Dates, Times, and Numbers
+
+- Use Babel’s formatting tools for locale-aware output:
+  ```python
+  from flask_babel import format_datetime
+  format_datetime(datetime.utcnow())
+  ```
+
+### 6. UI and Content
+
+- Wrap all user-facing strings in `_()` for translation.
+- Translate static content (emails, error messages, etc.).
+- Render form and validation messages via translation.
+
+## References
+
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [Flask-Babel Documentation](https://pythonhosted.org/Flask-Babel/)
+- [Babel User Guide](https://babel.pocoo.org/en/latest/user/index.html)
+- [Flask-Login](https://flask-login.readthedocs.io/en/latest/)
+- [Flask-WTF](https://flask-wtf.readthedocs.io/en/stable/)
+- [Flask-Mail](https://pythonhosted.org/Flask-Mail/)
