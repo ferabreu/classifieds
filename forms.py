@@ -1,6 +1,7 @@
 # Created by GitHub Copilot for Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu)
 
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, MultipleFileField
 from wtforms import StringField, PasswordField, SubmitField, TextAreaField, FloatField, SelectField, BooleanField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, Optional
 
