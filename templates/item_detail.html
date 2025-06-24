@@ -7,6 +7,9 @@
     <p><strong>Description:</strong> {{ item.description }}</p>
     <p><strong>Price:</strong> {% if item.price == 0 %}Free{% else %}${{ item.price }}{% endif %}</p>
     <p><strong>Posted by:</strong> {{ item.owner.first_name }} {{ item.owner.last_name }}</p>
+    {% for image in item.images %}
+        <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="Item image" class="img-thumbnail">
+    {% endfor %}
     {% if current_user.is_authenticated and (current_user.id == item.user_id or current_user.is_admin) %}
         <a href="{{ url_for('items.edit_item', item_id=item.id) }}" class="btn btn-warning">Edit</a>
         <form action="{{ url_for('items.delete_item', item_id=item.id) }}" method="post" style="display:inline;">

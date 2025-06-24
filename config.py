@@ -20,3 +20,7 @@ class Config:
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME', None)
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', None)
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'no-reply@classifieds.io')
+    
+    # File upload support
+    UPLOAD_FOLDER = 'static/uploads'
+    ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif'}

@@ -32,6 +32,24 @@ This is a Flask-based classified ads application. The main goals are:
 - [x] Deployment scripts and instructions are complete. The repo includes a Dockerfile and docker-compose.yml for containerized deployment, with detailed usage instructions and environment variable documentation in the README. No systemd or NGINX configuration is provided at this stage, but can be added if needed later.
 - [x] Implement admin dashboard and management views.
 
+## TODO (Short-Term)
+
+- Add support for images or attachments in items.
+- Add form validation for items:
+  - Title: at least 1 word.
+  - Description: at least one sentence.
+- Add basic tests for models and routes.
+- Add unit tests.
+
+## Open Questions / Next Steps
+
+- What are the requirements for the user interface for searching and filtering classified ads?
+- What should the user profile and dashboard pages include?
+- What are the admin-specific features needed (e.g. managing categories/types/users)?
+- Which email features are essential (e.g., ad notifications, password reset)?
+- What tests and deployment instructions are needed?
+- How to make the error messages more user friendly?
+
 ## Security Review Recommendations (2025-06-23)
 
 ### 1. CSRF Protection
@@ -74,20 +92,6 @@ This is a Flask-based classified ads application. The main goals are:
 
 For a deeper or more up-to-date review, search the full codebase for `csrf`, `user`, `session`, and `form`.  
 See: https://github.com/ferabreu/classifieds/search?q=csrf+OR+user+OR+session+OR+form
-
-## Open Questions / Next Steps
-
-- What are the requirements for the user interface for searching and filtering classified ads?
-- What should the user profile and dashboard pages include?
-- What are the admin-specific features needed (e.g. managing categories/types/users)?
-- Which email features are essential (e.g., ad notifications, password reset)?
-- What tests and deployment instructions are needed?
-
-## TODO (Short-Term)
-
-- Add support for images or attachments in items.
-- Add basic tests for models and routes.
-- Add unit tests.
 
 ## Internationalization (i18n) Guidance
 

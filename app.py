@@ -17,6 +17,7 @@ def create_app():
     )
     app.config.from_object(Config)
     app.config["SQLALCHEMY_DATABASE_URI"] = Config.get_db_uri(app)
+    #app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -40,8 +41,24 @@ def create_app():
     app.register_blueprint(users_bp, url_prefix='/users')
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
-    @app.cli.command("init-db")
+    @app.cli.command("init")
     def init_db():
+        # Ensure static/uploads directory exists
+        uploads_path = os.path.join(app.root_path, "static", "uploads")
+        if not os.path.exists(uploads_path):
+            os.makedirs(uploads_path)
+            print(f"Created uploads directory: {uploads_path}")
+        else:
+            print(f"Uploads directory already exists at {uploads_path}.")
+
+        # Check for existing database (assuming SQLite)
+        db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+        if db_uri.startswith("sqlite:///"):
+            db_path = db_uri.replace("sqlite:///", "")
+            if os.path.exists(db_path):
+                print(f"Database already exists at {db_path}.\nDatabase initialization skipped to avoid overwriting existing data.")
+                return
+
         # Ensure instance directory exists
         if not os.path.exists(app.instance_path):
             os.makedirs(app.instance_path)

@@ -1,3 +1,5 @@
+# Created by GitHub Copilot for Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu)
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -42,3 +44,9 @@ class Item(db.Model):
     type_id = db.Column(db.Integer, db.ForeignKey('type.id'), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ItemImage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(200), nullable=False)
+    item_id = db.Column(db.Integer, db.ForeignKey('item.id'), nullable=False)
+    item = db.relationship('Item', backref=db.backref('images', lazy=True))

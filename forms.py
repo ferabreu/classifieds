@@ -1,3 +1,5 @@
+# Created by GitHub Copilot for Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu)
+
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, TextAreaField, FloatField, SelectField, BooleanField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, Optional
@@ -26,10 +28,13 @@ class ResetPasswordForm(FlaskForm):
 
 class ItemForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(max=128)])
-    description = TextAreaField('Description', validators=[DataRequired()])
-    price = FloatField('Price', validators=[Optional()])
     type = SelectField('Type', coerce=int, validators=[DataRequired()])
     category = SelectField('Category', coerce=int, validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    price = FloatField('Price', validators=[Optional()])
+    images = MultipleFileField('Item Images', validators=[
+        FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Images only!')
+    ])
     submit = SubmitField('Save')
 
 class TypeForm(FlaskForm):

@@ -1,9 +1,14 @@
+# Created by GitHub Copilot for Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu)
+
 from flask import Blueprint, render_template, redirect, url_for, flash, request, g
 from flask_login import login_required, current_user
 from models import db, Item, Type, Category
 from forms import ItemForm
+from werkzeug.utils import secure_filename
+import os, uuid
 
 items_bp = Blueprint('items', __name__)
+UPLOAD_FOLDER = 'static/uploads'
 
 @items_bp.route('/')
 def index():
@@ -49,6 +54,17 @@ def create_item():
                 type_id=form.type.data,
                 category_id=form.category.data
             )
+            if form.images.data:
+                for file in form.images.data:
+                    if file and file.filename:  # Make sure the file exists
+                        # Get the file extension
+                        ext = os.path.splitext(secure_filename(file.filename))[1]
+                        # Generate a unique filename with UUID
+                        unique_filename = f"{uuid.uuid4().hex}{ext}"
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_filename))
+                        # Create an ItemImage record or append to item.images as appropriate
+                        image = ItemImage(filename=unique_filename, item=item)
+                        db.session.add(image)
             db.session.add(item)
             db.session.commit()
             flash('Item created successfully!', 'success')
