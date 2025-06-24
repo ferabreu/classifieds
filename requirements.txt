@@ -10,4 +10,3 @@ Flask-Migrate
 Flask-Bcrypt
 Flask-LDAP3-Login
 gunicorn
-

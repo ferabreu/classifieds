@@ -2,8 +2,16 @@
 {% block content %}
 <div class="container mt-4">
     <h2>{{ action }} Item</h2>
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
+        
+        <div class="mb-3">
+        {% for field, errors in form.errors.items() %}
+            {% for error in errors %}
+                <div class="alert alert-danger">{{ field }}: {{ error }}</div>
+            {% endfor %}
+        {% endfor %}
+        </div>
 
         <div class="mb-3">
             {{ form.title.label(class="form-label") }}
@@ -41,6 +49,34 @@
             {{ form.category.label(class="form-label") }}
             {{ form.category(class="form-select") }}
             {% for error in form.category.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        </div>
+        
+        <div class="row">
+            {% for image in item.images %}
+                <div class="col-auto mb-2 text-center">
+                    <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
+                        <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
+                             alt="Item image"
+                             class="img-thumbnail"
+                             style="max-width: 120px; max-height: 120px;">
+                    </a>
+                    <div>
+                        <label>
+                            <input type="checkbox" name="delete_images" value="{{ image.id }}">
+                            Delete
+                        </label>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        
+        <div class="mb-3">
+            {{ form.images.label(class="form-label") }}
+            {{ form.images(class="form-control", multiple=True) }}
+            {% for error in form.images.errors %}
                 <div class="text-danger">{{ error }}</div>
             {% endfor %}
         </div>

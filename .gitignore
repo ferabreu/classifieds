@@ -1,6 +1,9 @@
 # Github access token (password)
 token.txt
 
+# Ignore all uploaded files
+static/uploads
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

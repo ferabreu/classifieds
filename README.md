@@ -145,14 +145,15 @@ For Gunicorn (production), you must export these variables in your shell, use a 
 
 ---
 
-### 3. Initialize the database
+### 3. Initialize the app (database and uploads directory)
 
 ```bash
-flask --app app.py init-db
+flask --app app.py init
 ```
 
 This creates:
 - `instance/classifieds.db` (SQLite)
+- `static/uploads` (uploaded images)
 - Default admin: `admin@classifieds.io` / password: `admin`
 - Types: Good, Service. Each gets a "General" category.
 
