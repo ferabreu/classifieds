@@ -44,9 +44,19 @@ class Item(db.Model):
     type_id = db.Column(db.Integer, db.ForeignKey('type.id'), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    images = db.relationship(
+        'ItemImage',
+        backref='item',
+        cascade='all, delete-orphan'
+    )
 
 class ItemImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(256), nullable=False)
-    item_id = db.Column(db.Integer, db.ForeignKey('item.id'), nullable=False)
-    item = db.relationship('Item', backref=db.backref('images', lazy=True))
+    item_id = db.Column(
+        db.Integer,
+        db.ForeignKey('item.id', name='fk_itemimage_item_id', ondelete='CASCADE'),
+        nullable=False
+    )
+    # The item attribute on ItemImage will be available automatically due to the backref in Item
+    # item = db.relationship('Item', backref=db.backref('images', lazy=True))

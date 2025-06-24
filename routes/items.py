@@ -139,6 +139,13 @@ def delete_item(item_id):
     if current_user.id != item.user_id and not current_user.is_admin:
         flash("You do not have permission to delete this item.", "danger")
         return redirect(url_for('items.index'))
+
+    # Optional: delete image files from disk
+    for image in item.images:
+        image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], image.filename)
+        if os.path.exists(image_path):
+            os.remove(image_path)
+
     db.session.delete(item)
     db.session.commit()
     flash('Item deleted successfully!', 'success')
