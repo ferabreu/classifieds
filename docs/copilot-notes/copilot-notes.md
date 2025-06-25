@@ -31,10 +31,10 @@ This is a Flask-based classified ads application. The main goals are:
 - [x] Implemented admin management views for users (list, edit, delete), types (full CRUD), and categories (full CRUD). Admins can also delete any item.
 - [x] Deployment scripts and instructions are complete. The repo includes a Dockerfile and docker-compose.yml for containerized deployment, with detailed usage instructions and environment variable documentation in the README. No systemd or NGINX configuration is provided at this stage, but can be added if needed later.
 - [x] Implement admin dashboard and management views.
+- [x] Add support for images or attachments in items.
 
 ## TODO (Short-Term)
 
-- Add support for images or attachments in items.
 - Add form validation for items:
   - Title: at least 1 word.
   - Description: at least one sentence.

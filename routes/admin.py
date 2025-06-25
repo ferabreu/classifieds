@@ -253,27 +253,26 @@ def items():
 @admin_required
 def delete_item(item_id):
     """
-    Deletes a single item and its associated image files using a 'trash' strategy
+    Deletes a single item and its associated image files using a 'temp' strategy
     to approximate atomicity between database and filesystem operations.
 
-    - Assumes the permanent trash directory exists (created at app init and referenced in config as TRASH_DIR).
-    - Moves files to the trash before DB operation.
-    - If DB commit fails, restores files from trash.
-    - If DB commit succeeds, deletes files from trash.
+    - Assumes the permanent temp directory exists (created at app init and referenced in config as TEMP_DIR).
+    - Moves files to the temp before DB operation.
+    - If DB commit fails, restores files from temp.
+    - If DB commit succeeds, deletes files from temp.
     """
-    trash_dir = current_app.config['TRASH_DIR']
     item = Item.query.options(joinedload(Item.images)).get_or_404(item_id)
     original_paths = []
-    trash_paths = []
+    temp_paths = []
 
-    # Move all image files to the permanent trash
+    # Move all image files to the temp directory
     for image in item.images:
-        orig = os.path.join(current_app.config['UPLOAD_FOLDER'], image.filename)
-        trashed = os.path.join(trash_dir, image.filename)
+        orig = os.path.join(current_app.config['UPLOAD_DIR'], image.filename)
+        temped = os.path.join(current_app.config['TEMP_DIR'], image.filename)
         try:
-            shutil.move(orig, trashed)
+            shutil.move(orig, temped)
             original_paths.append(orig)
-            trash_paths.append(trashed)
+            temp_paths.append(temped)
         except FileNotFoundError:
             # If file doesn't exist, just skip it
             pass
@@ -283,20 +282,20 @@ def delete_item(item_id):
         db.session.delete(item)
         db.session.commit()
     except Exception as e:
-        # If DB delete fails, move files back from trash
-        for orig, trashed in zip(original_paths, trash_paths):
+        # If DB delete fails, move files back from temp
+        for orig, temped in zip(original_paths, temp_paths):
             try:
-                shutil.move(trashed, orig)
+                shutil.move(temped, orig)
             except Exception:
                 pass  # Could log this if desired
         db.session.rollback()
         flash('Database error. Item was not deleted. Files restored.', 'danger')
         return redirect(url_for('admin.items'))
 
-    # If DB commit succeeded, permanently delete files from trash
-    for trashed in trash_paths:
+    # If DB commit succeeded, permanently delete files from temp
+    for temped in temp_paths:
         try:
-            os.remove(trashed)
+            os.remove(temped)
         except Exception:
             pass  # Could log this if desired
 
@@ -308,35 +307,33 @@ def delete_item(item_id):
 @admin_required
 def delete_selected_items():
     """
-    Deletes multiple selected items and all their associated image files using a 'trash' strategy
+    Deletes multiple selected items and all their associated image files using a 'temp' strategy
     to approximate atomicity between database and filesystem operations.
 
-    - Assumes the permanent trash directory exists (created at app init and referenced in config as TRASH_DIR).
-    - Moves files to the trash before DB operation.
-    - If DB commit fails, restores files from trash.
-    - If DB commit succeeds, deletes files from trash.
+    - Assumes the permanent temp directory exists (created at app init and referenced in config as TEMP_DIR).
+    - Moves files to the temp before DB operation.
+    - If DB commit fails, restores files from temp.
+    - If DB commit succeeds, deletes files from temp.
     """
     selected_ids = request.form.getlist('selected_items')
     if not selected_ids:
         flash("No items selected for deletion.", "warning")
         return redirect(url_for('admin.items'))
 
-    trash_dir = current_app.config['TRASH_DIR']
-
     # Eagerly load images for all selected items
     items = Item.query.options(joinedload(Item.images)).filter(Item.id.in_(selected_ids)).all()
     original_paths = []
-    trash_paths = []
+    temp_paths = []
 
-    # Move all related image files to trash
+    # Move all related image files to temp
     for item in items:
         for image in item.images:
-            orig = os.path.join(current_app.config['UPLOAD_FOLDER'], image.filename)
-            trashed = os.path.join(trash_dir, image.filename)
+            orig = os.path.join(current_app.config['UPLOAD_DIR'], image.filename)
+            temped = os.path.join(current_app.config['TEMP_DIR'], image.filename)
             try:
-                shutil.move(orig, trashed)
+                shutil.move(orig, temped)
                 original_paths.append(orig)
-                trash_paths.append(trashed)
+                temp_paths.append(temped)
             except FileNotFoundError:
                 # If file doesn't exist, just skip it
                 pass
@@ -347,20 +344,20 @@ def delete_selected_items():
             db.session.delete(item)
         db.session.commit()
     except Exception as e:
-        # If DB delete fails, move files back from trash
-        for orig, trashed in zip(original_paths, trash_paths):
+        # If DB delete fails, move files back from temp
+        for orig, temped in zip(original_paths, temp_paths):
             try:
-                shutil.move(trashed, orig)
+                shutil.move(temped, orig)
             except Exception:
                 pass  # Could log this if desired
         db.session.rollback()
         flash('Database error. Items were not deleted. Files restored.', 'danger')
         return redirect(url_for('admin.items'))
 
-    # If DB commit succeeded, permanently delete files from trash
-    for trashed in trash_paths:
+    # If DB commit succeeded, permanently delete files from temp
+    for temped in temp_paths:
         try:
-            os.remove(trashed)
+            os.remove(temped)
         except Exception:
             pass  # Could log this if desired
 

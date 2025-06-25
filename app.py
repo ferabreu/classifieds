@@ -56,13 +56,13 @@ def create_app():
         else:
             print(f"Uploads directory already exists at {app.config['UPLOAD_DIR']}.")
 
-        # Ensure trash directory exists
-        app.config['TRASH_DIR'] = os.path.join(app.root_path, app.config['TRASH_DIR'])
-        if not os.path.exists(app.config['TRASH_DIR']):
-            os.makedirs(app.config['TRASH_DIR'])
-            print(f"Created trash directory: {app.config['TRASH_DIR']}")
+        # Ensure temp directory exists
+        app.config['TEMP_DIR'] = os.path.join(app.root_path, app.config['TEMP_DIR'])
+        if not os.path.exists(app.config['TEMP_DIR']):
+            os.makedirs(app.config['TEMP_DIR'])
+            print(f"Created temp directory: {app.config['TEMP_DIR']}")
         else:
-            print(f"Trash directory already exists at {app.config['TRASH_DIR']}.")
+            print(f"Temp directory already exists at {app.config['TEMP_DIR']}.")
 
         # Check for existing database (assuming SQLite)
         db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")

@@ -24,4 +24,4 @@ class Config:
     # File upload support
     ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif'}
     UPLOAD_DIR = os.path.join('static', 'uploads')
-    TRASH_DIR = os.path.join('static', 'trash')
+    TEMP_DIR = os.path.join('static', 'temp')
