@@ -16,9 +16,12 @@ def create_app():
         static_url_path="/static",
         instance_relative_config=True
     )
+    
     app.config.from_object(Config)
-    app.config["SQLALCHEMY_DATABASE_URI"] = Config.get_db_uri(app)
-    #app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    
+    if not app.config["SQLALCHEMY_DATABASE_URI"]:
+        db_path = os.path.join(app.instance_path, Config.DB_FILENAME)
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 
     db.init_app(app)
     migrate = Migrate(app, db)
@@ -44,14 +47,22 @@ def create_app():
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
     @app.cli.command("init")
-    def init_db():
+    def init():
         # Ensure static/uploads directory exists
-        uploads_path = os.path.join(app.root_path, "static", "uploads")
-        if not os.path.exists(uploads_path):
-            os.makedirs(uploads_path)
-            print(f"Created uploads directory: {uploads_path}")
+        app.config['UPLOAD_DIR'] = os.path.join(app.root_path, app.config['UPLOAD_DIR'])
+        if not os.path.exists(app.config['UPLOAD_DIR']):
+            os.makedirs(app.config['UPLOAD_DIR'])
+            print(f"Created uploads directory: {app.config['UPLOAD_DIR']}")
         else:
-            print(f"Uploads directory already exists at {uploads_path}.")
+            print(f"Uploads directory already exists at {app.config['UPLOAD_DIR']}.")
+
+        # Ensure trash directory exists
+        app.config['TRASH_DIR'] = os.path.join(app.root_path, app.config['TRASH_DIR'])
+        if not os.path.exists(app.config['TRASH_DIR']):
+            os.makedirs(app.config['TRASH_DIR'])
+            print(f"Created trash directory: {app.config['TRASH_DIR']}")
+        else:
+            print(f"Trash directory already exists at {app.config['TRASH_DIR']}.")
 
         # Check for existing database (assuming SQLite)
         db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")

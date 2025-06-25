@@ -8,7 +8,7 @@ from werkzeug.utils import secure_filename
 import os, uuid
 
 items_bp = Blueprint('items', __name__)
-UPLOAD_FOLDER = 'static/uploads'
+UPLOAD_DIR = 'static/uploads'
 
 @items_bp.route('/')
 def index():
@@ -61,7 +61,7 @@ def create_item():
                         ext = os.path.splitext(secure_filename(file.filename))[1]
                         # Generate a unique filename with UUID
                         unique_filename = f"{uuid.uuid4().hex}{ext}"
-                        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename))
+                        file.save(os.path.join(current_app.config['UPLOAD_DIR'], unique_filename))
                         # Create an ItemImage record or append to item.images as appropriate
                         image = ItemImage(filename=unique_filename, item=item)
                         db.session.add(image)
@@ -104,7 +104,7 @@ def edit_item(item_id):
                 for img_id in delete_image_ids:
                     image = ItemImage.query.get(int(img_id))
                     if image and image in item.images:
-                        image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], image.filename)
+                        image_path = os.path.join(current_app.config['UPLOAD_DIR'], image.filename)
                         if os.path.exists(image_path):
                             os.remove(image_path)
                         db.session.delete(image)
@@ -115,7 +115,7 @@ def edit_item(item_id):
                     if file and file.filename:
                         ext = os.path.splitext(secure_filename(file.filename))[1]
                         unique_filename = f"{uuid.uuid4().hex}{ext}"
-                        file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename))
+                        file.save(os.path.join(current_app.config['UPLOAD_DIR'], unique_filename))
                         image = ItemImage(filename=unique_filename, item=item)
                         db.session.add(image)
 
@@ -140,11 +140,13 @@ def delete_item(item_id):
         flash("You do not have permission to delete this item.", "danger")
         return redirect(url_for('items.index'))
 
-    # Optional: delete image files from disk
+    # Delete image files from disk
     for image in item.images:
-        image_path = os.path.join(current_app.config['UPLOAD_FOLDER'], image.filename)
-        if os.path.exists(image_path):
+        image_path = os.path.join(current_app.config['UPLOAD_DIR'], image.filename)
+        try:
             os.remove(image_path)
+        except FileNotFoundError:
+            pass  # File is already gone, that's fine
 
     db.session.delete(item)
     db.session.commit()

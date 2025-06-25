@@ -53,24 +53,26 @@
             {% endfor %}
         </div>
         
-        <div class="row">
-            {% for image in item.images %}
-                <div class="col-auto mb-2 text-center">
-                    <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
-                        <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
-                             alt="Item image"
-                             class="img-thumbnail"
-                             style="max-width: 120px; max-height: 120px;">
-                    </a>
-                    <div>
-                        <label>
-                            <input type="checkbox" name="delete_images" value="{{ image.id }}">
-                            Delete
-                        </label>
+        {% if item %}
+            <div class="row">
+                {% for image in item.images %}
+                    <div class="col-auto mb-2 text-center">
+                        <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
+                            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
+                                 alt="Item image"
+                                 class="img-thumbnail"
+                                 style="max-width: 120px; max-height: 120px;">
+                        </a>
+                        <div>
+                            <label>
+                                <input type="checkbox" name="delete_images" value="{{ image.id }}">
+                                Delete
+                            </label>
+                        </div>
                     </div>
-                </div>
-            {% endfor %}
-        </div>
+                {% endfor %}
+            </div>
+        {% endif %}
 
         
         <div class="mb-3">

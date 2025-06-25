@@ -4,11 +4,11 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    @staticmethod
-    def get_db_uri(app):
-        db_path = os.path.join(app.instance_path, "classifieds.db")
-        return os.environ.get('DATABASE_URL', f"sqlite:///{db_path}")
-
+    # Use a relative path or env var for the DB
+    DB_FILENAME = "classifieds.db"
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')  # may be None for now
+    
+    # LDAP auth support
     LDAP_SERVER = os.environ.get('LDAP_SERVER', '')
     LDAP_DOMAIN = os.environ.get('LDAP_DOMAIN', '')
 
@@ -22,5 +22,6 @@ class Config:
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'no-reply@classifieds.io')
     
     # File upload support
-    UPLOAD_FOLDER = 'static/uploads'
     ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif'}
+    UPLOAD_DIR = os.path.join('static', 'uploads')
+    TRASH_DIR = os.path.join('static', 'trash')
