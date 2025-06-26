@@ -59,10 +59,31 @@ def dashboard():
 @admin_required
 def users():
     """
-    Lists all users in the system, ordered by email.
+    Lists all users in the system, with sorting and pagination.
     """
-    users = User.query.order_by(User.email).all()
-    return render_template('admin_users.html', users=users)
+    page = request.args.get('page', 1, type=int)
+    sort = request.args.get('sort', 'email')
+    direction = request.args.get('direction', 'asc')
+
+    sort_column_map = {
+        'email': User.email,
+        'name': User.first_name,  # "Name" column sorts by first_name
+        'is_admin': User.is_admin,
+        'is_ldap_user': User.is_ldap_user,
+        'id': User.id
+    }
+    sort_column = sort_column_map.get(sort, User.email)
+    sort_order = sort_column.asc() if direction == 'asc' else sort_column.desc()
+
+    pagination = User.query.order_by(sort_order).paginate(page=page, per_page=20)
+    users = pagination.items
+    return render_template(
+        'admin_users.html',
+        users=users,
+        pagination=pagination,
+        sort=sort,
+        direction=direction
+    )
 
 @admin_bp.route('/users/profile/<int:user_id>')
 @login_required
@@ -243,10 +264,33 @@ def delete_category(category_id):
 @admin_required
 def items():
     """
-    Lists all items (ordered by most recent) for admin management.
+    Lists all items (ordered by least recent) for admin management.
     """
-    items = Item.query.order_by(Item.created_at.desc()).all()
-    return render_template('admin_items.html', items=items)
+    page = request.args.get('page', 1, type=int)
+    
+    sort = request.args.get('sort', 'created_at')
+    direction = request.args.get('direction', 'desc')
+
+    sort_column_map = {
+        'title': Item.title,
+        'type': Item.type_id,
+        'category': Item.category_id,
+        'user': Item.user_id,
+        'created_at': Item.created_at,
+    }
+    sort_column = sort_column_map.get(sort, Item.created_at)
+    sort_order = sort_column.asc() if direction == 'asc' else sort_column.desc()
+
+    pagination = Item.query.order_by(sort_order).paginate(page=page, per_page=20)
+    items = pagination.items
+    
+    return render_template(
+        'admin_items.html',
+        items=items,
+        pagination=pagination,
+        sort=sort,
+        direction=direction
+    )
 
 @admin_bp.route('/items/delete/<int:item_id>', methods=['POST'])
 @login_required

@@ -2,6 +2,7 @@
 {% block content %}
 <div class="container mt-4">
     <h2>{{ action }} Item</h2>
+    <a href="{{ request.referrer or url_for('items.index') }}">&larr; Back</a>
     <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         

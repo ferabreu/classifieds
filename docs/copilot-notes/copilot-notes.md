@@ -17,7 +17,7 @@ This is a Flask-based classified ads application. The main goals are:
 - `routes/`: Contains blueprints for authentication, items, users, and admin.
 - `static/` and `templates/`: For static assets and HTML templates.
 
-## Completed Features
+## TODO (Short-Term)
 
 - [x] Defined all primary database models (`User`, `Type`, `Category`, `Item`) in `models.py` with proper relationships and constraints.
 - [x] Set up `app.py` as the Flask application entry, using the application factory pattern and correct import order to avoid circular dependencies.
@@ -32,24 +32,35 @@ This is a Flask-based classified ads application. The main goals are:
 - [x] Deployment scripts and instructions are complete. The repo includes a Dockerfile and docker-compose.yml for containerized deployment, with detailed usage instructions and environment variable documentation in the README. No systemd or NGINX configuration is provided at this stage, but can be added if needed later.
 - [x] Implement admin dashboard and management views.
 - [x] Add support for images or attachments in items.
-
-## TODO (Short-Term)
-
-- Add form validation for items:
-  - Title: at least 1 word.
-  - Description: at least one sentence.
-- schedule a cron job or background task to periodically clean up orphaned files in TEMP_DIR (in case something ever goes wrong mid-operation).
-- Add basic tests for models and routes.
-- Add unit tests.
+- [ ] Add a "Select All" checkbox to:
+  - [x] admin items
+  - [ ] admin users?
+  - [ ] admin other stuff?
+- [ ] Add form validation for items:
+  - [ ] Title: at least 1 word.
+  - [ ] Description: at least one sentence.
+- [ ] schedule a cron job or background task to periodically clean up orphaned files in TEMP_DIR (in case something ever goes wrong mid-operation).
+- [ ] Add basic tests for models and routes.
+- [ ] Add unit tests.
+- [ ] Ensure consistent HTML indentation (2 vs 4 spaces)
 
 ## Open Questions / Next Steps
 
-- What are the requirements for the user interface for searching and filtering classified ads?
-- What should the user profile and dashboard pages include?
-- What are the admin-specific features needed (e.g. managing categories/types/users)?
-- Which email features are essential (e.g., ad notifications, password reset)?
-- What tests and deployment instructions are needed?
-- How to make the error messages more user friendly?
+- [ ] What are the requirements for the user interface for searching and filtering classified ads?
+- [ ] What should the user profile and dashboard pages include?
+- [x] What are the admin-specific features needed (e.g. managing categories/types/users)?
+- [ ] Which email features are essential (e.g., ad notifications, password reset)?
+- [ ] What tests and deployment instructions are needed?
+- [ ] How to make the error messages more user friendly?
+
+## TODO Fun List :-)
+- [x] Investigate backend and frontend mapping of first/last name columns
+- [x] Understand why "Edit" is a link but "Delete" is a form button
+- [x] Compare the best approach: vanilla JS vs jQuery for UI scripting
+- [x] Implement "Select All" with jQuery in admin_items.html
+- [x] Sync "Select All" checkbox state with row selections
+- [x] Debug and fix checkbox syncing logic
+- [x] Celebrate a perfect working solution! 🎉
 
 ## References
 
