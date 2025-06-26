@@ -1,6 +1,6 @@
 # Created by GitHub Copilot for Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu)
 
-from flask import Blueprint, current_app, render_template, redirect, url_for, flash, request, g
+from flask import Blueprint, current_app, jsonify, render_template, redirect, url_for, flash, request, g
 from flask_login import login_required, current_user
 from models import db, Item, ItemImage, Type, Category
 from forms import ItemForm
@@ -36,17 +36,40 @@ def item_detail(item_id):
     item = Item.query.get_or_404(item_id)
     return render_template('item_detail.html', item=item)
 
+@items_bp.route('/categories_for_type/<int:type_id>')
+@login_required
+def categories_for_type(type_id):
+    """
+    Returns a JSON list of categories for a given type. Used for dynamic form population.
+    """
+    categories = Category.query.filter_by(type_id=type_id).order_by(Category.name).all()
+    category_list = [{'id': c.id, 'name': c.name} for c in categories]
+    return jsonify(category_list)
+
 @items_bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def create_item():
     """
-    Create a new item.
+    Create a new item with ACID-like file handling using TEMP_DIR.
     - On GET: show empty form.
-    - On POST: validate and save item and images.
+    - On POST: validate and save item and images using atomic file/database logic.
+    - Uploaded images are first saved to TEMP_DIR.
+    - If DB commit succeeds, move images from TEMP_DIR to UPLOAD_DIR.
+    - If DB commit fails, delete images from TEMP_DIR.
     - On success: redirect to detail page of the new item (not index).
     """
-    types = Type.query.order_by(Type.name).all()
     form = ItemForm()
+    
+    if not current_app.config['TEMP_DIR']:
+        flash('Temp directory is not configured.', 'danger')
+        return render_template("item_form.html", form=form, action="Create")
+    
+    if not os.path.exists(current_app.config['TEMP_DIR']):
+        flash('Temp directory does not exist. Please initialize the application.', 'danger')
+        return render_template("item_form.html", form=form, action="Create")
+        
+    types = Type.query.order_by(Type.name).all()
+    
     form.type.choices = [(t.id, t.name) for t in types]
     # Default to first type's categories
     categories = Category.query.filter_by(type_id=types[0].id).all() if types else []
@@ -54,7 +77,9 @@ def create_item():
     if request.method == 'POST':
         # Update choices for type/category dropdowns in form
         form.type.choices = [(t.id, t.name) for t in Type.query.order_by(Type.name)]
-        form.category.choices = [(c.id, c.name) for c in Category.query.filter_by(type_id=form.type.data).order_by(Category.name)]
+        form.category.choices = [
+            (c.id, c.name) for c in Category.query.filter_by(type_id=form.type.data).order_by(Category.name)
+        ]
         if form.validate_on_submit():
             item = Item(
                 title=form.title.data,
@@ -64,20 +89,59 @@ def create_item():
                 type_id=form.type.data,
                 category_id=form.category.data
             )
-            # Save uploaded images
+
+            upload_dir = current_app.config['UPLOAD_DIR']
+            temp_dir = current_app.config['TEMP_DIR']
+            
+            added_temp_paths = []
+            added_files = []
+
+            # --- Save uploaded images to temp (not final location) ---
             if form.images.data:
                 for file in form.images.data:
                     if file and file.filename:
                         ext = os.path.splitext(secure_filename(file.filename))[1]
                         unique_filename = f"{uuid.uuid4().hex}{ext}"
-                        file.save(os.path.join(current_app.config['UPLOAD_DIR'], unique_filename))
-                        image = ItemImage(filename=unique_filename, item=item)
-                        db.session.add(image)
-            db.session.add(item)
-            db.session.commit()
-            flash('Item created successfully!', 'success')
-            # Redirect to detail page of the new item
-            return redirect(url_for('items.item_detail', item_id=item.id))
+                        temp_path = os.path.join(temp_dir, unique_filename)
+                        file.save(temp_path)
+                        added_temp_paths.append((temp_path, unique_filename))
+                        added_files.append(unique_filename)
+
+            commit_success = False
+            try:
+                # Add item and new images to DB but don't move to final location yet
+                db.session.add(item)
+                for unique_filename in added_files:
+                    image = ItemImage(filename=unique_filename, item=item)
+                    db.session.add(image)
+                db.session.commit()
+                commit_success = True
+            except Exception as e:
+                db.session.rollback()
+                # Remove any temp-uploaded files
+                for temp_path, _ in added_temp_paths:
+                    try:
+                        if os.path.exists(temp_path):
+                            os.remove(temp_path)
+                    except Exception:
+                        pass
+                flash(f"Database error. Item was not created. Uploaded files were discarded. ({e})", "danger")
+                return render_template("item_form.html", form=form, action="Create")
+            
+            # --- If commit succeeded: finalize file system changes ---
+            if commit_success:
+                # Move new images from temp to upload dir
+                for temp_path, unique_filename in added_temp_paths:
+                    final_path = os.path.join(upload_dir, unique_filename)
+                    try:
+                        if os.path.exists(temp_path):
+                            shutil.move(temp_path, final_path)
+                    except Exception as e:
+                        flash(f"Warning: Could not finalize upload for {unique_filename}: {e}", "warning")
+
+                flash('Item created successfully!', 'success')
+                # Redirect to detail page of the new item
+                return redirect(url_for('items.item_detail', item_id=item.id))
     return render_template('item_form.html', form=form, action="Create")
 
 @items_bp.route('/edit/<int:item_id>', methods=['GET', 'POST'])
@@ -95,10 +159,19 @@ def edit_item(item_id):
     - On error: stay on item detail with flash message.
     """
     item = Item.query.get_or_404(item_id)
+    
     if current_user.id != item.user_id and not current_user.is_admin:
         flash("You do not have permission to edit this item.", "danger")
         return render_template("item_detail.html", item=item)
     
+    if not current_app.config['TEMP_DIR']:
+        flash('Temp directory is not configured.', 'danger')
+        return render_template("item_detail.html", item=item)
+    
+    if not os.path.exists(current_app.config['TEMP_DIR']):
+        flash('Temp directory does not exist. Please initialize the application.', 'danger')
+        return render_template("item_detail.html", item=item)
+        
     types = Type.query.order_by(Type.name).all()
     form = ItemForm()
     form.type.choices = [(t.id, t.name) for t in types]
@@ -120,7 +193,7 @@ def edit_item(item_id):
 
             upload_dir = current_app.config['UPLOAD_DIR']
             temp_dir = current_app.config['TEMP_DIR']
-            os.makedirs(temp_dir, exist_ok=True)
+
             # For rollback
             moved_to_temp = []
             added_temp_paths = []
@@ -221,6 +294,7 @@ def delete_item(item_id):
     - On success: if DB commit succeeds, deletes files from temp and redirect to index.
     """
     item = Item.query.get_or_404(item_id)
+    
     if current_user.id != item.user_id and not current_user.is_admin:
         flash("You do not have permission to delete this item.", "danger")
         return render_template("item_detail.html", item=item)
@@ -228,7 +302,11 @@ def delete_item(item_id):
     if not current_app.config['TEMP_DIR']:
         flash('Temp directory is not configured.', 'danger')
         return render_template("item_detail.html", item=item)
-
+    
+    if not os.path.exists(current_app.config['TEMP_DIR']):
+        flash('Temp directory does not exist. Please initialize the application.', 'danger')
+        return render_template("item_detail.html", item=item)
+        
     original_paths = []
     temp_paths = []
 

@@ -310,10 +310,9 @@ def delete_selected_items():
     Deletes multiple selected items and all their associated image files using a 'temp' strategy
     to approximate atomicity between database and filesystem operations.
 
-    - Assumes the permanent temp directory exists (created at app init and referenced in config as TEMP_DIR).
     - Moves files to the temp before DB operation.
     - If DB commit fails, restores files from temp.
-    - If DB commit succeeds, deletes files from temp.
+    - If DB commit succeeds, deletes files from temp and also sweeps upload dir for any remaining orphans.
     """
     selected_ids = request.form.getlist('selected_items')
     if not selected_ids:
@@ -324,10 +323,12 @@ def delete_selected_items():
     items = Item.query.options(joinedload(Item.images)).filter(Item.id.in_(selected_ids)).all()
     original_paths = []
     temp_paths = []
+    all_image_filenames = set()
 
-    # Move all related image files to temp
+    # Move all related image files to temp and track all filenames
     for item in items:
         for image in item.images:
+            all_image_filenames.add(image.filename)
             orig = os.path.join(current_app.config['UPLOAD_DIR'], image.filename)
             temped = os.path.join(current_app.config['TEMP_DIR'], image.filename)
             try:
@@ -349,7 +350,7 @@ def delete_selected_items():
             try:
                 shutil.move(temped, orig)
             except Exception:
-                pass  # Could log this if desired
+                pass
         db.session.rollback()
         flash('Database error. Items were not deleted. Files restored.', 'danger')
         return redirect(url_for('admin.items'))
@@ -358,6 +359,15 @@ def delete_selected_items():
     for temped in temp_paths:
         try:
             os.remove(temped)
+        except Exception:
+            pass  # Could log this if desired
+
+    # Final sweep: delete any remaining files in upload dir associated with deleted items
+    for filename in all_image_filenames:
+        path = os.path.join(current_app.config['UPLOAD_DIR'], filename)
+        try:
+            if os.path.exists(path):
+                os.remove(path)
         except Exception:
             pass  # Could log this if desired
 
