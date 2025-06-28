@@ -2,7 +2,7 @@
 token.txt
 
 # Standard miscs
-#docs/misc
+docs/misc
 resources/misc
 
 # Ignore all uploaded files
