@@ -3,13 +3,13 @@ admin.py - Admin Blueprint routes and logic for Flask app.
 
 NOTE: This code was written and annotated by GitHub Copilot at the request of ferabreu.
 
-This module contains administrative views and utilities, including user, type, category, and item management.
+This module contains administrative views and utilities, including user, type, category, and listing management.
 It ensures only admin users (with is_admin=True) can access these endpoints, and handles deletion of related images on the filesystem.
 """
 
 from flask import Blueprint, current_app, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from models import db, User, Type, Category, Item
+from models import db, User, Type, Category, Listing
 from forms import TypeForm, CategoryForm, UserEditForm
 from sqlalchemy.orm import joinedload
 import os, shutil
@@ -20,14 +20,14 @@ admin_bp = Blueprint('admin', __name__)
 def admin_required(func):
     """
     Decorator to ensure the current user is an admin.
-    - Redirects to the public items index page with an error flash if not.
+    - Redirects to the public listings index page with an error flash if not.
     """
     from functools import wraps
     @wraps(func)
     def wrapper(*args, **kwargs):
         if not current_user.is_authenticated or not current_user.is_admin:
             flash("Admin access required.", "danger")
-            return redirect(url_for('items.index'))
+            return redirect(url_for('listings.index'))
         return func(*args, **kwargs)
     return wrapper
 
@@ -38,18 +38,18 @@ def admin_required(func):
 @admin_required
 def dashboard():
     """
-    Renders the admin dashboard with simple statistics on users, types, categories, and items.
+    Renders the admin dashboard with simple statistics on users, types, categories, and listings.
     """
     user_count = User.query.count()
     type_count = Type.query.count()
     category_count = Category.query.count()
-    item_count = Item.query.count()
+    listing_count = Listing.query.count()
     return render_template(
         'admin_dashboard.html',
         user_count=user_count,
         type_count=type_count,
         category_count=category_count,
-        item_count=item_count
+        listing_count=listing_count
     )
 
 # -------------------- USER ADMIN --------------------
@@ -146,7 +146,7 @@ def delete_user(user_id):
 @admin_required
 def types():
     """
-    Lists all item types in the system.
+    Lists all listing types in the system.
     """
     types = Type.query.order_by(Type.name).all()
     return render_template('admin_types.html', types=types)
@@ -156,7 +156,7 @@ def types():
 @admin_required
 def new_type():
     """
-    Allows admins to create a new item type.
+    Allows admins to create a new listing type.
     """
     form = TypeForm()
     if form.validate_on_submit():
@@ -257,14 +257,14 @@ def delete_category(category_id):
     flash('Category deleted.', 'success')
     return redirect(url_for('admin.categories'))
 
-# -------------------- ITEM ADMIN --------------------
+# -------------------- LISTING ADMIN --------------------
 
-@admin_bp.route('/items')
+@admin_bp.route('/listings')
 @login_required
 @admin_required
-def items():
+def listings():
     """
-    Lists all items (ordered by least recent) for admin management.
+    Lists all listings (ordered by least recent) for admin management.
     """
     page = request.args.get('page', 1, type=int)
     
@@ -272,32 +272,32 @@ def items():
     direction = request.args.get('direction', 'desc')
 
     sort_column_map = {
-        'title': Item.title,
-        'type': Item.type_id,
-        'category': Item.category_id,
-        'user': Item.user_id,
-        'created_at': Item.created_at,
+        'title': Listing.title,
+        'type': Listing.type_id,
+        'category': Listing.category_id,
+        'user': Listing.user_id,
+        'created_at': Listing.created_at,
     }
-    sort_column = sort_column_map.get(sort, Item.created_at)
+    sort_column = sort_column_map.get(sort, Listing.created_at)
     sort_order = sort_column.asc() if direction == 'asc' else sort_column.desc()
 
-    pagination = Item.query.order_by(sort_order).paginate(page=page, per_page=20)
-    items = pagination.items
+    pagination = Listing.query.order_by(sort_order).paginate(page=page, per_page=20)
+    listings = pagination.items
     
     return render_template(
-        'admin_items.html',
-        items=items,
+        'admin_listings.html',
+        listings=listings,
         pagination=pagination,
         sort=sort,
         direction=direction
     )
 
-@admin_bp.route('/items/delete/<int:item_id>', methods=['POST'])
+@admin_bp.route('/listings/delete/<int:listing_id>', methods=['POST'])
 @login_required
 @admin_required
-def delete_item(item_id):
+def delete_listing(listing_id):
     """
-    Deletes a single item and its associated image files using a 'temp' strategy
+    Deletes a single listing and its associated image files using a 'temp' strategy
     to approximate atomicity between database and filesystem operations.
 
     - Assumes the permanent temp directory exists (created at app init and referenced in config as TEMP_DIR).
@@ -305,12 +305,12 @@ def delete_item(item_id):
     - If DB commit fails, restores files from temp.
     - If DB commit succeeds, deletes files from temp.
     """
-    item = Item.query.options(joinedload(Item.images)).get_or_404(item_id)
+    listing = Listing.query.options(joinedload(Listing.images)).get_or_404(listing_id)
     original_paths = []
     temp_paths = []
 
     # Move all image files to the temp directory
-    for image in item.images:
+    for image in listing.images:
         orig = os.path.join(current_app.config['UPLOAD_DIR'], image.filename)
         temped = os.path.join(current_app.config['TEMP_DIR'], image.filename)
         try:
@@ -322,8 +322,8 @@ def delete_item(item_id):
             pass
 
     try:
-        # Attempt to delete the item from the DB
-        db.session.delete(item)
+        # Attempt to delete the listing from the DB
+        db.session.delete(listing)
         db.session.commit()
     except Exception as e:
         # If DB delete fails, move files back from temp
@@ -333,8 +333,8 @@ def delete_item(item_id):
             except Exception:
                 pass  # Could log this if desired
         db.session.rollback()
-        flash('Database error. Item was not deleted. Files restored.', 'danger')
-        return redirect(url_for('admin.items'))
+        flash('Database error. Listing was not deleted. Files restored.', 'danger')
+        return redirect(url_for('admin.listings'))
 
     # If DB commit succeeded, permanently delete files from temp
     for temped in temp_paths:
@@ -343,35 +343,35 @@ def delete_item(item_id):
         except Exception:
             pass  # Could log this if desired
 
-    flash('Item deleted.', 'success')
-    return redirect(url_for('admin.items'))
+    flash('Listing deleted.', 'success')
+    return redirect(url_for('admin.listings'))
 
-@admin_bp.route('/items/delete_selected', methods=['POST'])
+@admin_bp.route('/listings/delete_selected', methods=['POST'])
 @login_required
 @admin_required
-def delete_selected_items():
+def delete_selected_listings():
     """
-    Deletes multiple selected items and all their associated image files using a 'temp' strategy
+    Deletes multiple selected listings and all their associated image files using a 'temp' strategy
     to approximate atomicity between database and filesystem operations.
 
     - Moves files to the temp before DB operation.
     - If DB commit fails, restores files from temp.
     - If DB commit succeeds, deletes files from temp and also sweeps upload dir for any remaining orphans.
     """
-    selected_ids = request.form.getlist('selected_items')
+    selected_ids = request.form.getlist('selected_listings')
     if not selected_ids:
-        flash("No items selected for deletion.", "warning")
-        return redirect(url_for('admin.items'))
+        flash("No listings selected for deletion.", "warning")
+        return redirect(url_for('admin.listings'))
 
-    # Eagerly load images for all selected items
-    items = Item.query.options(joinedload(Item.images)).filter(Item.id.in_(selected_ids)).all()
+    # Eagerly load images for all selected listings
+    listings = Listing.query.options(joinedload(Listing.images)).filter(Listing.id.in_(selected_ids)).all()
     original_paths = []
     temp_paths = []
     all_image_filenames = set()
 
     # Move all related image files to temp and track all filenames
-    for item in items:
-        for image in item.images:
+    for listing in listings:
+        for image in listing.images:
             all_image_filenames.add(image.filename)
             orig = os.path.join(current_app.config['UPLOAD_DIR'], image.filename)
             temped = os.path.join(current_app.config['TEMP_DIR'], image.filename)
@@ -384,9 +384,9 @@ def delete_selected_items():
                 pass
 
     try:
-        # Attempt to delete items from the DB in a single transaction
-        for item in items:
-            db.session.delete(item)
+        # Attempt to delete listings from the DB in a single transaction
+        for listing in listings:
+            db.session.delete(listing)
         db.session.commit()
     except Exception as e:
         # If DB delete fails, move files back from temp
@@ -396,8 +396,8 @@ def delete_selected_items():
             except Exception:
                 pass
         db.session.rollback()
-        flash('Database error. Items were not deleted. Files restored.', 'danger')
-        return redirect(url_for('admin.items'))
+        flash('Database error. Listings were not deleted. Files restored.', 'danger')
+        return redirect(url_for('admin.listings'))
 
     # If DB commit succeeded, permanently delete files from temp
     for temped in temp_paths:
@@ -406,7 +406,7 @@ def delete_selected_items():
         except Exception:
             pass  # Could log this if desired
 
-    # Final sweep: delete any remaining files in upload dir associated with deleted items
+    # Final sweep: delete any remaining files in upload dir associated with deleted listings
     for filename in all_image_filenames:
         path = os.path.join(current_app.config['UPLOAD_DIR'], filename)
         try:
@@ -415,7 +415,7 @@ def delete_selected_items():
         except Exception:
             pass  # Could log this if desired
 
-    flash(f"Deleted {len(items)} item(s).", "success")
-    return redirect(url_for('admin.items'))
+    flash(f"Deleted {len(listings)} listing(s).", "success")
+    return redirect(url_for('admin.listings'))
 
 # ----- End of admin.py -----

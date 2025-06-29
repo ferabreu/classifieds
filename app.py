@@ -37,14 +37,16 @@ def create_app():
     def inject_sidebar_data():
         g.types = Type.query.order_by(Type.name).all()
 
-    from routes.auth import auth_bp
-    from routes.items import items_bp
-    from routes.users import users_bp
     from routes.admin import admin_bp
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(items_bp, url_prefix='/')
-    app.register_blueprint(users_bp, url_prefix='/users')
+    from routes.auth import auth_bp
+    from routes.errors import errors_bp
+    from routes.listings import listings_bp
+    from routes.users import users_bp
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(errors_bp)
+    app.register_blueprint(listings_bp, url_prefix='/')
+    app.register_blueprint(users_bp, url_prefix='/users')
 
     @app.cli.command("init")
     def init():

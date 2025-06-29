@@ -23,7 +23,7 @@ def verify_reset_token(token, expiration=3600):
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('items.index'))
+        return redirect(url_for('listings.index'))
     form = LoginForm()
     ldap_enabled = bool(current_app.config.get("LDAP_SERVER") and current_app.config.get("LDAP_DOMAIN"))
     if form.validate_on_submit():
@@ -33,7 +33,7 @@ def login():
         if user and user.password_hash and user.check_password(password):
             login_user(user)
             flash("Logged in successfully.", "success")
-            return redirect(url_for('items.index'))
+            return redirect(url_for('listings.index'))
         if ldap_enabled and authenticate_with_ldap(email, password):
             if not user:
                 user = User(
@@ -46,14 +46,14 @@ def login():
                 db.session.commit()
             login_user(user)
             flash("Logged in with LDAP.", "success")
-            return redirect(url_for('items.index'))
+            return redirect(url_for('listings.index'))
         flash("Invalid credentials.", "danger")
     return render_template('login.html', form=form, ldap_enabled=ldap_enabled)
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('items.index'))
+        return redirect(url_for('listings.index'))
     form = RegistrationForm()
     if form.validate_on_submit():
         email = form.email.data.lower()
@@ -82,7 +82,7 @@ def logout():
 @auth_bp.route('/forgot', methods=['GET', 'POST'])
 def forgot_password():
     if current_user.is_authenticated:
-        return redirect(url_for('items.index'))
+        return redirect(url_for('listings.index'))
     form = ForgotPasswordForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data.lower()).first()
@@ -112,7 +112,7 @@ def forgot_password():
 @auth_bp.route('/reset/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     if current_user.is_authenticated:
-        return redirect(url_for('items.index'))
+        return redirect(url_for('listings.index'))
     email = verify_reset_token(token)
     if not email:
         flash("Invalid or expired reset link.", "danger")

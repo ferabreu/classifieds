@@ -2,41 +2,41 @@
 
 from flask import Blueprint, current_app, jsonify, render_template, redirect, url_for, flash, request, g
 from flask_login import login_required, current_user
-from models import db, Item, ItemImage, Type, Category
-from forms import ItemForm
+from models import db, Listing, ListingImage, Type, Category
+from forms import ListingForm
 from werkzeug.utils import secure_filename
 import os, uuid, shutil
 
-items_bp = Blueprint('items', __name__)
+listings_bp = Blueprint('listings', __name__)
 
-@items_bp.route('/')
+@listings_bp.route('/')
 def index():
-    """Show all items, newest first."""
-    items = Item.query.order_by(Item.created_at.desc()).all()
-    return render_template('index.html', items=items)
+    """Show all listings, newest first."""
+    listings = Listing.query.order_by(Listing.created_at.desc()).all()
+    return render_template('index.html', listings=listings)
 
-@items_bp.route('/type/<int:type_id>')
+@listings_bp.route('/type/<int:type_id>')
 def by_type(type_id):
-    """Show items filtered by type."""
-    items = Item.query.filter_by(type_id=type_id).order_by(Item.created_at.desc()).all()
+    """Show listings filtered by type."""
+    listings = Listing.query.filter_by(type_id=type_id).order_by(Listing.created_at.desc()).all()
     selected_type = Type.query.get_or_404(type_id)
-    return render_template('index.html', items=items, selected_type=selected_type)
+    return render_template('index.html', listings=listings, selected_type=selected_type)
 
-@items_bp.route('/type/<int:type_id>/category/<int:category_id>')
+@listings_bp.route('/type/<int:type_id>/category/<int:category_id>')
 def by_type_category(type_id, category_id):
-    """Show items filtered by type and category."""
-    items = Item.query.filter_by(type_id=type_id, category_id=category_id).order_by(Item.created_at.desc()).all()
+    """Show listings filtered by type and category."""
+    listings = Listing.query.filter_by(type_id=type_id, category_id=category_id).order_by(Listing.created_at.desc()).all()
     selected_type = Type.query.get_or_404(type_id)
     selected_category = Category.query.get_or_404(category_id)
-    return render_template('index.html', items=items, selected_type=selected_type, selected_category=selected_category)
+    return render_template('index.html', listings=listings, selected_type=selected_type, selected_category=selected_category)
 
-@items_bp.route('/item/<int:item_id>')
-def item_detail(item_id):
-    """Show details for a single item."""
-    item = Item.query.get_or_404(item_id)
-    return render_template('item_detail.html', item=item)
+@listings_bp.route('/listing/<int:listing_id>')
+def listing_detail(listing_id):
+    """Show details for a single listing."""
+    listing = Listing.query.get_or_404(listing_id)
+    return render_template('listing_detail.html', listing=listing)
 
-@items_bp.route('/categories_for_type/<int:type_id>')
+@listings_bp.route('/categories_for_type/<int:type_id>')
 @login_required
 def categories_for_type(type_id):
     """
@@ -46,27 +46,27 @@ def categories_for_type(type_id):
     category_list = [{'id': c.id, 'name': c.name} for c in categories]
     return jsonify(category_list)
 
-@items_bp.route('/new', methods=['GET', 'POST'])
+@listings_bp.route('/new', methods=['GET', 'POST'])
 @login_required
-def create_item():
+def create_listing():
     """
-    Create a new item with ACID-like file handling using TEMP_DIR.
+    Create a new listing with ACID-like file handling using TEMP_DIR.
     - On GET: show empty form.
-    - On POST: validate and save item and images using atomic file/database logic.
+    - On POST: validate and save listing and images using atomic file/database logic.
     - Uploaded images are first saved to TEMP_DIR.
     - If DB commit succeeds, move images from TEMP_DIR to UPLOAD_DIR.
     - If DB commit fails, delete images from TEMP_DIR.
-    - On success: redirect to detail page of the new item (not index).
+    - On success: redirect to detail page of the new listing (not index).
     """
-    form = ItemForm()
+    form = ListingForm()
     
     if not current_app.config['TEMP_DIR']:
         flash('Temp directory is not configured.', 'danger')
-        return render_template("item_form.html", form=form, action="Create")
+        return render_template("listing_form.html", form=form, action="Create")
     
     if not os.path.exists(current_app.config['TEMP_DIR']):
         flash('Temp directory does not exist. Please initialize the application.', 'danger')
-        return render_template("item_form.html", form=form, action="Create")
+        return render_template("listing_form.html", form=form, action="Create")
         
     types = Type.query.order_by(Type.name).all()
     
@@ -81,7 +81,7 @@ def create_item():
             (c.id, c.name) for c in Category.query.filter_by(type_id=form.type.data).order_by(Category.name)
         ]
         if form.validate_on_submit():
-            item = Item(
+            listing = Listing(
                 title=form.title.data,
                 description=form.description.data,
                 price=form.price.data or 0,
@@ -109,10 +109,10 @@ def create_item():
 
             commit_success = False
             try:
-                # Add item and new images to DB but don't move to final location yet
-                db.session.add(item)
+                # Add listing and new images to DB but don't move to final location yet
+                db.session.add(listing)
                 for unique_filename in added_files:
-                    image = ItemImage(filename=unique_filename, item=item)
+                    image = ListingImage(filename=unique_filename, listing=listing)
                     db.session.add(image)
                 db.session.commit()
                 commit_success = True
@@ -125,8 +125,8 @@ def create_item():
                             os.remove(temp_path)
                     except Exception:
                         pass
-                flash(f"Database error. Item was not created. Uploaded files were discarded. ({e})", "danger")
-                return render_template("item_form.html", form=form, action="Create")
+                flash(f"Database error. Listing was not created. Uploaded files were discarded. ({e})", "danger")
+                return render_template("listing_form.html", form=form, action="Create")
             
             # --- If commit succeeded: finalize file system changes ---
             if commit_success:
@@ -139,16 +139,16 @@ def create_item():
                     except Exception as e:
                         flash(f"Warning: Could not finalize upload for {unique_filename}: {e}", "warning")
 
-                flash('Item created successfully!', 'success')
-                # Redirect to detail page of the new item
-                return redirect(url_for('items.item_detail', item_id=item.id))
-    return render_template('item_form.html', form=form, action="Create")
+                flash('Listing created successfully!', 'success')
+                # Redirect to detail page of the new listing
+                return redirect(url_for('listings.listing_detail', listing_id=listing.id))
+    return render_template('listing_form.html', form=form, action="Create")
 
-@items_bp.route('/edit/<int:item_id>', methods=['GET', 'POST'])
+@listings_bp.route('/edit/<int:listing_id>', methods=['GET', 'POST'])
 @login_required
-def edit_item(item_id):
+def edit_listing(listing_id):
     """
-    Edit an existing item with ACID-like file handling using TEMP_DIR.
+    Edit an existing listing with ACID-like file handling using TEMP_DIR.
     - Only owner or admin can edit.
     - Deleted images are moved to temp before DB commit.
     - New images are stored in temp before DB commit.
@@ -156,26 +156,26 @@ def edit_item(item_id):
     - If DB succeeds, files are permanently changed.
     - On GET: show form pre-filled.
     - On POST: validate and update, handle image add/delete.
-    - On error: stay on item detail with flash message.
+    - On error: stay on listing detail with flash message.
     """
-    item = Item.query.get_or_404(item_id)
+    listing = Listing.query.get_or_404(listing_id)
     
-    if current_user.id != item.user_id and not current_user.is_admin:
-        flash("You do not have permission to edit this item.", "danger")
-        return render_template("item_detail.html", item=item)
+    if current_user.id != listing.user_id and not current_user.is_admin:
+        flash("You do not have permission to edit this listing.", "danger")
+        return render_template("listing_detail.html", listing=listing)
     
     if not current_app.config['TEMP_DIR']:
         flash('Temp directory is not configured.', 'danger')
-        return render_template("item_detail.html", item=item)
+        return render_template("listing_detail.html", listing=listing)
     
     if not os.path.exists(current_app.config['TEMP_DIR']):
         flash('Temp directory does not exist. Please initialize the application.', 'danger')
-        return render_template("item_detail.html", item=item)
+        return render_template("listing_detail.html", listing=listing)
         
     types = Type.query.order_by(Type.name).all()
-    form = ItemForm()
+    form = ListingForm()
     form.type.choices = [(t.id, t.name) for t in types]
-    categories = Category.query.filter_by(type_id=item.type_id).all()
+    categories = Category.query.filter_by(type_id=listing.type_id).all()
     form.category.choices = [(c.id, c.name) for c in categories]
 
     if request.method == 'POST':
@@ -185,11 +185,11 @@ def edit_item(item_id):
             (c.id, c.name) for c in Category.query.filter_by(type_id=form.type.data).order_by(Category.name)
         ]
         if form.validate_on_submit():
-            item.title = form.title.data
-            item.description = form.description.data
-            item.price = form.price.data or 0
-            item.type_id = form.type.data
-            item.category_id = form.category.data
+            listing.title = form.title.data
+            listing.description = form.description.data
+            listing.price = form.price.data or 0
+            listing.type_id = form.type.data
+            listing.category_id = form.category.data
 
             upload_dir = current_app.config['UPLOAD_DIR']
             temp_dir = current_app.config['TEMP_DIR']
@@ -203,8 +203,8 @@ def edit_item(item_id):
             delete_image_ids = request.form.getlist('delete_images')
             if delete_image_ids:
                 for img_id in delete_image_ids:
-                    image = ItemImage.query.get(int(img_id))
-                    if image and image in item.images:
+                    image = ListingImage.query.get(int(img_id))
+                    if image and image in listing.images:
                         image_path = os.path.join(upload_dir, image.filename)
                         temp_path = os.path.join(temp_dir, image.filename)
                         try:
@@ -230,7 +230,7 @@ def edit_item(item_id):
             try:
                 # Add new images to DB but don't move to final location yet
                 for unique_filename in added_files:
-                    image = ItemImage(filename=unique_filename, item=item)
+                    image = ListingImage(filename=unique_filename, listing=listing)
                     db.session.add(image)
                 db.session.commit()
                 commit_success = True
@@ -251,7 +251,7 @@ def edit_item(item_id):
                     except Exception:
                         pass
                 flash(f"Database error. Changes not saved. Files restored. ({e})", "danger")
-                return render_template("item_form.html", form=form, item=item, action="Save")
+                return render_template("listing_form.html", form=form, listing=listing, action="Save")
             
             # --- If commit succeeded: finalize file system changes ---
             if commit_success:
@@ -271,47 +271,47 @@ def edit_item(item_id):
                     except Exception as e:
                         flash(f"Warning: Could not finalize upload for {unique_filename}: {e}", "warning")
 
-                flash('Item updated successfully!', 'success')
-                return redirect(url_for('items.item_detail', item_id=item.id))
+                flash('Listing updated successfully!', 'success')
+                return redirect(url_for('listings.listing_detail', listing_id=listing.id))
     else:
-        # Only on GET: Pre-populate form fields from item
-        form.title.data = item.title
-        form.type.data = item.type_id
-        form.category.data = item.category_id
-        form.description.data = item.description
-        form.price.data = item.price
+        # Only on GET: Pre-populate form fields from listing
+        form.title.data = listing.title
+        form.type.data = listing.type_id
+        form.category.data = listing.category_id
+        form.description.data = listing.description
+        form.price.data = listing.price
 
-    return render_template('item_form.html', form=form, item=item, action="Save")
+    return render_template('listing_form.html', form=form, listing=listing, action="Save")
 
-@items_bp.route('/delete/<int:item_id>', methods=['POST'])
+@listings_bp.route('/delete/<int:listing_id>', methods=['POST'])
 @login_required
-def delete_item(item_id):
+def delete_listing(listing_id):
     """
-    Delete a single item and its associated images using a temp directory for ACID-like safety.
+    Delete a single listing and its associated images using a temp directory for ACID-like safety.
     - Only owner or admin can delete.
     - Moves image files to a temp directory before DB operation.
     - On error: if DB commit fails, restores files from temp and stay on detail page with error flash.
     - On success: if DB commit succeeds, deletes files from temp and redirect to index.
     """
-    item = Item.query.get_or_404(item_id)
+    listing = Listing.query.get_or_404(listing_id)
     
-    if current_user.id != item.user_id and not current_user.is_admin:
-        flash("You do not have permission to delete this item.", "danger")
-        return render_template("item_detail.html", item=item)
+    if current_user.id != listing.user_id and not current_user.is_admin:
+        flash("You do not have permission to delete this listing.", "danger")
+        return render_template("listing_detail.html", listing=listing)
 
     if not current_app.config['TEMP_DIR']:
         flash('Temp directory is not configured.', 'danger')
-        return render_template("item_detail.html", item=item)
+        return render_template("listing_detail.html", listing=listing)
     
     if not os.path.exists(current_app.config['TEMP_DIR']):
         flash('Temp directory does not exist. Please initialize the application.', 'danger')
-        return render_template("item_detail.html", item=item)
+        return render_template("listing_detail.html", listing=listing)
         
     original_paths = []
     temp_paths = []
 
     # Move images to temp before DB commit
-    for image in item.images:
+    for image in listing.images:
         orig = os.path.join(current_app.config['UPLOAD_DIR'], image.filename)
         temped = os.path.join(current_app.config['TEMP_DIR'], image.filename)
         try:
@@ -323,7 +323,7 @@ def delete_item(item_id):
             flash(f'Error moving image {image.filename} to temp: {e}', 'warning')
 
     try:
-        db.session.delete(item)
+        db.session.delete(listing)
         db.session.commit()
     except Exception as e:
         # Restore files if DB fails
@@ -334,8 +334,8 @@ def delete_item(item_id):
             except Exception:
                 pass
         db.session.rollback()
-        flash(f'Database error. Item was not deleted. Files restored. ({e})', 'danger')
-        return render_template("item_detail.html", item=item)
+        flash(f'Database error. Listing was not deleted. Files restored. ({e})', 'danger')
+        return render_template("listing_detail.html", listing=listing)
 
     # Permanently delete temped files after commit
     for temped in temp_paths:
@@ -345,5 +345,5 @@ def delete_item(item_id):
         except Exception:
             pass
 
-    flash('Item deleted successfully!', 'success')
-    return redirect(url_for('items.index'))
+    flash('Listing deleted successfully!', 'success')
+    return redirect(url_for('listings.index'))

@@ -5,5 +5,5 @@
 - Discussed statelessness and session limitations in Copilot Chat.
 - Shared strategies for maintaining project continuity over multi-day sessions.
 - Reviewed `routes/auth.py` and confirmed authentication and registration routes are implemented.
-- Reviewed `routes/items.py` and confirmed item creation, editing, and deletion routes are implemented.
+- Reviewed `routes/listings.py` and confirmed listing creation, editing, and deletion routes are implemented.
 - Updated project notes to accurately reflect completed features.

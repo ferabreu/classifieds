@@ -27,13 +27,13 @@ class ResetPasswordForm(FlaskForm):
     password2 = PasswordField('Repeat New Password', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Reset Password')
 
-class ItemForm(FlaskForm):
+class ListingForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired(), Length(max=128)])
     type = SelectField('Type', coerce=int, validators=[DataRequired()])
     category = SelectField('Category', coerce=int, validators=[DataRequired()])
     description = TextAreaField('Description', validators=[DataRequired()])
     price = FloatField('Price', validators=[Optional()])
-    images = MultipleFileField('Item Images', validators=[
+    images = MultipleFileField('Listing Images', validators=[
         FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Images only!')
     ])
     submit = SubmitField('Save')

@@ -3,15 +3,15 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Manage Items</h2>
+    <h2>Manage Listings</h2>
     <a href="{{ url_for('admin.dashboard') }}">&larr; Admin Dashboard</a>
-    <form method="post" action="{{ url_for('admin.delete_selected_items') }}">
+    <form method="post" action="{{ url_for('admin.delete_selected_listings') }}">
         <table class="table">
           <thead>
           <tr>
           <th><input type="checkbox" id="select-all"></th>
           <th>
-            <a href="{{ url_for('admin.items', sort='title', direction='asc' if sort != 'title' or direction == 'desc' else 'desc') }}">
+            <a href="{{ url_for('admin.listings', sort='title', direction='asc' if sort != 'title' or direction == 'desc' else 'desc') }}">
               Title
               {% if sort == 'title' %}
                 {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
@@ -19,7 +19,7 @@
             </a>
           </th>
           <th>
-            <a href="{{ url_for('admin.items', sort='type', direction='asc' if sort != 'type' or direction == 'desc' else 'desc') }}">
+            <a href="{{ url_for('admin.listings', sort='type', direction='asc' if sort != 'type' or direction == 'desc' else 'desc') }}">
               Type
               {% if sort == 'type' %}
                 {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
@@ -27,7 +27,7 @@
             </a>
           </th>
           <th>
-            <a href="{{ url_for('admin.items', sort='category', direction='asc' if sort != 'category' or direction == 'desc' else 'desc') }}">
+            <a href="{{ url_for('admin.listings', sort='category', direction='asc' if sort != 'category' or direction == 'desc' else 'desc') }}">
               Category
               {% if sort == 'category' %}
                 {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
@@ -35,7 +35,7 @@
             </a>
           </th>
           <th>
-            <a href="{{ url_for('admin.items', sort='user', direction='asc' if sort != 'user' or direction == 'desc' else 'desc') }}">
+            <a href="{{ url_for('admin.listings', sort='user', direction='asc' if sort != 'user' or direction == 'desc' else 'desc') }}">
               User
               {% if sort == 'user' %}
                 {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
@@ -43,7 +43,7 @@
             </a>
           </th>
           <th>
-            <a href="{{ url_for('admin.items', sort='created_at', direction='asc' if sort != 'created_at' or direction == 'desc' else 'desc') }}">
+            <a href="{{ url_for('admin.listings', sort='created_at', direction='asc' if sort != 'created_at' or direction == 'desc' else 'desc') }}">
               Date Created
               {% if sort == 'created_at' %}
                 {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
@@ -54,20 +54,20 @@
           </tr>
           </thead>
           <tbody>
-          {% for item in items %}
+          {% for listing in listings %}
               <tr>
                   <td>
-                      <input type="checkbox" class="row-checkbox" name="selected_items" value="{{ item.id }}">
+                      <input type="checkbox" class="row-checkbox" name="selected_listings" value="{{ listing.id }}">
                   </td>
                   <td>
-                      <a href="{{ url_for('items.item_detail', item_id=item.id) }}">{{ item.title }}</a>
+                      <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}">{{ listing.title }}</a>
                   </td>
-                  <td>{{ item.type.name }}</td>
-                  <td>{{ item.category.name }}</td>
-                  <td>{{ item.owner.email }}</td>
-                  <td>{{ item.created_at.strftime('%Y-%m-%d') }}</td>
+                  <td>{{ listing.type.name }}</td>
+                  <td>{{ listing.category.name }}</td>
+                  <td>{{ listing.owner.email }}</td>
+                  <td>{{ listing.created_at.strftime('%Y-%m-%d') }}</td>
                   <td>
-                      <a href="{{ url_for('items.edit_item', item_id=item.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                      <a href="{{ url_for('listings.edit_listing', listing_id=listing.id) }}" class="btn btn-warning btn-sm">Edit</a>
                   </td>
               </tr>
           {% endfor %}
@@ -77,7 +77,7 @@
             <button type="submit" class="btn btn-danger">Delete Selected</button>
         </div>
     </form>
-    {{ render_pagination(pagination, 'admin.items', sort=sort, direction=direction) }}
+    {{ render_pagination(pagination, 'admin.listings', sort=sort, direction=direction) }}
 </div>
 {% endblock %}
 {% block scripts %}

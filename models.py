@@ -11,13 +11,13 @@ class Type(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), unique=True, nullable=False)
     categories = db.relationship('Category', backref='type', lazy=True, cascade="all, delete")
-    items = db.relationship('Item', backref='type', lazy=True)
+    listings = db.relationship('Listing', backref='type', lazy=True)
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), nullable=False)
     type_id = db.Column(db.Integer, db.ForeignKey('type.id'), nullable=False)
-    items = db.relationship('Item', backref='category', lazy=True)
+    listings = db.relationship('Listing', backref='category', lazy=True)
     __table_args__ = (db.UniqueConstraint('name', 'type_id', name='_cat_type_uc'),)
 
 class User(UserMixin, db.Model):
@@ -28,14 +28,14 @@ class User(UserMixin, db.Model):
     last_name = db.Column(db.String(64), nullable=False)
     is_ldap_user = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
-    items = db.relationship('Item', backref='owner', lazy=True)
+    listings = db.relationship('Listing', backref='owner', lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-class Item(db.Model):
+class Listing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(64), nullable=False)
     description = db.Column(db.Text, nullable=False)
@@ -45,18 +45,18 @@ class Item(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     images = db.relationship(
-        'ItemImage',
-        backref='item',
+        'ListingImage',
+        backref='listing',
         cascade='all, delete-orphan'
     )
 
-class ItemImage(db.Model):
+class ListingImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(256), nullable=False)
-    item_id = db.Column(
+    listing_id = db.Column(
         db.Integer,
-        db.ForeignKey('item.id', name='fk_itemimage_item_id', ondelete='CASCADE'),
+        db.ForeignKey('listing.id', name='fk_listingimage_listing_id', ondelete='CASCADE'),
         nullable=False
     )
-    # The item attribute on ItemImage will be available automatically due to the backref in Item
-    # item = db.relationship('Item', backref=db.backref('images', lazy=True))
+    # The listing attribute on ListingImage will be available automatically due to the backref in Listing
+    # listing = db.relationship('Listing', backref=db.backref('images', lazy=True))
