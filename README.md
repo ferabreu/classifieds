@@ -9,9 +9,9 @@ A modern, production-quality Flask web application for posting and managing clas
 This application allows users to post, browse, and manage classified ads for goods and services. Key features include:
 
 - User registration & authentication (local and optional LDAP)
-- Posting, editing, and deleting ads (items)
+- Posting, editing, and deleting ads (listings)
 - Browsing by type (Good or Service) and by category
-- Admin dashboard for managing users, types, categories, and items
+- Admin dashboard for managing users, types, categories, and listings
 - Password reset via email link (for non-LDAP users)
 - Clean, responsive UI with sidebar navigation
 
@@ -20,9 +20,9 @@ This application allows users to post, browse, and manage classified ads for goo
 ## Features Overview
 
 - **Users:** Register, login, edit profile, reset password
-- **Items:** Create, edit, delete, view details
-- **Types & Categories:** Admin-defined; organize items for easy browsing
-- **Admin:** Full CRUD for users, types, categories, and items
+- **Listings:** Create, edit, delete, view details
+- **Types & Categories:** Admin-defined; organize listings for easy browsing
+- **Admin:** Full CRUD for users, types, categories, and listings
 - **LDAP Authentication:** Optional, fallback to local, creates users on first LDAP login
 - **Password Reset:** Secure, token-based, for local accounts
 - **Sidebar Navigation:** Types and categories always visible for quick filtering
@@ -53,7 +53,7 @@ classifieds/
 │   ├── __init__.py
 │   ├── admin.py
 │   ├── auth.py
-│   ├── items.py
+│   ├── listings.py
 │   └── users.py
 └── templates/
     ├── base.html
@@ -62,15 +62,15 @@ classifieds/
     ├── register.html
     ├── forgot_password.html
     ├── reset_password.html
-    ├── item_detail.html
-    ├── item_form.html
+    ├── listing_detail.html
+    ├── listing_form.html
     ├── admin_dashboard.html
     ├── admin_users.html
     ├── admin_types.html
     ├── admin_type_form.html
     ├── admin_categories.html
     ├── admin_category_form.html
-    ├── admin_items.html
+    ├── admin_listings.html
     ├── user_profile.html
     └── user_edit.html
 ```
@@ -90,12 +90,12 @@ classifieds/
 - Visit `/admin/dashboard` as an admin user
 - Manage users (edit, promote/demote admin, delete, except must always have at least one admin)
 - Manage types and categories (CRUD)
-- Manage all items (delete any item)
+- Manage all listings (delete any listing)
 
 ### Classifieds
 
-- Any user can create, edit, or delete their own items
-- Admins can edit/delete any item
+- Any user can create, edit, or delete their own listings
+- Admins can edit/delete any listing
 - Browse by type/category via sidebar
 
 ---
@@ -154,7 +154,7 @@ flask --app app.py init
 This creates:
 - `instance/classifieds.db` (SQLite)
 - `static/uploads` (uploaded images)
-- `static/temp` (temp folder for ACIDized transactions when CRUDing items)
+- `static/temp` (temp folder for ACIDized transactions when CRUDing listings)
 - Default admin: `admin@classifieds.io` / password: `admin`
 - Types: Good, Service. Each gets a "General" category.
 

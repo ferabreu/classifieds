@@ -43,6 +43,8 @@ This is a Flask-based classified ads application. The main goals are:
 - [ ] Add basic tests for models and routes.
 - [ ] Add unit tests.
 - [ ] Ensure consistent HTML indentation (2 vs 4 spaces)
+- [ ] Rename "items" to "ads".
+- [ ] Unify management of types and categories in the same screen.
 
 ## Open Questions / Next Steps
 

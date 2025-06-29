@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container mt-4">
-    <h2>{{ action }} Item</h2>
-    <a href="{{ request.referrer or url_for('items.index') }}">&larr; Back</a>
+    <h2>{{ action }} Listing</h2>
+    <a href="{{ request.referrer or url_for('listings.index') }}">&larr; Back</a>
     <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         
@@ -16,7 +16,7 @@
 
         <div class="mb-3">
             {{ form.title.label(class="form-label") }}
-            {{ form.title(class="form-control", placeholder="Item title") }}
+            {{ form.title(class="form-control", placeholder="Listing title") }}
             {% for error in form.title.errors %}
                 <div class="text-danger">{{ error }}</div>
             {% endfor %}
@@ -24,7 +24,7 @@
 
         <div class="mb-3">
             {{ form.description.label(class="form-label") }}
-            {{ form.description(class="form-control", placeholder="Item description") }}
+            {{ form.description(class="form-control", placeholder="Listing description") }}
             {% for error in form.description.errors %}
                 <div class="text-danger">{{ error }}</div>
             {% endfor %}
@@ -54,13 +54,13 @@
             {% endfor %}
         </div>
         
-        {% if item %}
+        {% if listing %}
             <div class="row">
-                {% for image in item.images %}
+                {% for image in listing.images %}
                     <div class="col-auto mb-2 text-center">
                         <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
                             <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
-                                 alt="Item image"
+                                 alt="Listing image"
                                  class="img-thumbnail"
                                  style="max-width: 120px; max-height: 120px;">
                         </a>

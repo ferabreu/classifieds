@@ -9,7 +9,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
     <div class="container">
-        <a class="navbar-brand" href="{{ url_for('items.index') }}">Classifieds</a>
+        <a class="navbar-brand" href="{{ url_for('listings.index') }}">Classifieds</a>
         <!-- Hamburger button for collapsing navbar on mobile -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -19,23 +19,23 @@
             <ul class="navbar-nav ms-auto">
                 {% if current_user.is_authenticated %}
                     {% if current_user.is_admin %}
-                        <li class="nav-item">
+                        <li class="nav-listing">
                             <a class="nav-link" href="{{ url_for('admin.dashboard') }}">Admin dashboard</a>
                         </li>
                     {% endif %}
-                        <li class="nav-item">
+                        <li class="nav-listing">
                             <a class="nav-link" href="{{ url_for('users.my_profile') }}">
                                 {{ current_user.email }}
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-listing">
                             <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                         </li>
                     {% else %}
-                        <li class="nav-item">
+                        <li class="nav-listing">
                             <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-listing">
                             <a class="nav-link" href="{{ url_for('auth.register') }}">Sign up</a>
                         </li>
                     {% endif %}
@@ -50,14 +50,14 @@
                     <h6 class="sidebar-heading">Types</h6>
                     <ul class="nav flex-column mb-2">
                         {% for type in g.types %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('items.by_type', type_id=type.id) }}">
+                        <li class="nav-listing">
+                            <a class="nav-link" href="{{ url_for('listings.by_type', type_id=type.id) }}">
                                 {{ type.name }}s
                             </a>
                             <ul class="nav flex-column ms-3">
                                 {% for category in type.categories %}
-                                <li class="nav-item">
-                                    <a class="nav-link" href="{{ url_for('items.by_type_category', type_id=type.id, category_id=category.id) }}">{{ category.name }}</a>
+                                <li class="nav-listing">
+                                    <a class="nav-link" href="{{ url_for('listings.by_type_category', type_id=type.id, category_id=category.id) }}">{{ category.name }}</a>
                                 </li>
                                 {% endfor %}
                             </ul>
