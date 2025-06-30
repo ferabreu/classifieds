@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
-    <h2>User Profile</h2>
-    <p><strong>Email:</strong> {{ user.email }}</p>
-    <p><strong>Name:</strong> {{ user.first_name }} {{ user.last_name }}</p>
-    {% if user.is_admin %}
-        <p><strong>This user has administrative privileges.</strong></p>
-    {% endif %}
-    {% if current_user.is_authenticated and (current_user.id == user.id or current_user.is_admin) %}
-        <a href="{% if current_user.is_admin %}{{ url_for('admin.edit_user', user_id=user.id) }}{% else %}{{ url_for('users.edit_my_profile') }}{% endif %}" class="btn btn-primary">Edit Profile</a>
-    {% endif %}
-</div>
+    <div class="container mt-4">
+        <h2>User Profile</h2>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Name:</strong> {{ user.first_name }} {{ user.last_name }}</p>
+        {% if user.is_admin %}
+            <p><strong>This user has administrative privileges.</strong></p>
+        {% endif %}
+        {% if current_user.is_authenticated and (current_user.id == user.id or current_user.is_admin) %}
+            <a href="{% if current_user.is_admin %}{{ url_for('admin.edit_user', user_id=user.id) }}{% else %}{{ url_for('users.edit_my_profile') }}{% endif %}" class="btn btn-primary">Edit Profile</a>
+        {% endif %}
+    </div>
 {% endblock %}

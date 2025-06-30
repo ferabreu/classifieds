@@ -1,0 +1,8 @@
+repos:
+  - repo: https://github.com/rtts/djhtml
+    rev: "3.0.6"  # Use the latest stable tag or release
+    hooks:
+      - id: djhtml
+        name: djhtml (HTML/Jinja2 Template Formatter)
+        files: ^templates/.*\.html$
+        args: ["--tabwidth=4"]  # Optional: use 2 or 4 for indentation width
