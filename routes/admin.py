@@ -188,9 +188,12 @@ def edit_type(type_id):
 @admin_required
 def delete_type(type_id):
     """
-    Allows admins to delete a type.
+    Allows admins to delete a type only if it has no categories.
     """
     t = Type.query.get_or_404(type_id)
+    if t.categories:  # If there are any categories, do not delete
+        flash('You must delete all categories under this type first.', 'danger')
+        return redirect(url_for('admin.types'))
     db.session.delete(t)
     db.session.commit()
     flash('Type deleted.', 'success')
