@@ -33,46 +33,43 @@ This application allows users to post, browse, and manage classified ads for goo
 
 ```
 classifieds/
-├── app.py
-├── config.py
-├── forms.py
-├── ldap_auth.py
-├── models.py
-├── requirements.txt
-├── wsgi.py
 ├── Dockerfile
-├── docker-compose.yml
-├── .dockerignore
-├── .env.example
+├── LICENSE
 ├── README.md
-├── static/
-│   └── styles.css
-├── instance/
-│   └── classifieds.db         # Created after first run
-├── routes/
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── auth.py
-│   ├── listings.py
-│   └── users.py
-└── templates/
-    ├── base.html
-    ├── index.html
-    ├── login.html
-    ├── register.html
-    ├── forgot_password.html
-    ├── reset_password.html
-    ├── listing_detail.html
-    ├── listing_form.html
-    ├── admin_dashboard.html
-    ├── admin_users.html
-    ├── admin_types.html
-    ├── admin_type_form.html
-    ├── admin_categories.html
-    ├── admin_category_form.html
-    ├── admin_listings.html
-    ├── user_profile.html
-    └── user_edit.html
+├── app
+│   ├── __init__.py
+│   ├── config.py
+│   ├── forms.py
+│   ├── ldap_auth.py
+│   ├── models.py
+│   ├── routes
+│   │   ├── admin.py
+│   │   ├── auth.py
+│   │   ├── errors.py
+│   │   ├── listings.py
+│   │   └── users.py
+│   └── static
+├── classifieds.service
+├── docker-compose.yml
+├── docs
+│   ├── README.md
+│   └── copilot-notes
+│       ├── copilot-internationalization-guidance.md
+│       ├── copilot-migrations-best-practices.md
+│       ├── copilot-notes.md
+│       ├── copilot-retailing-gold-standard.md
+│       └── copilot-security-review-recomendations.md
+├── migrations
+│   ├── README
+│   ├── alembic.ini
+│   ├── env.py
+│   ├── script.py.mako
+│   └── versions
+│       └── 04ede7750476_renamed_item_to_listing.py
+├── requirements.txt
+├── resources
+│   └── populate_items_with_files.sql
+└── wsgi.py
 ```
 
 ---

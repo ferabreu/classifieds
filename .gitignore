@@ -6,12 +6,12 @@ docs/misc
 resources/misc
 
 # Ignore all uploaded files
-app/static/uploads*/
-app/static/temp/
+**/uploads*/
+**/temp*/
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
+**/__pycache__/
+**/*.py[cod]
 *$py.class
 
 # C extensions
