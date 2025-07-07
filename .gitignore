@@ -6,8 +6,8 @@ docs/misc
 resources/misc
 
 # Ignore all uploaded files
-static/uploads*
-static/temp
+app/static/uploads*/
+app/static/temp/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

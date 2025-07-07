@@ -1,11 +1,11 @@
 # Created by GitHub Copilot for Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu)
 
-from flask import Blueprint, current_app, jsonify, render_template, redirect, url_for, flash, request, g
-from flask_login import login_required, current_user
-from models import db, Listing, ListingImage, Type, Category
-from forms import ListingForm
+from flask import Blueprint, current_app, flash, g, jsonify, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
-import os, uuid, shutil
+from ..forms import ListingForm
+from ..models import db, Category, Listing, ListingImage, Type
+import os, shutil, uuid
 
 listings_bp = Blueprint('listings', __name__)
 

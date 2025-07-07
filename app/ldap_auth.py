@@ -1,5 +1,5 @@
-from config import Config
-from ldap3 import Server, Connection, NTLM, ALL
+from ldap3 import ALL, Connection, NTLM, Server
+from .config import Config
 
 def authenticate_with_ldap(email, password):
     ldap_server = Config.LDAP_SERVER
