@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, flash
-from flask_login import login_required, current_user
-from models import db, User
-from forms import UserEditForm
+from flask import Blueprint, flash, redirect, render_template, url_for
+from flask_login import current_user, login_required
+from ..forms import UserEditForm
+from ..models import db, User
 
 users_bp = Blueprint('users', __name__)
 

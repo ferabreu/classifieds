@@ -148,7 +148,7 @@ For Gunicorn (production), you must export these variables in your shell, use a 
 ### 3. Initialize the app (database and uploads directory)
 
 ```bash
-flask --app app.py init
+FLASK_APP=app flask init
 ```
 
 This creates:
@@ -165,9 +165,7 @@ This creates:
 #### Development
 
 ```bash
-export FLASK_APP=app.py
-export FLASK_ENV=development
-flask run
+FLASK_APP=app FLASK_ENV=development flask run --debug
 ```
 Visit [http://localhost:5000](http://localhost:5000)
 

@@ -1,15 +1,25 @@
 from flask import Flask, g
-from config import Config
-from models import db, Type, User, Category
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
+from .config import Config, DevelopmentConfig, TestingConfig, ProductionConfig
+from .models import db, Category, Type, User
 import os
 
 login_manager = LoginManager()
 mail = Mail()
 
-def create_app():
+def create_app(config_class=None):
+    if config_class is None:
+        # Fallback: choose config based on FLASK_ENV
+        env = os.getenv('FLASK_ENV', 'development').lower()
+        config_map = {
+            "development": DevelopmentConfig,
+            "testing": TestingConfig,
+            "production": ProductionConfig,
+        }
+        config_class = config_map.get(env, DevelopmentConfig)
+    
     app = Flask(
         __name__,
         static_folder="static",
@@ -17,12 +27,8 @@ def create_app():
         instance_relative_config=True
     )
     
-    app.config.from_object(Config)
+    app.config.from_object(config_class)
     
-    if not app.config["SQLALCHEMY_DATABASE_URI"]:
-        db_path = os.path.join(app.instance_path, Config.DB_FILENAME)
-        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
-
     db.init_app(app)
     migrate = Migrate(app, db)
     login_manager.init_app(app)
@@ -37,11 +43,11 @@ def create_app():
     def inject_sidebar_data():
         g.types = Type.query.order_by(Type.name).all()
 
-    from routes.admin import admin_bp
-    from routes.auth import auth_bp
-    from routes.errors import errors_bp
-    from routes.listings import listings_bp
-    from routes.users import users_bp
+    from .routes.admin import admin_bp
+    from .routes.auth import auth_bp
+    from .routes.errors import errors_bp
+    from .routes.listings import listings_bp
+    from .routes.users import users_bp
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(errors_bp)

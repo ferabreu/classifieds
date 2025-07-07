@@ -7,11 +7,11 @@ This module contains administrative views and utilities, including user, type, c
 It ensures only admin users (with is_admin=True) can access these endpoints, and handles deletion of related images on the filesystem.
 """
 
-from flask import Blueprint, current_app, render_template, redirect, url_for, flash, request
-from flask_login import login_required, current_user
-from models import db, User, Type, Category, Listing
-from forms import TypeForm, CategoryForm, UserEditForm
+from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload
+from ..forms import CategoryForm, TypeForm, UserEditForm
+from ..models import db, Category, Listing, Type, User
 import os, shutil
 
 # Blueprint for admin routes
