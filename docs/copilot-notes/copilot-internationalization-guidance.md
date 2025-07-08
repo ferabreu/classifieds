@@ -5,7 +5,7 @@ To prepare the application for multilingual support, consider the following step
 ## 1. Use Flask-Babel for i18n
 
 - Install Flask-Babel:
-  ```
+  ```bash
   pip install Flask-Babel
   ```
 - Initialize Babel in your application:
@@ -33,15 +33,15 @@ To prepare the application for multilingual support, consider the following step
 ## 3. Extract and Manage Translations
 
 - Extract messages:
-  ```
+  ```bash
   pybabel extract -F babel.cfg -o messages.pot .
   ```
 - Initialize a new language:
-  ```
+  ```bash
   pybabel init -i messages.pot -d translations -l pt_BR
   ```
 - Update and compile translations:
-  ```
+  ```bash
   pybabel update -i messages.pot -d translations
   pybabel compile -d translations
   ```

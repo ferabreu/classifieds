@@ -31,7 +31,7 @@ This application allows users to post, browse, and manage classified ads for goo
 
 ## Project Structure
 
-```
+```text
 classifieds/
 ├── Dockerfile
 ├── LICENSE
@@ -150,8 +150,8 @@ FLASK_APP=app flask init
 
 This creates:
 - `instance/classifieds.db` (SQLite)
-- `static/uploads` (uploaded images)
-- `static/temp` (temp folder for ACIDized transactions when CRUDing listings)
+- `app/static/uploads` (uploaded images)
+- `app/static/temp` (temp folder for ACIDized transactions when CRUDing listings)
 - Default admin: `admin@classifieds.io` / password: `admin`
 - Types: Good, Service. Each gets a "General" category.
 
@@ -201,7 +201,7 @@ export LDAP_DOMAIN="YOURDOMAIN"
 
 To enable password reset emails, you must configure Flask-Mail via environment variables or your `.env` file:
 
-```
+```env
 MAIL_SERVER=smtp.example.com
 MAIL_PORT=587
 MAIL_USE_TLS=true

@@ -1,6 +1,19 @@
-# Created by GitHub Copilot for Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu)
+# Copyright (c) 2024 Fernando "ferabreu" Mees Abreu
+# 
+# Licensed under the MIT License. See LICENSE file in the project root for full license information.
+#
+"""
+This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
-from flask import Blueprint, current_app, flash, g, jsonify, redirect, render_template, request, url_for
+Routes for listings management in the classifieds Flask app.
+
+Implements ACID-like file handling for listing image uploads and deletions:
+- Images are first moved to a temp directory until DB commits succeed,
+  ensuring DB and storage consistency even on errors.
+- Only listing owners or admins can edit/delete listings.
+"""
+
+from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 from ..forms import ListingForm
@@ -34,7 +47,7 @@ def by_type_category(type_id, category_id):
 def listing_detail(listing_id):
     """Show details for a single listing."""
     listing = Listing.query.get_or_404(listing_id)
-    return render_template('listing_detail.html', listing=listing)
+    return render_template('listings/listing_detail.html', listing=listing)
 
 @listings_bp.route('/categories_for_type/<int:type_id>')
 @login_required
@@ -60,13 +73,14 @@ def create_listing():
     """
     form = ListingForm()
     
+    # Defensive: Temp directory must be configured and exist
     if not current_app.config['TEMP_DIR']:
         flash('Temp directory is not configured.', 'danger')
-        return render_template("listing_form.html", form=form, action="Create")
+        return render_template("listings/listing_form.html", form=form, action="Create")
     
     if not os.path.exists(current_app.config['TEMP_DIR']):
         flash('Temp directory does not exist. Please initialize the application.', 'danger')
-        return render_template("listing_form.html", form=form, action="Create")
+        return render_template("listings/listing_form.html", form=form, action="Create")
         
     types = Type.query.order_by(Type.name).all()
     
@@ -75,7 +89,7 @@ def create_listing():
     categories = Category.query.filter_by(type_id=types[0].id).all() if types else []
     form.category.choices = [(c.id, c.name) for c in categories]
     if request.method == 'POST':
-        # Update choices for type/category dropdowns in form
+        # Always refresh choices after submit, in case user changed type/category
         form.type.choices = [(t.id, t.name) for t in Type.query.order_by(Type.name)]
         form.category.choices = [
             (c.id, c.name) for c in Category.query.filter_by(type_id=form.type.data).order_by(Category.name)
@@ -96,7 +110,7 @@ def create_listing():
             added_temp_paths = []
             added_files = []
 
-            # --- Save uploaded images to temp (not final location) ---
+            # Store uploaded images in TEMP_DIR first, before DB commit.
             if form.images.data:
                 for file in form.images.data:
                     if file and file.filename:
@@ -126,11 +140,11 @@ def create_listing():
                     except Exception:
                         pass
                 flash(f"Database error. Listing was not created. Uploaded files were discarded. ({e})", "danger")
-                return render_template("listing_form.html", form=form, action="Create")
+                return render_template("listings/listing_form.html", form=form, action="Create")
             
             # --- If commit succeeded: finalize file system changes ---
             if commit_success:
-                # Move new images from temp to upload dir
+                # Only move images to UPLOAD_DIR after DB commit
                 for temp_path, unique_filename in added_temp_paths:
                     final_path = os.path.join(upload_dir, unique_filename)
                     try:
@@ -142,7 +156,7 @@ def create_listing():
                 flash('Listing created successfully!', 'success')
                 # Redirect to detail page of the new listing
                 return redirect(url_for('listings.listing_detail', listing_id=listing.id))
-    return render_template('listing_form.html', form=form, action="Create")
+    return render_template('listings/listing_form.html', form=form, action="Create")
 
 @listings_bp.route('/edit/<int:listing_id>', methods=['GET', 'POST'])
 @login_required
@@ -162,15 +176,15 @@ def edit_listing(listing_id):
     
     if current_user.id != listing.user_id and not current_user.is_admin:
         flash("You do not have permission to edit this listing.", "danger")
-        return render_template("listing_detail.html", listing=listing)
+        return render_template("listings/listing_detail.html", listing=listing)
     
     if not current_app.config['TEMP_DIR']:
         flash('Temp directory is not configured.', 'danger')
-        return render_template("listing_detail.html", listing=listing)
+        return render_template("listings/listing_detail.html", listing=listing)
     
     if not os.path.exists(current_app.config['TEMP_DIR']):
         flash('Temp directory does not exist. Please initialize the application.', 'danger')
-        return render_template("listing_detail.html", listing=listing)
+        return render_template("listings/listing_detail.html", listing=listing)
         
     types = Type.query.order_by(Type.name).all()
     form = ListingForm()
@@ -195,11 +209,11 @@ def edit_listing(listing_id):
             temp_dir = current_app.config['TEMP_DIR']
 
             # For rollback
-            moved_to_temp = []
-            added_temp_paths = []
+            moved_to_temp = []    # Images "deleted" from listing, but reversible until commit
+            added_temp_paths = [] # New images, staged in TEMP_DIR
             added_files = []
 
-            # --- Handle image deletions (move to temp, not delete) ---
+            # Image deletions: move to temp, do not delete yet (enables rollback on DB error)
             delete_image_ids = request.form.getlist('delete_images')
             if delete_image_ids:
                 for img_id in delete_image_ids:
@@ -215,7 +229,7 @@ def edit_listing(listing_id):
                         except Exception as e:
                             flash(f'Error moving image {image.filename} to temp: {e}', 'warning')
             
-            # --- Handle new image uploads (save to temp, not final location) ---
+            # New image uploads: stage in TEMP_DIR until DB commit
             if form.images.data:
                 for file in form.images.data:
                     if file and file.filename:
@@ -236,7 +250,7 @@ def edit_listing(listing_id):
                 commit_success = True
             except Exception as e:
                 db.session.rollback()
-                # Restore deleted images from temp
+                # Restore deleted images on DB error
                 for orig_path, temp_path in moved_to_temp:
                     try:
                         if os.path.exists(temp_path):
@@ -251,11 +265,11 @@ def edit_listing(listing_id):
                     except Exception:
                         pass
                 flash(f"Database error. Changes not saved. Files restored. ({e})", "danger")
-                return render_template("listing_form.html", form=form, listing=listing, action="Save")
+                return render_template("listings/listing_form.html", form=form, listing=listing, action="Save")
             
             # --- If commit succeeded: finalize file system changes ---
             if commit_success:
-                # Permanently delete temp-ed images
+                # Delete images from TEMP_DIR after DB commit (no longer needed)
                 for _, temp_path in moved_to_temp:
                     try:
                         if os.path.exists(temp_path):
@@ -281,7 +295,7 @@ def edit_listing(listing_id):
         form.description.data = listing.description
         form.price.data = listing.price
 
-    return render_template('listing_form.html', form=form, listing=listing, action="Save")
+    return render_template('listings/listing_form.html', form=form, listing=listing, action="Save")
 
 @listings_bp.route('/delete/<int:listing_id>', methods=['POST'])
 @login_required
@@ -297,20 +311,20 @@ def delete_listing(listing_id):
     
     if current_user.id != listing.user_id and not current_user.is_admin:
         flash("You do not have permission to delete this listing.", "danger")
-        return render_template("listing_detail.html", listing=listing)
+        return render_template("listings/listing_detail.html", listing=listing)
 
     if not current_app.config['TEMP_DIR']:
         flash('Temp directory is not configured.', 'danger')
-        return render_template("listing_detail.html", listing=listing)
+        return render_template("listings/listing_detail.html", listing=listing)
     
     if not os.path.exists(current_app.config['TEMP_DIR']):
         flash('Temp directory does not exist. Please initialize the application.', 'danger')
-        return render_template("listing_detail.html", listing=listing)
+        return render_template("listings/listing_detail.html", listing=listing)
         
     original_paths = []
     temp_paths = []
 
-    # Move images to temp before DB commit
+    # Move images to TEMP_DIR; only delete after DB commit
     for image in listing.images:
         orig = os.path.join(current_app.config['UPLOAD_DIR'], image.filename)
         temped = os.path.join(current_app.config['TEMP_DIR'], image.filename)
@@ -326,7 +340,7 @@ def delete_listing(listing_id):
         db.session.delete(listing)
         db.session.commit()
     except Exception as e:
-        # Restore files if DB fails
+        # Rollback: restore files if DB commit failed
         for orig, temped in zip(original_paths, temp_paths):
             try:
                 if os.path.exists(temped):
@@ -335,7 +349,7 @@ def delete_listing(listing_id):
                 pass
         db.session.rollback()
         flash(f'Database error. Listing was not deleted. Files restored. ({e})', 'danger')
-        return render_template("listing_detail.html", listing=listing)
+        return render_template("listings/listing_detail.html", listing=listing)
 
     # Permanently delete temped files after commit
     for temped in temp_paths:
