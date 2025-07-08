@@ -150,8 +150,8 @@ FLASK_APP=app flask init
 
 This creates:
 - `instance/classifieds.db` (SQLite)
-- `static/uploads` (uploaded images)
-- `static/temp` (temp folder for ACIDized transactions when CRUDing listings)
+- `app/static/uploads` (uploaded images)
+- `app/static/temp` (temp folder for ACIDized transactions when CRUDing listings)
 - Default admin: `admin@classifieds.io` / password: `admin`
 - Types: Good, Service. Each gets a "General" category.
 

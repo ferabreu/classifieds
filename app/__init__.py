@@ -28,6 +28,9 @@ def create_app(config_class=None):
     )
     
     app.config.from_object(config_class)
+    # Always resolve to absolute paths, right after loading config
+    app.config['UPLOAD_DIR'] = os.path.join(app.root_path, app.config['UPLOAD_DIR'])
+    app.config['TEMP_DIR'] = os.path.join(app.root_path, app.config['TEMP_DIR'])
     
     db.init_app(app)
     migrate = Migrate(app, db)

@@ -1,7 +1,11 @@
+# Copyright (c) 2024 Fernando "ferabreu" Mees Abreu
+# 
+# Licensed under the MIT License. See LICENSE file in the project root for full license information.
+#
 """
-admin.py - Admin Blueprint routes and logic for Flask app.
+This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
-NOTE: This code was written and annotated by GitHub Copilot at the request of ferabreu.
+Admin Blueprint routes and logic for Flask app.
 
 This module contains administrative views and utilities, including user, type, category, and listing management.
 It ensures only admin users (with is_admin=True) can access these endpoints, and handles deletion of related images on the filesystem.
@@ -10,26 +14,13 @@ It ensures only admin users (with is_admin=True) can access these endpoints, and
 from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload
+from .utils import admin_required
 from ..forms import CategoryForm, TypeForm, UserEditForm
 from ..models import db, Category, Listing, Type, User
 import os, shutil
 
 # Blueprint for admin routes
 admin_bp = Blueprint('admin', __name__)
-
-def admin_required(func):
-    """
-    Decorator to ensure the current user is an admin.
-    - Redirects to the public listings index page with an error flash if not.
-    """
-    from functools import wraps
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_admin:
-            flash("Admin access required.", "danger")
-            return redirect(url_for('listings.index'))
-        return func(*args, **kwargs)
-    return wrapper
 
 # -------------------- DASHBOARD --------------------
 
@@ -45,7 +36,7 @@ def dashboard():
     category_count = Category.query.count()
     listing_count = Listing.query.count()
     return render_template(
-        'admin_dashboard.html',
+        'admin/admin_dashboard.html',
         user_count=user_count,
         type_count=type_count,
         category_count=category_count,
@@ -78,7 +69,7 @@ def users():
     pagination = User.query.order_by(sort_order).paginate(page=page, per_page=20)
     users = pagination.items
     return render_template(
-        'admin_users.html',
+        'admin/admin_users.html',
         users=users,
         pagination=pagination,
         sort=sort,
@@ -93,7 +84,7 @@ def user_profile(user_id):
     Displays a user's profile page for admin review.
     """
     user = User.query.get_or_404(user_id)
-    return render_template('user_profile.html', user=user)
+    return render_template('users/user_profile.html', user=user)
 
 @admin_bp.route('/users/edit/<int:user_id>', methods=['GET', 'POST'])
 @login_required
@@ -119,7 +110,7 @@ def edit_user(user_id):
         db.session.commit()
         flash('User updated.', 'success')
         return redirect(url_for('admin.users'))
-    return render_template('user_edit.html', form=form, user=user, admin_panel=True)
+    return render_template('users/user_edit.html', form=form, user=user, admin_panel=True)
 
 @admin_bp.route('/users/delete/<int:user_id>', methods=['POST'])
 @login_required
@@ -149,7 +140,7 @@ def types():
     Lists all listing types in the system.
     """
     types = Type.query.order_by(Type.name).all()
-    return render_template('admin_types.html', types=types)
+    return render_template('admin/admin_types.html', types=types)
 
 @admin_bp.route('/types/new', methods=['GET', 'POST'])
 @login_required
@@ -165,7 +156,7 @@ def new_type():
         db.session.commit()
         flash('Type created.', 'success')
         return redirect(url_for('admin.types'))
-    return render_template('admin_type_form.html', form=form, action="Create")
+    return render_template('admin/admin_type_form.html', form=form, action="Create")
 
 @admin_bp.route('/types/edit/<int:type_id>', methods=['GET', 'POST'])
 @login_required
@@ -181,7 +172,7 @@ def edit_type(type_id):
         db.session.commit()
         flash('Type updated.', 'success')
         return redirect(url_for('admin.types'))
-    return render_template('admin_type_form.html', form=form, action="Edit", type_obj=t)
+    return render_template('admin/admin_type_form.html', form=form, action="Edit", type_obj=t)
 
 @admin_bp.route('/types/delete/<int:type_id>', methods=['POST'])
 @login_required
@@ -210,7 +201,7 @@ def categories():
     """
     categories = Category.query.order_by(Category.name).all()
     types = Type.query.order_by(Type.name).all()
-    return render_template('admin_categories.html', categories=categories, types=types)
+    return render_template('admin/admin_categories.html', categories=categories, types=types)
 
 @admin_bp.route('/categories/new', methods=['GET', 'POST'])
 @login_required
@@ -227,7 +218,7 @@ def new_category():
         db.session.commit()
         flash('Category created.', 'success')
         return redirect(url_for('admin.categories'))
-    return render_template('admin_category_form.html', form=form, action="Create")
+    return render_template('admin/admin_category_form.html', form=form, action="Create")
 
 @admin_bp.route('/categories/edit/<int:category_id>', methods=['GET', 'POST'])
 @login_required
@@ -245,7 +236,7 @@ def edit_category(category_id):
         db.session.commit()
         flash('Category updated.', 'success')
         return redirect(url_for('admin.categories'))
-    return render_template('admin_category_form.html', form=form, action="Edit", category_obj=c)
+    return render_template('admin/admin_category_form.html', form=form, action="Edit", category_obj=c)
 
 @admin_bp.route('/categories/delete/<int:category_id>', methods=['POST'])
 @login_required
@@ -288,7 +279,7 @@ def listings():
     listings = pagination.items
     
     return render_template(
-        'admin_listings.html',
+        'admin/admin_listings.html',
         listings=listings,
         pagination=pagination,
         sort=sort,
