@@ -4,7 +4,7 @@ repos:
     hooks:
       - id: djhtml
         name: djhtml (HTML/Jinja2 Template Formatter)
-        files: ^templates/.*\.html$
+        files: ^app/templates/.*\.html$
         args: ["--tabwidth=4"]  # Optional: use 2 or 4 for indentation width
 
   - repo: https://github.com/psf/black
