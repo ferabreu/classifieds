@@ -14,7 +14,7 @@
 
 ## 4. Use `flask db stamp head` To Realign
 - If you manually align your DB schema with your models (for instance, after recreating migrations), run:
-  ```
+  ```bash
   flask db stamp head
   ```
   This marks the DB as up-to-date without running any migrations.
