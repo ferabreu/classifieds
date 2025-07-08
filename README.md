@@ -31,7 +31,7 @@ This application allows users to post, browse, and manage classified ads for goo
 
 ## Project Structure
 
-```
+```text
 classifieds/
 ├── Dockerfile
 ├── LICENSE
@@ -201,7 +201,7 @@ export LDAP_DOMAIN="YOURDOMAIN"
 
 To enable password reset emails, you must configure Flask-Mail via environment variables or your `.env` file:
 
-```
+```env
 MAIL_SERVER=smtp.example.com
 MAIL_PORT=587
 MAIL_USE_TLS=true
