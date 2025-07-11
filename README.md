@@ -161,6 +161,8 @@ This creates:
 
 #### Development
 
+In development, you'll probably want to `source venv/bin/activate` first.
+
 ```bash
 FLASK_APP=app FLASK_ENV=development flask run --debug
 ```
