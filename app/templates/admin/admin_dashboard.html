@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container mt-4">
+        <h2>Admin Dashboard</h2>
+        <ul>
+            <li><a href="{{ url_for('admin.users') }}">Manage Users ({{ user_count }})</a></li>
+            <li><a href="{{ url_for('admin.types') }}">Manage Types ({{ type_count }})</a></li>
+            <li><a href="{{ url_for('admin.categories') }}">Manage Categories ({{ category_count }})</a></li>
+            <li><a href="{{ url_for('admin.listings') }}">Manage Listings ({{ listing_count }})</a></li>
+        </ul>
+    </div>
+{% endblock %}
