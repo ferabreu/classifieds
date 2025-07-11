@@ -127,11 +127,12 @@ def create_listing():
     form.type.choices = type_choices
     form.category.choices = category_choices
 
-    # On GET: ensure placeholders are selected
+    # Do not set form.type.data = 0 or form.category.data = 0 here!
+    # Let WTForms/browser autofill take precedence.
     if request.method == "GET":
-        form.price.data = 0.00
-        form.type.data = 0
-        form.category.data = 0
+        form.price.data = (
+            form.price.data or 0.00
+        )  # Optional: default price only if missing
 
     if request.method == "POST":
         # Always refresh choices after submit, in case user changed type/category
