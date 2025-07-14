@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+
 {% block content %}
     <div class="container my-4">
         <h2>
@@ -41,5 +43,6 @@
                 </tbody>
             </table>
         </div>
+        {{ render_pagination(pagination, 'index', sort=sort, direction=direction) }}
     </div>
 {% endblock %}

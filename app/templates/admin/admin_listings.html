@@ -19,6 +19,14 @@
                             </a>
                         </th>
                         <th>
+                            <a href="{{ url_for('admin.listings', sort='price', direction='asc' if sort != 'price' or direction == 'desc' else 'desc') }}">
+                                Price
+                                {% if sort == 'price' %}
+                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
                             <a href="{{ url_for('admin.listings', sort='type', direction='asc' if sort != 'type' or direction == 'desc' else 'desc') }}">
                                 Type
                                 {% if sort == 'type' %}
@@ -62,6 +70,7 @@
                             <td>
                                 <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}">{{ listing.title }}</a>
                             </td>
+                            <td>{{ listing.price }}</td>
                             <td>{{ listing.type.name }}</td>
                             <td>{{ listing.category.name }}</td>
                             <td>{{ listing.owner.email }}</td>

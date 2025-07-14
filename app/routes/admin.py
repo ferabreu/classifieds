@@ -267,6 +267,7 @@ def listings():
 
     sort_column_map = {
         'title': Listing.title,
+        'price': Listing.price,
         'type': Listing.type_id,
         'category': Listing.category_id,
         'user': Listing.user_id,
