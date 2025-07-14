@@ -25,7 +25,7 @@ from flask import (
     redirect,
     render_template,
     request,
-    url_for,
+    url_for
 )
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
@@ -118,39 +118,18 @@ def create_listing():
         return render_template("listings/listing_form.html", form=form, action="Create")
 
     types = Type.query.order_by(Type.name).all()
-    type_choices = [(0, "Select type")] + [(t.id, t.name) for t in types]
+    
+    form.type.choices = [(t.id, t.name) for t in types]
+    # Default to first type's categories
+    categories = Category.query.filter_by(type_id=types[0].id).all() if types else []
+    form.category.choices = [(c.id, c.name) for c in categories]
 
-    # Default: no categories (placeholder only)
-    category_choices = [(0, "Select category")]
-
-    form = ListingForm()
-    form.type.choices = type_choices
-    form.category.choices = category_choices
-
-    # Do not set form.type.data = 0 or form.category.data = 0 here!
-    # Let WTForms/browser autofill take precedence.
-    if request.method == "GET":
-        form.price.data = (
-            form.price.data or 0.00
-        )  # Optional: default price only if missing
-
-    if request.method == "POST":
-        # Always refresh choices after submit, in case user changed type/category
-        types = Type.query.order_by(Type.name).all()
-        form.type.choices = [(0, "Select type")] + [(t.id, t.name) for t in types]
-
-        # Get categories for selected type, or just placeholder if none
-        if form.type.data and form.type.data != 0:
-            categories = (
-                Category.query.filter_by(type_id=form.type.data)
-                .order_by(Category.name)
-                .all()
-            )
-            form.category.choices = [(0, "Select category")] + [
-                (c.id, c.name) for c in categories
-            ]
-        else:
-            form.category.choices = [(0, "Select category")]
+    if request.method == 'POST':
+        # Update choices for type/category dropdowns in form
+        form.type.choices = [(t.id, t.name) for t in Type.query.order_by(Type.name)]
+        form.category.choices = [
+            (c.id, c.name) for c in Category.query.filter_by(type_id=form.type.data).order_by(Category.name)
+        ]
         if form.validate_on_submit():
             listing = Listing(
                 title=form.title.data,
@@ -158,7 +137,7 @@ def create_listing():
                 price=form.price.data or 0,
                 user_id=current_user.id,
                 type_id=form.type.data,
-                category_id=form.category.data,
+                category_id=form.category.data
             )
 
             upload_dir = current_app.config["UPLOAD_DIR"]
@@ -283,9 +262,7 @@ def edit_listing(listing_id):
             temp_dir = current_app.config["TEMP_DIR"]
 
             # For rollback
-            moved_to_temp = (
-                []
-            )  # Images "deleted" from listing, but reversible until commit
+            moved_to_temp = [] # Images "deleted" from listing, but reversible until commit
             added_temp_paths = []  # New images, staged in TEMP_DIR
             added_files = []
 

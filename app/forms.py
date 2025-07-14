@@ -67,7 +67,7 @@ class ListingForm(FlaskForm):
         import re
 
         if not field.data or len(re.findall(r"\b\w+\b", field.data)) < 4:
-            raise ValidationError("Description must be at least one sentence.")
+            raise ValidationError("Description must contain at least a sentence with 4 words.")
         if not re.search(r"[.!?]", field.data):
             raise ValidationError(
                 "Description should end with a sentence-ending punctuation."
@@ -84,14 +84,6 @@ class ListingForm(FlaskForm):
             raise ValidationError("Price cannot be negative.")
         if round(value, 2) != value:
             raise ValidationError("Price must have at most 2 decimal places.")
-
-    def validate_type(self, field):
-        if field.data == 0:
-            raise ValidationError("Please select a type.")
-
-    def validate_category(self, field):
-        if field.data == 0:
-            raise ValidationError("Please select a category.")
 
 
 class TypeForm(FlaskForm):

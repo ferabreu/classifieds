@@ -32,7 +32,7 @@
 
             <div class="mb-3">
                 {{ form.price.label(class="form-label") }}
-                {{ form.price(class="form-control", step="0.01", value="%.2f" % (form.price.data if form.price.data is none else 0)) }}
+                {{ form.price(class="form-control", placeholder="Price") }}
                 {% for error in form.price.errors %}
                     <div class="text-danger">{{ error }}</div>
                 {% endfor %}
@@ -89,42 +89,18 @@
     </div>
 {% endblock %}
 {% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('type').addEventListener('change', function() {
-                var typeId = this.value;
-                fetch('/categories_for_type/' + typeId)
-                    .then(response => response.json())
-                    .then(data => {
-                        var category = document.getElementById('category');
-                        category.innerHTML = ''; // Remove existing options
-
-                        // Add the placeholder option first
-                        var placeholder = document.createElement('option');
-                        placeholder.value = 0;
-                        placeholder.textContent = 'Select category';
-                        category.appendChild(placeholder);
-
-                        // Then add the new options
-                        data.forEach(function(cat) {
-                            var opt = document.createElement('option');
-                            opt.value = cat.id;
-                            opt.textContent = cat.name;
-                            category.appendChild(opt);
-                        });
+        $(function() {
+            $('#type').change(function() {
+                var typeId = $(this).val();
+                $.getJSON('/categories_for_type/' + typeId, function(data) {
+                    var $category = $('#category');
+                    $category.empty();
+                    $.each(data, function(idx, cat) {
+                        $category.append($('<option>').attr('value', cat.id).text(cat.name));
                     });
-            });
-
-            // Remove placeholder on focus (only once)
-            ['type', 'category'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) {
-                    el.addEventListener('focus', function handler() {
-                        var opt = el.querySelector('option[value="0"]');
-                        if (opt) el.removeChild(opt);
-                        el.removeEventListener('focus', handler);
-                    });
-                }
+                });
             });
         });
     </script>
