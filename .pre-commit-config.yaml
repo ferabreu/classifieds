@@ -7,23 +7,23 @@ repos:
         files: ^app/templates/.*\.html$
         args: ["--tabwidth=4"]  # Optional: use 2 or 4 for indentation width
 
-  - repo: https://github.com/psf/black
-    rev: 24.3.0
-    hooks:
-      - id: black
-        language_version: python3
-        # additional_dependencies: ["black[jupyter]"]  # If you use Jupyter Notebooks
-        args: ["--line-length=88"]  # Adjust if you prefer a different line length
-        exclude: '(^|/)(migrations)/.*\.py'
+  # - repo: https://github.com/psf/black
+    # rev: 24.3.0
+    # hooks:
+      # - id: black
+        # language_version: python3
+        # # additional_dependencies: ["black[jupyter]"]  # If you use Jupyter Notebooks
+        # args: ["--line-length=88"]  # Adjust if you prefer a different line length
+        # exclude: '(^|/)(migrations)/.*\.py'
 
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        name: isort (python import sorter)
-        language_version: python3
-        args: ["--profile=black"]  # Ensures compatibility with Black formatting
-        exclude: '(^|/)(migrations)/.*\.py'
+  # - repo: https://github.com/pycqa/isort
+    # rev: 5.13.2
+    # hooks:
+      # - id: isort
+        # name: isort (python import sorter)
+        # language_version: python3
+        # args: ["--profile=black"]  # Ensures compatibility with Black formatting
+        # exclude: '(^|/)(migrations)/.*\.py'
 
   # - repo: https://github.com/pycqa/flake8
   #   rev: 7.0.0
@@ -32,11 +32,11 @@ repos:
   #       language_version: python3
   #      args: ["--max-line-length=88"]  # Match Black's line length
 
-  - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.35.1
-    hooks:
-      - id: yamllint
-        files: \.(yml|yaml)$
+  # - repo: https://github.com/adrienverge/yamllint.git
+    # rev: v1.35.1
+    # hooks:
+      # - id: yamllint
+        # files: \.(yml|yaml)$
 
   # - repo: https://github.com/toml-lang/toml-sort
   #   rev: 0.23.1

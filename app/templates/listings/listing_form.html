@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container mt-4">
+        <h2>{{ action }} Listing</h2>
+        <a href="{{ request.referrer or url_for('listings.index') }}">&larr; Back</a>
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                {% for field, errors in form.errors.items() %}
+                    {% for error in errors %}
+                        <div class="alert alert-danger">{{ field }}: {{ error }}</div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.title.label(class="form-label") }}
+                {{ form.title(class="form-control", placeholder="Listing title") }}
+                {% for error in form.title.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.description.label(class="form-label") }}
+                {{ form.description(class="form-control", placeholder="Listing description") }}
+                {% for error in form.description.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.price.label(class="form-label") }}
+                {{ form.price(class="form-control", placeholder="Price") }}
+                {% for error in form.price.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.type.label(class="form-label") }}
+                {{ form.type(class="form-select", id="type") }}
+                {% for error in form.type.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.category.label(class="form-label") }}
+                {{ form.category(class="form-select", id="category") }}
+                {% for error in form.category.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            {% if listing %}
+                <div class="row">
+                    {% for image in listing.images %}
+                        <div class="col-auto mb-2 text-center">
+                            <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
+                                <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
+                                     alt="Listing image"
+                                     class="img-thumbnail"
+                                     style="max-width: 120px; max-height: 120px;">
+                            </a>
+                            <div>
+                                <label>
+                                    <input type="checkbox" name="delete_images" value="{{ image.id }}">
+                                    Delete
+                                </label>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+
+            <div class="mb-3">
+                {{ form.images.label(class="form-label") }}
+                {{ form.images(class="form-control", multiple=True) }}
+                {% for error in form.images.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn btn-primary">{{ action }}</button>
+        </form>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(function() {
+            $('#type').change(function() {
+                var typeId = $(this).val();
+                $.getJSON('/categories_for_type/' + typeId, function(data) {
+                    var $category = $('#category');
+                    $category.empty();
+                    $.each(data, function(idx, cat) {
+                        $category.append($('<option>').attr('value', cat.id).text(cat.name));
+                    });
+                });
+            });
+        });
+    </script>
+{% endblock %}

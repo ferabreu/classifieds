@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container mt-4">
+        <h2>{{ action }} Listing</h2>
+        <a href="{{ request.referrer or url_for('listings.index') }}">&larr; Back</a>
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                {% for field, errors in form.errors.items() %}
+                    {% for error in errors %}
+                        <div class="alert alert-danger">{{ field }}: {{ error }}</div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.title.label(class="form-label") }}
+                {{ form.title(class="form-control", placeholder="Listing title") }}
+                {% for error in form.title.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.description.label(class="form-label") }}
+                {{ form.description(class="form-control", placeholder="Listing description") }}
+                {% for error in form.description.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.price.label(class="form-label") }}
+                {{ form.price(class="form-control", step="0.01", value="%.2f" % (form.price.data if form.price.data is not none else 0)) }}
+                {% for error in form.price.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.type.label(class="form-label") }}
+                {{ form.type(class="form-select", id="type") }}
+                {% for error in form.type.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.category.label(class="form-label") }}
+                {{ form.category(class="form-select", id="category") }}
+                {% for error in form.category.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            {% if listing %}
+                <div class="row">
+                    {% for image in listing.images %}
+                        <div class="col-auto mb-2 text-center">
+                            <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
+                                <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
+                                     alt="Listing image"
+                                     class="img-thumbnail"
+                                     style="max-width: 120px; max-height: 120px;">
+                            </a>
+                            <div>
+                                <label>
+                                    <input type="checkbox" name="delete_images" value="{{ image.id }}">
+                                    Delete
+                                </label>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="mb-3">
+                {{ form.images.label(class="form-label") }}
+                {{ form.images(class="form-control", multiple=True) }}
+                {% for error in form.images.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn btn-primary">{{ action }}</button>
+        </form>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var typeEl = document.getElementById('type');
+            var categoryEl = document.getElementById('category');
+
+            // --- On load, if type is pre-selected (not 0), fetch appropriate categories and restore selection ---
+            if (typeEl && categoryEl && typeEl.value !== "0") {
+                // Save the current category value the browser restored (if any)
+                var prevCategory = categoryEl.value;
+                fetch('/categories_for_type/' + typeEl.value)
+                    .then(response => response.json())
+                    .then(data => {
+                        categoryEl.innerHTML = '';
+                        // Add the placeholder
+                        var placeholder = document.createElement('option');
+                        placeholder.value = 0;
+                        placeholder.textContent = 'Select category';
+                        categoryEl.appendChild(placeholder);
+                        // Add fetched categories, and restore selection if possible
+                        var found = false;
+                        data.forEach(function(cat) {
+                            var opt = document.createElement('option');
+                            opt.value = cat.id;
+                            opt.textContent = cat.name;
+                            if (prevCategory === String(cat.id)) {
+                                opt.selected = true;
+                                found = true;
+                            }
+                            categoryEl.appendChild(opt);
+                        });
+                        // If previous category is not valid, select placeholder
+                        if (!found) categoryEl.value = "0";
+                    });
+            }
+
+            // --- On type change, fetch categories as before ---
+            if (typeEl) {
+                typeEl.addEventListener('change', function() {
+                    var typeId = this.value;
+                    fetch('/categories_for_type/' + typeId)
+                        .then(response => response.json())
+                        .then(data => {
+                            categoryEl.innerHTML = '';
+                            // Add the placeholder option first
+                            var placeholder = document.createElement('option');
+                            placeholder.value = 0;
+                            placeholder.textContent = 'Select category';
+                            categoryEl.appendChild(placeholder);
+
+                            // Then add the new options
+                            data.forEach(function(cat) {
+                                var opt = document.createElement('option');
+                                opt.value = cat.id;
+                                opt.textContent = cat.name;
+                                categoryEl.appendChild(opt);
+                            });
+                            // Always select the placeholder on type change
+                            categoryEl.value = "0";
+                        });
+                });
+            }
+
+            // --- Remove placeholder on focus (only once) ---
+            ['type', 'category'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('focus', function handler() {
+                        var opt = el.querySelector('option[value="0"]');
+                        if (opt) el.removeChild(opt);
+                        el.removeEventListener('focus', handler);
+                    });
+                }
+            });
+        });
+    </script>
+{% endblock %}
