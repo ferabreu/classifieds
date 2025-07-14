@@ -1,165 +1,99 @@
 {% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+
 {% block content %}
     <div class="container mt-4">
-        <h2>{{ action }} Listing</h2>
-        <a href="{{ request.referrer or url_for('listings.index') }}">&larr; Back</a>
-        <form method="POST" enctype="multipart/form-data">
-            {{ form.hidden_tag() }}
-
-            <div class="mb-3">
-                {% for field, errors in form.errors.items() %}
-                    {% for error in errors %}
-                        <div class="alert alert-danger">{{ field }}: {{ error }}</div>
-                    {% endfor %}
-                {% endfor %}
-            </div>
-
-            <div class="mb-3">
-                {{ form.title.label(class="form-label") }}
-                {{ form.title(class="form-control", placeholder="Listing title") }}
-                {% for error in form.title.errors %}
-                    <div class="text-danger">{{ error }}</div>
-                {% endfor %}
-            </div>
-
-            <div class="mb-3">
-                {{ form.description.label(class="form-label") }}
-                {{ form.description(class="form-control", placeholder="Listing description") }}
-                {% for error in form.description.errors %}
-                    <div class="text-danger">{{ error }}</div>
-                {% endfor %}
-            </div>
-
-            <div class="mb-3">
-                {{ form.price.label(class="form-label") }}
-                {{ form.price(class="form-control", step="0.01", value="%.2f" % (form.price.data if form.price.data is not none else 0)) }}
-                {% for error in form.price.errors %}
-                    <div class="text-danger">{{ error }}</div>
-                {% endfor %}
-            </div>
-
-            <div class="mb-3">
-                {{ form.type.label(class="form-label") }}
-                {{ form.type(class="form-select", id="type") }}
-                {% for error in form.type.errors %}
-                    <div class="text-danger">{{ error }}</div>
-                {% endfor %}
-            </div>
-
-            <div class="mb-3">
-                {{ form.category.label(class="form-label") }}
-                {{ form.category(class="form-select", id="category") }}
-                {% for error in form.category.errors %}
-                    <div class="text-danger">{{ error }}</div>
-                {% endfor %}
-            </div>
-
-            {% if listing %}
-                <div class="row">
-                    {% for image in listing.images %}
-                        <div class="col-auto mb-2 text-center">
-                            <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
-                                <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
-                                     alt="Listing image"
-                                     class="img-thumbnail"
-                                     style="max-width: 120px; max-height: 120px;">
+        <h2>Manage Listings</h2>
+        <a href="{{ url_for('admin.dashboard') }}">&larr; Admin Dashboard</a>
+        <form method="post" action="{{ url_for('admin.delete_selected_listings') }}">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="select-all"></th>
+                        <th>
+                            <a href="{{ url_for('admin.listings', sort='title', direction='asc' if sort != 'title' or direction == 'desc' else 'desc') }}">
+                                Title
+                                {% if sort == 'title' %}
+                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                                {% endif %}
                             </a>
-                            <div>
-                                <label>
-                                    <input type="checkbox" name="delete_images" value="{{ image.id }}">
-                                    Delete
-                                </label>
-                            </div>
-                        </div>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('admin.listings', sort='type', direction='asc' if sort != 'type' or direction == 'desc' else 'desc') }}">
+                                Type
+                                {% if sort == 'type' %}
+                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('admin.listings', sort='category', direction='asc' if sort != 'category' or direction == 'desc' else 'desc') }}">
+                                Category
+                                {% if sort == 'category' %}
+                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('admin.listings', sort='user', direction='asc' if sort != 'user' or direction == 'desc' else 'desc') }}">
+                                User
+                                {% if sort == 'user' %}
+                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('admin.listings', sort='created_at', direction='asc' if sort != 'created_at' or direction == 'desc' else 'desc') }}">
+                                Date Created
+                                {% if sort == 'created_at' %}
+                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for listing in listings %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="row-checkbox" name="selected_listings" value="{{ listing.id }}">
+                            </td>
+                            <td>
+                                <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}">{{ listing.title }}</a>
+                            </td>
+                            <td>{{ listing.type.name }}</td>
+                            <td>{{ listing.category.name }}</td>
+                            <td>{{ listing.owner.email }}</td>
+                            <td>{{ listing.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <a href="{{ url_for('listings.edit_listing', listing_id=listing.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                            </td>
+                        </tr>
                     {% endfor %}
-                </div>
-            {% endif %}
-
-            <div class="mb-3">
-                {{ form.images.label(class="form-label") }}
-                {{ form.images(class="form-control", multiple=True) }}
-                {% for error in form.images.errors %}
-                    <div class="text-danger">{{ error }}</div>
-                {% endfor %}
+                </tbody>
+            </table>
+            <div class="d-flex justify-content-start mb-3">
+                <button type="submit" class="btn btn-danger">Delete Selected</button>
             </div>
-
-            <button type="submit" class="btn btn-primary">{{ action }}</button>
         </form>
+        {{ render_pagination(pagination, 'admin.listings', sort=sort, direction=direction) }}
     </div>
 {% endblock %}
 {% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var typeEl = document.getElementById('type');
-            var categoryEl = document.getElementById('category');
+        $(function() {
+  // When header checkbox is toggled, set all row checkboxes
+            $('#select-all').on('change', function() {
+                $('.row-checkbox').prop('checked', this.checked);
+            });
 
-            // --- On load, if type is pre-selected (not 0), fetch appropriate categories and restore selection ---
-            if (typeEl && categoryEl && typeEl.value !== "0") {
-                // Save the current category value the browser restored (if any)
-                var prevCategory = categoryEl.value;
-                fetch('/categories_for_type/' + typeEl.value)
-                    .then(response => response.json())
-                    .then(data => {
-                        categoryEl.innerHTML = '';
-                        // Add the placeholder
-                        var placeholder = document.createElement('option');
-                        placeholder.value = 0;
-                        placeholder.textContent = 'Select category';
-                        categoryEl.appendChild(placeholder);
-                        // Add fetched categories, and restore selection if possible
-                        var found = false;
-                        data.forEach(function(cat) {
-                            var opt = document.createElement('option');
-                            opt.value = cat.id;
-                            opt.textContent = cat.name;
-                            if (prevCategory === String(cat.id)) {
-                                opt.selected = true;
-                                found = true;
-                            }
-                            categoryEl.appendChild(opt);
-                        });
-                        // If previous category is not valid, select placeholder
-                        if (!found) categoryEl.value = "0";
-                    });
-            }
-
-            // --- On type change, fetch categories as before ---
-            if (typeEl) {
-                typeEl.addEventListener('change', function() {
-                    var typeId = this.value;
-                    fetch('/categories_for_type/' + typeId)
-                        .then(response => response.json())
-                        .then(data => {
-                            categoryEl.innerHTML = '';
-                            // Add the placeholder option first
-                            var placeholder = document.createElement('option');
-                            placeholder.value = 0;
-                            placeholder.textContent = 'Select category';
-                            categoryEl.appendChild(placeholder);
-
-                            // Then add the new options
-                            data.forEach(function(cat) {
-                                var opt = document.createElement('option');
-                                opt.value = cat.id;
-                                opt.textContent = cat.name;
-                                categoryEl.appendChild(opt);
-                            });
-                            // Always select the placeholder on type change
-                            categoryEl.value = "0";
-                        });
-                });
-            }
-
-            // --- Remove placeholder on focus (only once) ---
-            ['type', 'category'].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) {
-                    el.addEventListener('focus', function handler() {
-                        var opt = el.querySelector('option[value="0"]');
-                        if (opt) el.removeChild(opt);
-                        el.removeEventListener('focus', handler);
-                    });
-                }
+  // When any row checkbox is changed, sync the header checkbox
+            $(document).on('change', '.row-checkbox', function() {
+                let total = $('.row-checkbox').length;
+                let checked = $('.row-checkbox:checked').length;
+                $('#select-all').prop('checked', total > 0 && checked === total);
             });
         });
     </script>
