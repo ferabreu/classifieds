@@ -7,6 +7,7 @@
 }
 
 .card {
+  width: var(--card-min-width); /* Maybe remove this later */
   min-width: var(--card-min-width);
   max-width: var(--card-max-width);
   display: flex;
@@ -21,6 +22,7 @@
   object-position: center;
   border-radius: 0.25rem 0.25rem 0 0;
   margin-bottom: 0.4rem;
+  display: block;
 }
 
 .card-price {
