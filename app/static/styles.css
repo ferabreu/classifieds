@@ -2,8 +2,9 @@
 
 /* Listing cards */
 .listing-card {
-    height: 100%;
+    aspect-ratio: 9 / 16;
     transition: transform 0.2s ease-in-out;
+    overflow: hidden;
 }
 
 .listing-card:hover {
@@ -11,45 +12,37 @@
 }
 
 .listing-card-img-top {
-    height: 224px;
+    width: 100%;
+    height: 70%;
     object-fit: cover;
     background-color: #f8f9fa;
 }
 
 .listing-card-body {
+    height: 30%;
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
+    justify-content: space-between;
+    padding: 0.75rem;
 }
 
 .listing-card-title {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
+    flex-grow: 1;
+    line-height: 1.2;
 }
 
 .listing-card-price {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: bold;
     color: #28a745;
-    margin-top: auto;
-}
-
-.listing-card-date {
-    font-size: 0.875rem;
-    color: #6c757d;
-    margin-top: 0.25rem;
-}
-
-.listing-card-description {
-    font-size: 0.9rem;
-    color: #6c757d;
-    flex-grow: 1;
-    margin-bottom: 1rem;
 }
 
 .listing-card-placeholder {
-    height: 224px;
+    width: 100%;
+    height: 70%;
     background-color: #f8f9fa;
     display: flex;
     align-items: center;

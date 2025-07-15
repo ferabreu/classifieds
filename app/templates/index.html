@@ -45,17 +45,8 @@
                                    class="text-decoration-none text-dark">{{ listing.title }}</a>
                             </h5>
                             
-                            <p class="listing-card-description">
-                                {{ listing.description[:100] }}{% if listing.description|length > 100 %}...{% endif %}
-                            </p>
-                            
-                            <div class="mt-auto">
-                                <div class="listing-card-price">
-                                    {% if listing.price == 0 %}Free{% else %}${{ listing.price }}{% endif %}
-                                </div>
-                                <div class="listing-card-date">
-                                    {{ listing.created_at.strftime('%B %d, %Y') }}
-                                </div>
+                            <div class="listing-card-price">
+                                {% if listing.price == 0 %}Free{% else %}${{ listing.price }}{% endif %}
                             </div>
                         </div>
                     </div>
