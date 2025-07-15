@@ -1,3 +1,13 @@
+# Copyright (c) 2025 Fernando "ferabreu" Mees Abreu
+#
+# Licensed under the MIT License. See LICENSE file in the project root for full license information.
+#
+"""
+This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+
+LDAP authentication support.
+"""
+
 from ldap3 import ALL, Connection, NTLM, Server
 from .config import Config
 

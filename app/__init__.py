@@ -1,10 +1,32 @@
+# Copyright (c) 2025 Fernando "ferabreu" Mees Abreu
+#
+# Licensed under the MIT License. See LICENSE file in the project root for full license information.
+#
+"""
+This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+
+App factory.
+"""
+
+import os
+
 from flask import Flask, g
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
-from .config import Config, DevelopmentConfig, TestingConfig, ProductionConfig
+
+from .config import (
+    Config,
+    DevelopmentConfig,
+    TestingConfig,
+    ProductionConfig,
+    UI_CARD_MIN_WIDTH,
+    UI_CARD_MAX_WIDTH,
+    UI_CARD_IMG_SIZE,
+    UI_CARD_TITLE_FONT_SIZE,
+    UI_CARD_PRICE_FONT_SIZE    
+)
 from .models import db, Category, Type, User
-import os
 
 login_manager = LoginManager()
 mail = Mail()
@@ -37,6 +59,19 @@ def create_app(config_class=None):
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     mail.init_app(app)
+
+    # Context processors run before the template is rendered
+    # and have the ability to inject new values into the template context
+    @app.context_processor
+    def inject_ui_constants():
+        # A context processor is a function that returns a dictionary
+        return dict(
+            CARD_MIN_WIDTH=UI_CARD_MIN_WIDTH,
+            CARD_MAX_WIDTH=UI_CARD_MAX_WIDTH,
+            CARD_IMG_SIZE=UI_CARD_IMG_SIZE,
+            CARD_PRICE_FONT_SIZE=UI_CARD_PRICE_FONT_SIZE,
+            CARD_TITLE_FONT_SIZE=UI_CARD_TITLE_FONT_SIZE,
+        ) # These constants are now available in all Jinja2 templates
 
     @login_manager.user_loader
     def load_user(user_id):

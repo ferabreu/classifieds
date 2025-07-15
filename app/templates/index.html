@@ -1,48 +1,73 @@
 {% extends "base.html" %}
-{% from "macros/pagination.html" import render_pagination %}
+
+{% block head %}
+    {{ super() }}
+    <style>
+        :root {
+            --card-min-width: {{ CARD_MIN_WIDTH }};
+            --card-max-width: {{ CARD_MAX_WIDTH }};
+            --card-img-size: {{ CARD_IMG_SIZE }};
+            --card-price-font-size: {{ CARD_PRICE_FONT_SIZE }};
+            --card-title-font-size: {{ CARD_TITLE_FONT_SIZE }};
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+{% endblock %}
 
 {% block content %}
     <div class="container my-4">
-        <h2>
-            {% if selected_type %}{{ selected_type.name }}s{% else %}All Listings{% endif %}
-            {% if selected_category %}in {{ selected_category.name }}{% endif %}
-        </h2>
-        {% if current_user.is_authenticated %}
-            <div class="mb-3">
-                <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success">+ Post New Listing</a>
+        <h2 class="mb-4">Latest Listings</h2>
+        {% for category in categories %}
+            <div class="mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h3 class="mb-0">{{ category.name }}</h3>
+                    <a href="{{ url_for('listings.by_type_category', type_id=category.type_id, category_id=category.id) }}">
+                        See all &raquo;
+                    </a>
+                </div>
+                <div class="position-relative">
+                    <button class="btn btn-light btn-sm position-absolute start-0 top-50 translate-middle-y z-1" style="left: -40px;" onclick="scrollRow('{{ category.id }}', -1)">
+                        &lt;
+                    </button>
+                    <div class="d-flex overflow-auto gap-3 px-2" id="row-{{ category.id }}" style="scroll-behavior: smooth;">
+                        {% for listing in listings_by_category[category.id] %}
+                            <div class="card">
+                                {% if listing.images and listing.images[0] %}
+                                    <img src="{{ url_for('static', filename='uploads/' ~ listing.images[0].filename) }}"
+                                         class="card-img-top"
+                                         alt="{{ listing.title }}">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='img/no-image.png') }}"
+                                         class="card-img-top"
+                                         alt="No image">
+                                {% endif %}
+                                <div class="card-body p-2">
+                                    <h6 class="card-title mb-0">
+                                        <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}" class="text-decoration-none text-dark">
+                                            {{ listing.title }}
+                                        </a>
+                                    </h6>
+                                    <div class="card-price">
+                                        ${{ "{:,.2f}".format(listing.price) if listing.price else "Free" }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button class="btn btn-light btn-sm position-absolute end-0 top-50 translate-middle-y z-1" style="right: -40px;" onclick="scrollRow('{{ category.id }}', 1)">
+                        &gt;
+                    </button>
+                </div>
             </div>
-        {% endif %}
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Price</th>
-                        <th>Date Created</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for listing in listings %}
-                        <tr>
-                            <td>
-                                <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}">{{ listing.title }}</a>
-                            </td>
-                            <td>
-                                {% if listing.price == 0 %}Free{% else %}${{ listing.price }}{% endif %}
-                            </td>
-                            <td>
-                                {{ listing.created_at.strftime('%Y-%m-%d') }}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    {% if listings|length == 0 %}
-                        <tr>
-                            <td colspan="3"><p>No listings found.</p></td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-        {{ render_pagination(pagination, 'index', sort=sort, direction=direction) }}
+        {% endfor %}
     </div>
+{% endblock %}
+
+{% block scripting %}
+    <script>
+        function scrollRow(rowId, dir) {
+            const el = document.getElementById('row-' + rowId);
+            el.scrollBy({ left: dir * 320, behavior: 'smooth' });
+        }
+    </script>
 {% endblock %}

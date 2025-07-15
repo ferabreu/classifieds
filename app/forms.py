@@ -1,4 +1,12 @@
-# Created by GitHub Copilot for Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu)
+# Copyright (c) 2025 Fernando "ferabreu" Mees Abreu
+#
+# Licensed under the MIT License. See LICENSE file in the project root for full license information.
+#
+"""
+This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+
+Form models.
+"""
 
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, MultipleFileField

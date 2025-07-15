@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Fernando "ferabreu" Mees Abreu
+# Copyright (c) 2025 Fernando "ferabreu" Mees Abreu
 #
 # Licensed under the MIT License. See LICENSE file in the project root for full license information.
 #
@@ -14,6 +14,7 @@ Implements ACID-like file handling for listing image uploads and deletions:
 """
 
 import os
+import random
 import shutil
 import uuid
 
@@ -30,6 +31,7 @@ from flask import (
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
+from ..config import UI_INDEX_CARDS_PER_CATEGORY, UI_INDEX_NUM_CATEGORIES
 from ..forms import ListingForm
 from ..models import Category, Listing, ListingImage, Type, db
 
@@ -38,9 +40,39 @@ listings_bp = Blueprint("listings", __name__)
 
 @listings_bp.route("/")
 def index():
-    """Show all listings, newest first."""
-    listings = Listing.query.order_by(Listing.created_at.desc()).all()
-    return render_template("index.html", listings=listings)
+    categories = Category.query.order_by(Category.name).all()
+    if len(categories) > UI_INDEX_NUM_CATEGORIES:
+        categories = random.sample(categories, UI_INDEX_NUM_CATEGORIES)
+    listings_by_category = {
+        c.id: Listing.query.filter_by(category_id=c.id)
+            .order_by(Listing.created_at.desc())
+            .limit(UI_INDEX_CARDS_PER_CATEGORY)
+            .all()
+        for c in categories
+    }
+    return render_template("index.html", categories=categories, listings_by_category=listings_by_category)
+    
+    #categories = Category.query.order_by(Category.name).all()
+    #if len(categories) > INDEX_LISTING_ROW:
+    #    categories = random.sample(categories, INDEX_LISTING_ROW)
+    ## For each category, get the 8 most recent listings
+    #listings_by_category = {
+    #    c.id: Listing.query.filter_by(category_id=c.id).order_by(Listing.created_at.desc()).limit(8).all()
+    #    for c in categories
+    #}
+    #return render_template("index.html", categories=categories, listings_by_category=listings_by_category)
+
+    #types = Type.query.order_by(Type.name).all()
+    ## For each type, get the 8 most recent listings (adjust N as needed)
+    #listings_by_type = {
+    #    t.id: Listing.query.filter_by(type_id=t.id).order_by(Listing.created_at.desc()).limit(INDEX_LISTING_ROW).all()
+    #    for t in types
+    #}
+    #return render_template("index.html", types=types, listings_by_type=listings_by_type)
+    
+    #"""Show all listings, newest first."""
+    #listings = Listing.query.order_by(Listing.created_at.desc()).all()
+    #return render_template("index.html", listings=listings)
 
 
 @listings_bp.route("/type/<int:type_id>")

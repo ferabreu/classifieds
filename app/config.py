@@ -1,4 +1,23 @@
+# Copyright (c) 2025 Fernando "ferabreu" Mees Abreu
+#
+# Licensed under the MIT License. See LICENSE file in the project root for full license information.
+#
+"""
+This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+
+Application configuration.
+"""
+
 import os
+
+# UI and display constants for card design
+UI_INDEX_CARDS_PER_CATEGORY = 8
+UI_INDEX_NUM_CATEGORIES = 6
+UI_CARD_MIN_WIDTH = '14rem'      # Updated width for 9:16 ratio
+UI_CARD_MAX_WIDTH = '14rem'
+UI_CARD_IMG_SIZE = '14rem'       # Square image at the top
+UI_CARD_TITLE_FONT_SIZE = '1rem'      # 16px, safe and crisp for title
+UI_CARD_PRICE_FONT_SIZE = '1.25rem'   # 20px, prominent and crisp for price
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev')
