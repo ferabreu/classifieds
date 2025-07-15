@@ -7,7 +7,7 @@
 }
 
 .card {
-  width: var(--card-min-width); /* Maybe remove this later */
+  width: var(--card-min-width);          /* Ensures fixed width - Maybe remove this later */
   min-width: var(--card-min-width);
   max-width: var(--card-max-width);
   display: flex;
@@ -16,9 +16,9 @@
 }
 
 .card-img-top {
-  width: var(--card-img-size);
-  height: var(--card-img-size);
-  object-fit: cover;
+  width: var(--card-img-size);           /* Ensures fixed width */
+  height: var(--card-img-size);          /* Ensures fixed width */
+  object-fit: cover;                     /* Crops image to fill area */
   object-position: center;
   border-radius: 0.25rem 0.25rem 0 0;
   margin-bottom: 0.4rem;
@@ -28,7 +28,7 @@
 .card-price {
   font-size: var(--card-price-font-size);
   font-weight: bold;
-  color: #198754; /* Bootstrap's text-success */
+  color: #198754;                       /* Bootstrap's text-success */
   text-align: center;
 }
 
