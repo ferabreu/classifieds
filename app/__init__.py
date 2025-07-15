@@ -31,6 +31,7 @@ def create_app(config_class=None):
     # Always resolve to absolute paths, right after loading config
     app.config['UPLOAD_DIR'] = os.path.join(app.root_path, app.config['UPLOAD_DIR'])
     app.config['TEMP_DIR'] = os.path.join(app.root_path, app.config['TEMP_DIR'])
+    app.config['THUMBNAIL_DIR'] = os.path.join(app.root_path, app.config['THUMBNAIL_DIR'])
     
     db.init_app(app)
     migrate = Migrate(app, db)
@@ -66,6 +67,14 @@ def create_app(config_class=None):
             print(f"Created uploads directory: {app.config['UPLOAD_DIR']}")
         else:
             print(f"Uploads directory already exists at {app.config['UPLOAD_DIR']}.")
+
+        # Ensure thumbnails directory exists
+        app.config['THUMBNAIL_DIR'] = os.path.join(app.root_path, app.config['THUMBNAIL_DIR'])
+        if not os.path.exists(app.config['THUMBNAIL_DIR']):
+            os.makedirs(app.config['THUMBNAIL_DIR'])
+            print(f"Created thumbnails directory: {app.config['THUMBNAIL_DIR']}")
+        else:
+            print(f"Thumbnails directory already exists at {app.config['THUMBNAIL_DIR']}.")
 
         # Ensure temp directory exists
         app.config['TEMP_DIR'] = os.path.join(app.root_path, app.config['TEMP_DIR'])
