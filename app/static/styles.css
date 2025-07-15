@@ -1,0 +1,110 @@
+/* Custom styles for the classifieds app */
+
+/* Listing cards */
+.listing-card {
+    height: 100%;
+    transition: transform 0.2s ease-in-out;
+}
+
+.listing-card:hover {
+    transform: translateY(-5px);
+}
+
+.listing-card-img-top {
+    height: 224px;
+    object-fit: cover;
+    background-color: #f8f9fa;
+}
+
+.listing-card-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.listing-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.listing-card-price {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #28a745;
+    margin-top: auto;
+}
+
+.listing-card-date {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.listing-card-description {
+    font-size: 0.9rem;
+    color: #6c757d;
+    flex-grow: 1;
+    margin-bottom: 1rem;
+}
+
+.listing-card-placeholder {
+    height: 224px;
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+.listing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .listing-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Sidebar styles */
+.sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 48px 0 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-heading {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+}
+
+/* Main content adjustments */
+.main-content {
+    margin-left: 16.666667%;
+    padding: 1rem;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+}

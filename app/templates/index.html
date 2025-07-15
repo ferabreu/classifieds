@@ -12,37 +12,57 @@
                 <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success">+ Post New Listing</a>
             </div>
         {% endif %}
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Price</th>
-                        <th>Date Created</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for listing in listings %}
-                        <tr>
-                            <td>
-                                <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}">{{ listing.title }}</a>
-                            </td>
-                            <td>
-                                {% if listing.price == 0 %}Free{% else %}${{ listing.price }}{% endif %}
-                            </td>
-                            <td>
-                                {{ listing.created_at.strftime('%Y-%m-%d') }}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    {% if listings|length == 0 %}
-                        <tr>
-                            <td colspan="3"><p>No listings found.</p></td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
+        
+        {% if listings|length == 0 %}
+            <div class="alert alert-info">
+                <p class="mb-0">No listings found.</p>
+            </div>
+        {% else %}
+            <div class="listing-grid">
+                {% for listing in listings %}
+                    <div class="card listing-card">
+                        {% if listing.images %}
+                            {% set image = listing.images[0] %}
+                            {% if image.thumbnail_filename %}
+                                <img src="{{ url_for('static', filename='uploads/thumbnails/' ~ image.thumbnail_filename) }}" 
+                                     alt="{{ listing.title }}" 
+                                     class="card-img-top listing-card-img-top">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
+                                     alt="{{ listing.title }}" 
+                                     class="card-img-top listing-card-img-top">
+                            {% endif %}
+                        {% else %}
+                            <div class="listing-card-placeholder">
+                                <i class="fas fa-image"></i>
+                                <span class="ms-2">No Image</span>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="card-body listing-card-body">
+                            <h5 class="card-title listing-card-title">
+                                <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}" 
+                                   class="text-decoration-none text-dark">{{ listing.title }}</a>
+                            </h5>
+                            
+                            <p class="listing-card-description">
+                                {{ listing.description[:100] }}{% if listing.description|length > 100 %}...{% endif %}
+                            </p>
+                            
+                            <div class="mt-auto">
+                                <div class="listing-card-price">
+                                    {% if listing.price == 0 %}Free{% else %}${{ listing.price }}{% endif %}
+                                </div>
+                                <div class="listing-card-date">
+                                    {{ listing.created_at.strftime('%B %d, %Y') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
         {{ render_pagination(pagination, 'index', sort=sort, direction=direction) }}
     </div>
 {% endblock %}
