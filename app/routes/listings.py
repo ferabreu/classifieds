@@ -166,9 +166,34 @@ def create_listing():
                             added_temp_paths.append((temp_path, unique_filename, temp_thumb_path, thumbnail_filename))
                             added_files.append((unique_filename, thumbnail_filename))
                         else:
-                            # If thumbnail creation fails, still add the original
-                            added_temp_paths.append((temp_path, unique_filename, None, None))
-                            added_files.append((unique_filename, None))
+                            # If thumbnail creation fails, clean up and abort
+                            # Clean up current temp file
+                            try:
+                                if os.path.exists(temp_path):
+                                    os.remove(temp_path)
+                                if os.path.exists(temp_thumb_path):
+                                    os.remove(temp_thumb_path)
+                            except Exception:
+                                pass
+                            
+                            # Clean up any previously created temp files
+                            for prev_temp_path, _, prev_temp_thumb_path, _ in added_temp_paths:
+                                try:
+                                    if os.path.exists(prev_temp_path):
+                                        os.remove(prev_temp_path)
+                                    if prev_temp_thumb_path and os.path.exists(prev_temp_thumb_path):
+                                        os.remove(prev_temp_thumb_path)
+                                except Exception:
+                                    pass
+                            
+                            flash(
+                                f"Failed to create thumbnail for image '{file.filename}'. "
+                                "Please try again or use a different image format.",
+                                "danger"
+                            )
+                            return render_template(
+                                "listings/listing_form.html", form=form, action="Create"
+                            )
 
             commit_success = False
             try:
@@ -348,9 +373,47 @@ def edit_listing(listing_id):
                             added_temp_paths.append((temp_path, unique_filename, temp_thumb_path, thumbnail_filename))
                             added_files.append((unique_filename, thumbnail_filename))
                         else:
-                            # If thumbnail creation fails, still add the original
-                            added_temp_paths.append((temp_path, unique_filename, None, None))
-                            added_files.append((unique_filename, None))
+                            # If thumbnail creation fails, clean up and abort
+                            # Clean up current temp file
+                            try:
+                                if os.path.exists(temp_path):
+                                    os.remove(temp_path)
+                                if os.path.exists(temp_thumb_path):
+                                    os.remove(temp_thumb_path)
+                            except Exception:
+                                pass
+                            
+                            # Clean up any previously created temp files
+                            for prev_temp_path, _, prev_temp_thumb_path, _ in added_temp_paths:
+                                try:
+                                    if os.path.exists(prev_temp_path):
+                                        os.remove(prev_temp_path)
+                                    if prev_temp_thumb_path and os.path.exists(prev_temp_thumb_path):
+                                        os.remove(prev_temp_thumb_path)
+                                except Exception:
+                                    pass
+                            
+                            # Restore deleted images on thumbnail error
+                            for orig_path, temp_path, thumbnail_path, temp_thumb_path in moved_to_temp:
+                                try:
+                                    if os.path.exists(temp_path):
+                                        shutil.move(temp_path, orig_path)
+                                    if temp_thumb_path and os.path.exists(temp_thumb_path):
+                                        shutil.move(temp_thumb_path, thumbnail_path)
+                                except Exception:
+                                    pass
+                            
+                            flash(
+                                f"Failed to create thumbnail for image '{file.filename}'. "
+                                "Please try again or use a different image format.",
+                                "danger"
+                            )
+                            return render_template(
+                                "listings/listing_form.html",
+                                form=form,
+                                listing=listing,
+                                action="Save",
+                            )
 
             commit_success = False
             try:
