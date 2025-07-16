@@ -8,5 +8,6 @@ Flask-SQLAlchemy
 Flask-WTF
 email-validator
 gunicorn
+Pillow
 python-dotenv
 WTForms

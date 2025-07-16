@@ -11,11 +11,19 @@
             {% for image in listing.images %}
                 <div class="col-auto mb-2">
                     <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
-                        <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
-                             alt="Listing image"
-                             class="img-thumbnail"
-                             style="max-width: 120px; max-height: 120px;"
-                        >
+                        {% if image.thumbnail_filename %}
+                            <img src="{{ url_for('static', filename='uploads/thumbnails/' ~ image.thumbnail_filename) }}"
+                                 alt="Listing image"
+                                 class="img-thumbnail"
+                                 style="width: 120px; height: 120px;"
+                            >
+                        {% else %}
+                            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
+                                 alt="Listing image"
+                                 class="img-thumbnail"
+                                 style="max-width: 120px; max-height: 120px;"
+                            >
+                        {% endif %}
                     </a>
                 </div>
             {% endfor %}

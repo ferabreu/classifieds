@@ -25,6 +25,7 @@ class Config:
     ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif'}
     UPLOAD_DIR = os.path.join('static', 'uploads')
     TEMP_DIR = os.path.join('static', 'temp')
+    THUMBNAIL_DIR = os.path.join('static', 'uploads', 'thumbnails')
 
 class DevelopmentConfig(Config):
     DEBUG = True
