@@ -1,5 +1,5 @@
 from app import create_app
-from config import DevelopmentConfig, TestingConfig, ProductionConfig
+from app.config import DevelopmentConfig, TestingConfig, ProductionConfig
 import os
 
 config_map = {
