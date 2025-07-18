@@ -229,30 +229,70 @@ def create_listing():
 
             # --- If commit succeeded: finalize file system changes ---
             if commit_success:
-                # Only move images to UPLOAD_DIR after DB commit
-                for temp_path, unique_filename, temp_thumb_path, thumbnail_filename in added_temp_paths:
-                    final_path = os.path.join(upload_dir, unique_filename)
-                    try:
+                # Track successfully moved files for rollback if needed
+                moved_files = []
+                file_move_failed = False
+                file_move_error = None
+                
+                try:
+                    # Only move images to UPLOAD_DIR after DB commit
+                    for temp_path, unique_filename, temp_thumb_path, thumbnail_filename in added_temp_paths:
+                        final_path = os.path.join(upload_dir, unique_filename)
+                        
+                        # Move main image
                         if os.path.exists(temp_path):
                             shutil.move(temp_path, final_path)
-                    except Exception as e:
-                        flash(
-                            f"Warning: Could not finalize upload for {unique_filename}: {e}",
-                            "warning",
-                        )
-                    
-                    # Move thumbnail if it exists
-                    if temp_thumb_path and thumbnail_filename:
-                        final_thumb_path = os.path.join(thumbnail_dir, thumbnail_filename)
-                        try:
+                            moved_files.append((final_path, None))  # (moved_file_path, temp_thumb_path)
+                        
+                        # Move thumbnail if it exists
+                        if temp_thumb_path and thumbnail_filename:
+                            final_thumb_path = os.path.join(thumbnail_dir, thumbnail_filename)
                             if os.path.exists(temp_thumb_path):
                                 shutil.move(temp_thumb_path, final_thumb_path)
-                        except Exception as e:
-                            flash(
-                                f"Warning: Could not finalize thumbnail for {thumbnail_filename}: {e}",
-                                "warning",
-                            )
-
+                                # Update the moved_files entry to include thumbnail
+                                moved_files[-1] = (final_path, final_thumb_path)
+                                
+                except Exception as e:
+                    file_move_failed = True
+                    file_move_error = str(e)
+                
+                # If any file move failed, rollback everything
+                if file_move_failed:
+                    # Rollback DB transaction
+                    try:
+                        db.session.delete(listing)
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+                    
+                    # Clean up any successfully moved files
+                    for moved_file_path, moved_thumb_path in moved_files:
+                        try:
+                            if moved_file_path and os.path.exists(moved_file_path):
+                                os.remove(moved_file_path)
+                            if moved_thumb_path and os.path.exists(moved_thumb_path):
+                                os.remove(moved_thumb_path)
+                        except Exception:
+                            pass
+                    
+                    # Clean up any remaining temp files
+                    for temp_path, _, temp_thumb_path, _ in added_temp_paths:
+                        try:
+                            if os.path.exists(temp_path):
+                                os.remove(temp_path)
+                            if temp_thumb_path and os.path.exists(temp_thumb_path):
+                                os.remove(temp_thumb_path)
+                        except Exception:
+                            pass
+                    
+                    flash(
+                        f"Failed to finalize file uploads: {file_move_error}. "
+                        "Listing was not created. Please try again.",
+                        "danger"
+                    )
+                    return render_template("listings/listing_form.html", form=form, action="Create")
+                
+                # All file operations succeeded
                 flash("Listing created successfully!", "success")
                 # Redirect to detail page of the new listing
                 return redirect(
@@ -460,39 +500,107 @@ def edit_listing(listing_id):
 
             # --- If commit succeeded: finalize file system changes ---
             if commit_success:
-                # Delete images from TEMP_DIR after DB commit (no longer needed)
-                for _, temp_path, _, temp_thumb_path in moved_to_temp:
-                    try:
-                        if os.path.exists(temp_path):
-                            os.remove(temp_path)
-                        if temp_thumb_path and os.path.exists(temp_thumb_path):
-                            os.remove(temp_thumb_path)
-                    except Exception:
-                        pass
-                # Move new images from temp to upload dir
-                for temp_path, unique_filename, temp_thumb_path, thumbnail_filename in added_temp_paths:
-                    final_path = os.path.join(upload_dir, unique_filename)
-                    try:
+                # Track successfully moved files for rollback if needed
+                moved_files = []
+                deleted_temp_files = []
+                file_move_failed = False
+                file_move_error = None
+                
+                try:
+                    # First, move new images from temp to upload dir
+                    for temp_path, unique_filename, temp_thumb_path, thumbnail_filename in added_temp_paths:
+                        final_path = os.path.join(upload_dir, unique_filename)
+                        
+                        # Move main image
                         if os.path.exists(temp_path):
                             shutil.move(temp_path, final_path)
-                    except Exception as e:
-                        flash(
-                            f"Warning: Could not finalize upload for {unique_filename}: {e}",
-                            "warning",
-                        )
-                    
-                    # Move thumbnail if it exists
-                    if temp_thumb_path and thumbnail_filename:
-                        final_thumb_path = os.path.join(thumbnail_dir, thumbnail_filename)
-                        try:
+                            moved_files.append((final_path, None))  # (moved_file_path, temp_thumb_path)
+                        
+                        # Move thumbnail if it exists
+                        if temp_thumb_path and thumbnail_filename:
+                            final_thumb_path = os.path.join(thumbnail_dir, thumbnail_filename)
                             if os.path.exists(temp_thumb_path):
                                 shutil.move(temp_thumb_path, final_thumb_path)
-                        except Exception as e:
-                            flash(
-                                f"Warning: Could not finalize thumbnail for {thumbnail_filename}: {e}",
-                                "warning",
-                            )
-
+                                # Update the moved_files entry to include thumbnail
+                                moved_files[-1] = (final_path, final_thumb_path)
+                    
+                    # Only after all new files are moved successfully, delete old temp files
+                    for _, temp_path, _, temp_thumb_path in moved_to_temp:
+                        if os.path.exists(temp_path):
+                            os.remove(temp_path)
+                            deleted_temp_files.append(temp_path)
+                        if temp_thumb_path and os.path.exists(temp_thumb_path):
+                            os.remove(temp_thumb_path)
+                            deleted_temp_files.append(temp_thumb_path)
+                                
+                except Exception as e:
+                    file_move_failed = True
+                    file_move_error = str(e)
+                
+                # If any file move failed, rollback everything
+                if file_move_failed:
+                    # Restore deleted images on file error
+                    for orig_path, temp_path, thumbnail_path, temp_thumb_path in moved_to_temp:
+                        try:
+                            if temp_path in deleted_temp_files and os.path.exists(temp_path):
+                                # File was deleted, but we can't easily restore it since move was one-way
+                                pass
+                            elif not os.path.exists(temp_path) and not os.path.exists(orig_path):
+                                # Try to move back if it was moved to temp but not yet deleted
+                                if os.path.exists(temp_path):
+                                    shutil.move(temp_path, orig_path)
+                            if temp_thumb_path in deleted_temp_files and temp_thumb_path and thumbnail_path:
+                                if os.path.exists(temp_thumb_path):
+                                    shutil.move(temp_thumb_path, thumbnail_path)
+                        except Exception:
+                            pass
+                    
+                    # Remove any new images that were added to DB
+                    try:
+                        for unique_filename, thumbnail_filename in added_files:
+                            new_image = ListingImage.query.filter_by(
+                                listing_id=listing.id, 
+                                filename=unique_filename
+                            ).first()
+                            if new_image:
+                                db.session.delete(new_image)
+                        db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+                    
+                    # Clean up any successfully moved files
+                    for moved_file_path, moved_thumb_path in moved_files:
+                        try:
+                            if moved_file_path and os.path.exists(moved_file_path):
+                                os.remove(moved_file_path)
+                            if moved_thumb_path and os.path.exists(moved_thumb_path):
+                                os.remove(moved_thumb_path)
+                        except Exception:
+                            pass
+                    
+                    # Clean up any remaining temp files
+                    for temp_path, _, temp_thumb_path, _ in added_temp_paths:
+                        try:
+                            if os.path.exists(temp_path):
+                                os.remove(temp_path)
+                            if temp_thumb_path and os.path.exists(temp_thumb_path):
+                                os.remove(temp_thumb_path)
+                        except Exception:
+                            pass
+                    
+                    flash(
+                        f"Failed to finalize file operations: {file_move_error}. "
+                        "Changes were not saved. Please try again.",
+                        "danger"
+                    )
+                    return render_template(
+                        "listings/listing_form.html",
+                        form=form,
+                        listing=listing,
+                        action="Save",
+                    )
+                
+                # All file operations succeeded
                 flash("Listing updated successfully!", "success")
                 return redirect(
                     url_for("listings.listing_detail", listing_id=listing.id)
