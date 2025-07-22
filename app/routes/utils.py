@@ -54,8 +54,11 @@ def create_thumbnail(image_path, thumbnail_path, size=(224, 224)):
     """
     try:
         with Image.open(image_path) as img:
-            # Convert to RGB if necessary (e.g., for PNG with alpha channel)
-            if img.mode in ('RGBA', 'LA', 'P'):
+            # Convert palette images (P mode) with transparency to RGBA
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            # For all other images, convert to RGB if not already RGBA/RGB
+            elif img.mode not in ('RGBA', 'RGB'):
                 img = img.convert('RGB')
             
             # Create thumbnail maintaining aspect ratio

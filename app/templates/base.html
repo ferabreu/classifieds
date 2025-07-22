@@ -5,16 +5,119 @@
         <title>Classifieds</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+        /* Dropdown menu styling */
+            .type-category-dropdown {
+                position: relative;
+                display: inline-block;
+            }
+            .type-category-dropdown-toggle {
+                background: transparent;
+                border: none;
+                padding: 0;
+                color: #212529;
+                font-size: 1rem;
+                font-weight: 500;
+                cursor: pointer;
+            }
+            .type-category-dropdown-menu {
+                display: none;
+                position: absolute;
+                left: 0;
+                top: 100%;
+                min-width: 220px;
+                background: white;
+                border: 1px solid #e5e5e5;
+                box-shadow: 0 0.2rem 0.5rem rgba(0,0,0,0.05);
+                z-index: 1000;
+            }
+            .type-category-dropdown:hover .type-category-dropdown-menu,
+            .type-category-dropdown:focus-within .type-category-dropdown-menu {
+                display: block;
+            }
+            .type-category-dropdown-menu ul {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+            .type-category-dropdown-menu li {
+                position: relative;
+            }
+            .type-category-dropdown-menu a {
+                display: block;
+                padding: 8px 18px;
+                text-decoration: none;
+                color: #212529;
+                background: none;
+                transition: background 0.2s;
+                white-space: nowrap;
+            }
+            .type-category-dropdown-menu a:hover,
+            .type-category-dropdown-menu a:focus {
+                background: #f8f9fa;
+                color: #212529;
+            }
+        /* For categories (submenu) */
+            .type-category-dropdown-menu .submenu {
+                display: none;
+                position: absolute;
+                left: 100%;
+                top: 0;
+                min-width: 180px;
+                border: 1px solid #e5e5e5;
+                background: white;
+                z-index: 1100;
+            }
+            .type-category-dropdown-menu li:hover > .submenu,
+            .type-category-dropdown-menu li:focus-within > .submenu {
+                display: block;
+            }
+
+        /* Responsive: stack below logo on mobile */
+            @media (max-width: 991.98px) {
+                .header-flex {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 0.5rem;
+                }
+            }
+        </style>
     </head>
     <body>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-0">
             <div class="container">
-                <a class="navbar-brand" href="{{ url_for('listings.index') }}">Classifieds</a>
-        <!-- Hamburger button for collapsing navbar on mobile -->
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <div class="d-flex flex-column align-items-start w-100">
+                    <a class="navbar-brand mb-0" href="{{ url_for('listings.index') }}">Classifieds</a>
+                    <div class="type-category-dropdown mt-1">
+                        <button class="type-category-dropdown-toggle" tabindex="0">
+                            Categories
+                        </button>
+                        <div class="type-category-dropdown-menu">
+                            <ul>
+                                {% for type in g.types %}
+                                    <li>
+                                        <a href="{{ url_for('listings.by_type', type_id=type.id) }}" tabindex="0">{{ type.name }}s</a>
+                                        {% if type.categories %}
+                                            <div class="submenu">
+                                                <ul>
+                                                    {% for category in type.categories %}
+                                                        <li>
+                                                            <a href="{{ url_for('listings.by_type_category', type_id=type.id, category_id=category.id) }}" tabindex="0">{{ category.name }}</a>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <!-- Hamburger & right links remain as before -->
+                <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-        <!-- Collapsible content -->
                 <div class="collapse navbar-collapse" id="mainNavbar">
                     <ul class="navbar-nav ms-auto">
                         {% if current_user.is_authenticated %}
@@ -45,27 +148,7 @@
         </nav>
         <div class="container-fluid">
             <div class="row">
-                <nav class="col-md-2 d-none d-md-block bg-light sidebar">
-                    <div class="sidebar-sticky pt-3">
-                        <h6 class="sidebar-heading">Types</h6>
-                        <ul class="nav flex-column mb-2">
-                            {% for type in g.types %}
-                                <li class="nav-listing">
-                                    <a class="nav-link" href="{{ url_for('listings.by_type', type_id=type.id) }}">
-                                        {{ type.name }}s
-                                    </a>
-                                    <ul class="nav flex-column ms-3">
-                                        {% for category in type.categories %}
-                                            <li class="nav-listing">
-                                                <a class="nav-link" href="{{ url_for('listings.by_type_category', type_id=type.id, category_id=category.id) }}">{{ category.name }}</a>
-                                            </li>
-                                        {% endfor %}
-                                    </ul>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </nav>
+                <!-- Sidebar would be here-->
                 <main role="main" class="col-md-9 ms-sm-auto col-lg-10 px-4">
                     {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
@@ -78,7 +161,7 @@
                 </main>
             </div>
         </div>
-    <!-- Bootstrap JS Bundle with Popper -->
+        <!-- Bootstrap JS Bundle with Popper -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         {% block scripts %}{% endblock %}
     </body>
