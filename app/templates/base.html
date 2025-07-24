@@ -4,71 +4,87 @@
         <meta charset="UTF-8">
         <title>Classifieds</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
     <body>
         <nav class="navbar navbar-expand-lg navbar-light bg-light mb-0">
             <div class="container" style="max-width: 1200px; width: 90vw;">
-                <!-- Brand/title centered and above -->
                 <div class="w-100 d-flex flex-column">
+                <!-- First row: Title -->
                     <a class="navbar-brand mb-2" href="{{ url_for('listings.index') }}" style="font-size: 2rem;">
                         Classifieds
                     </a>
-                <!-- Row for nav contents -->
-                    <div class="w-100 d-flex align-items-center justify-content-between">
-                        <div class="type-category-dropdown me-3">
-                            <button class="type-category-dropdown-toggle" tabindex="0">
-                                Categories
-                            </button>
-                            <div class="type-category-dropdown-menu">
-                                <ul>
-                                    {% for type in g.types %}
+                <!-- Second row: Dropdowns and right links -->
+                    <div class="d-flex align-items-center justify-content-between w-100">
+                        <div class="d-flex align-items-center">
+
+                    <pre>g.types: {{ g.types|tojson }}</pre>
+                    <pre>goods_categories: {{ goods_categories|tojson }}</pre>
+                    <pre>goods_type_id: {{ goods_type_id }}</pre>
+
+                    <!-- Goods Dropdown -->
+                            <div class="dropdown me-3">
+                                <button class="btn btn-link dropdown-toggle text-decoration-none" type="button" id="goodsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Goods
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="goodsDropdown">
+                                    {% for category in goods_categories %}
                                         <li>
-                                            <a href="{{ url_for('listings.by_type', type_id=type.id) }}" tabindex="0">{{ type.name }}s</a>
-                                            {% if type.categories %}
-                                                <div class="submenu">
-                                                    <ul>
-                                                        {% for category in type.categories %}
-                                                            <li>
-                                                                <a href="{{ url_for('listings.by_type_category', type_id=type.id, category_id=category.id) }}" tabindex="0">{{ category.name }}</a>
-                                                            </li>
-                                                        {% endfor %}
-                                                    </ul>
-                                                </div>
-                                            {% endif %}
+                                            <a class="dropdown-item" href="{{ url_for('listings.by_type_category', type_id=goods_type_id, category_id=category.id) }}">{{ category.name }}</a>
                                         </li>
                                     {% endfor %}
                                 </ul>
                             </div>
+
+                    <!-- Services Dropdown -->
+                            <div class="type-category-dropdown">
+                                <button class="type-category-dropdown-toggle" tabindex="0">
+                                    Services
+                                </button>
+                                <div class="type-category-dropdown-menu">
+                                    <ul>
+                                        {% for type in g.types if type.name|lower == 'services' %}
+                                            {% for category in type.categories %}
+                                                <li>
+                                                    <a href="{{ url_for('listings.by_type_category', type_id=type.id, category_id=category.id) }}" tabindex="0">{{ category.name }}</a>
+                                                </li>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
-                        <button class="navbar-toggler ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                        <div class="collapse navbar-collapse flex-grow-1" id="mainNavbar">
-                            <ul class="navbar-nav ms-auto">
-                                {% if current_user.is_authenticated %}
-                                    {% if current_user.is_admin %}
+                    <!-- Hamburger and user links -->
+                        <div class="d-flex align-items-center">
+                            <button class="navbar-toggler ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                            <div class="collapse navbar-collapse flex-grow-1" id="mainNavbar">
+                                <ul class="navbar-nav ms-auto">
+                                    {% if current_user.is_authenticated %}
+                                        {% if current_user.is_admin %}
+                                            <li class="nav-listing">
+                                                <a class="nav-link" href="{{ url_for('admin.dashboard') }}">Admin dashboard</a>
+                                            </li>
+                                        {% endif %}
                                         <li class="nav-listing">
-                                            <a class="nav-link" href="{{ url_for('admin.dashboard') }}">Admin dashboard</a>
+                                            <a class="nav-link" href="{{ url_for('users.my_profile') }}">
+                                                {{ current_user.email }}
+                                            </a>
+                                        </li>
+                                        <li class="nav-listing">
+                                            <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="nav-listing">
+                                            <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+                                        </li>
+                                        <li class="nav-listing">
+                                            <a class="nav-link" href="{{ url_for('auth.register') }}">Sign up</a>
                                         </li>
                                     {% endif %}
-                                    <li class="nav-listing">
-                                        <a class="nav-link" href="{{ url_for('users.my_profile') }}">
-                                            {{ current_user.email }}
-                                        </a>
-                                    </li>
-                                    <li class="nav-listing">
-                                        <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
-                                    </li>
-                                {% else %}
-                                    <li class="nav-listing">
-                                        <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
-                                    </li>
-                                    <li class="nav-listing">
-                                        <a class="nav-link" href="{{ url_for('auth.register') }}">Sign up</a>
-                                    </li>
-                                {% endif %}
-                            </ul>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -87,7 +103,7 @@
             </div>
         </div>
         <!-- Bootstrap JS Bundle with Popper -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
         {% block scripts %}{% endblock %}
     </body>
 </html>

@@ -40,6 +40,17 @@ def create_app(config_class=None):
     login_manager.login_view = 'auth.login'
     mail.init_app(app)
 
+    @app.context_processor
+    def inject_types_and_categories():
+        goods_type = next((t for t in g.types if t.name.lower() == "goods"), None)
+        services_type = next((t for t in g.types if t.name.lower() == "services"), None)
+        return {
+            "goods_categories": goods_type.categories if goods_type else [],
+            "goods_type_id": goods_type.id if goods_type else None,
+            "services_categories": services_type.categories if services_type else [],
+            "services_type_id": services_type.id if services_type else None,
+        }
+
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
