@@ -11,18 +11,24 @@
             {% for image in listing.images %}
                 <div class="col-auto mb-2">
                     <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
-                        <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
-                             alt="Listing image"
-                             class="img-thumbnail"
-                             style="max-width: 120px; max-height: 120px;"
-                        >
+                        {% if image.thumbnail_filename %}
+                            <img src="{{ url_for('static', filename='uploads/thumbnails/' ~ image.thumbnail_filename) }}"
+                                 alt="Listing image"
+                                 class="img-thumbnail listing-detail-thumbnail"
+                            >
+                        {% else %}
+                            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
+                                 alt="Listing image"
+                                 class="img-thumbnail listing-detail-image"
+                            >
+                        {% endif %}
                     </a>
                 </div>
             {% endfor %}
         </div>
         {% if current_user.is_authenticated and current_user.id == listing.user_id %}
             <a href="{{ url_for('listings.edit_listing', listing_id=listing.id) }}" class="btn btn-warning">Edit</a>
-            <form action="{{ url_for('listings.delete_listing', listing_id=listing.id) }}" method="post" style="display:inline;">
+            <form action="{{ url_for('listings.delete_listing', listing_id=listing.id) }}" method="post" class="inline-form">
                 <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
             </form>
         {% endif %}

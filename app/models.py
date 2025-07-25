@@ -53,6 +53,7 @@ class Listing(db.Model):
 class ListingImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(256), nullable=False)
+    thumbnail_filename = db.Column(db.String(256), nullable=True)
     listing_id = db.Column(
         db.Integer,
         db.ForeignKey('listing.id', name='fk_listingimage_listing_id', ondelete='CASCADE'),
