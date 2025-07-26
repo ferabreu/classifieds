@@ -7,86 +7,97 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
     <body>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-0">
-            <div class="container" style="max-width: 1200px; width: 90vw;">
-                <div class="w-100 d-flex flex-column">
-                <!-- First row: Title -->
-                    <a class="navbar-brand mb-2" href="{{ url_for('listings.index') }}" style="font-size: 2rem;">
-                        Classifieds
-                    </a>
-                <!-- Second row: Dropdowns and right links -->
-                    <div class="d-flex align-items-center justify-content-between w-100">
-                        <div class="d-flex align-items-center">
-
-                    <pre>g.types: {{ g.types|tojson }}</pre>
-                    <pre>goods_categories: {{ goods_categories|tojson }}</pre>
-                    <pre>goods_type_id: {{ goods_type_id }}</pre>
-
-                    <!-- Goods Dropdown -->
-                            <div class="dropdown me-3">
-                                <button class="btn btn-link dropdown-toggle text-decoration-none" type="button" id="goodsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                    Goods
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-0">
+            <div class="container-fluid w-100 d-flex flex-column">
+                <!-- First row: Brand and user dropdown -->
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <ul class="navbar-nav flex-row align-items-center">
+                        <a class="navbar-brand ms-1" href="{{ url_for('listings.index') }}" style="font-size: 2rem;">
+                            Classifieds
+                        </a>
+                    </ul>
+                    <ul class="navbar-nav flex-row align-items-center">
+                        {% if current_user.is_authenticated %}
+                            <li class="nav-item dropdown">
+                                <button class="nav-link dropdown-toggle text-light bg-transparent border-0"
+                                        id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    {{ current_user.email }}
                                 </button>
-                                <ul class="dropdown-menu" aria-labelledby="goodsDropdown">
-                                    {% for category in goods_categories %}
-                                        <li>
-                                            <a class="dropdown-item" href="{{ url_for('listings.by_type_category', type_id=goods_type_id, category_id=category.id) }}">{{ category.name }}</a>
-                                        </li>
-                                    {% endfor %}
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('users.my_profile') }}">My Profile</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a>
+                                    </li>
                                 </ul>
-                            </div>
-
-                    <!-- Services Dropdown -->
-                            <div class="type-category-dropdown">
-                                <button class="type-category-dropdown-toggle" tabindex="0">
-                                    Services
-                                </button>
-                                <div class="type-category-dropdown-menu">
-                                    <ul>
-                                        {% for type in g.types if type.name|lower == 'services' %}
-                                            {% for category in type.categories %}
-                                                <li>
-                                                    <a href="{{ url_for('listings.by_type_category', type_id=type.id, category_id=category.id) }}" tabindex="0">{{ category.name }}</a>
-                                                </li>
-                                            {% endfor %}
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    <!-- Hamburger and user links -->
-                        <div class="d-flex align-items-center">
-                            <button class="navbar-toggler ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                                <span class="navbar-toggler-icon"></span>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('auth.register') }}">Sign up</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <!-- Second row: Dropdowns and admin dashboard -->
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <ul class="navbar-nav flex-row align-items-center">
+                        <!-- Goods Dropdown -->
+                        <li class="nav-item dropdown me-1">
+                            <button class="nav-link dropdown-toggle text-light bg-transparent border-0"
+                                    id="goodsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                Goods
                             </button>
-                            <div class="collapse navbar-collapse flex-grow-1" id="mainNavbar">
-                                <ul class="navbar-nav ms-auto">
-                                    {% if current_user.is_authenticated %}
-                                        {% if current_user.is_admin %}
-                                            <li class="nav-listing">
-                                                <a class="nav-link" href="{{ url_for('admin.dashboard') }}">Admin dashboard</a>
-                                            </li>
-                                        {% endif %}
-                                        <li class="nav-listing">
-                                            <a class="nav-link" href="{{ url_for('users.my_profile') }}">
-                                                {{ current_user.email }}
-                                            </a>
-                                        </li>
-                                        <li class="nav-listing">
-                                            <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
-                                        </li>
-                                    {% else %}
-                                        <li class="nav-listing">
-                                            <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
-                                        </li>
-                                        <li class="nav-listing">
-                                            <a class="nav-link" href="{{ url_for('auth.register') }}">Sign up</a>
-                                        </li>
-                                    {% endif %}
+                            <ul class="dropdown-menu" aria-labelledby="goodsDropdown">
+                                {% for category in goods_categories %}
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('listings.by_type_category', type_id=goods_type_id, category_id=category.id) }}">{{ category.name }}</a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                        <!-- Services Dropdown -->
+                        <li class="nav-item dropdown ms-1">
+                            <button class="nav-link dropdown-toggle text-light bg-transparent border-0"
+                                    id="servicesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                Services
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="servicesDropdown">
+                                {% for category in services_categories %}
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('listings.by_type_category', type_id=services_type_id, category_id=category.id) }}">{{ category.name }}</a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                    </ul>
+                    {% if current_user.is_admin %}
+                        <ul class="navbar-nav flex-row align-items-center">
+                            <li class="nav-item dropdown">
+                                <button class="nav-link dropdown-toggle text-light bg-transparent border-0"
+                                        id="adminDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Admin management
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('admin.users') }}">Manage Users ({{ user_count }})</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('admin.types') }}">Manage Types ({{ type_count }})</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('admin.categories') }}">Manage Categories ({{ category_count }})</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('admin.listings') }}">Manage Listings ({{ listing_count }})</a>
+                                    </li>
                                 </ul>
-                            </div>
-                        </div>
-                    </div>
+                            </li>
+                        </ul>
+                    {% endif %}
                 </div>
             </div>
         </nav>
