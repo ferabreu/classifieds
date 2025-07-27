@@ -25,7 +25,7 @@ from flask import (
     redirect,
     render_template,
     request,
-    url_for
+    url_for,
 )
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
@@ -42,7 +42,9 @@ def index():
     """Show all listings, newest first, paginated."""
     page = request.args.get("page", 1, type=int)
     per_page = 20  # 6 lines x 6 cards
-    pagination = Listing.query.order_by(Listing.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    pagination = Listing.query.order_by(Listing.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
     listings = pagination.items
     return render_template("index.html", listings=listings, pagination=pagination)
 
@@ -122,17 +124,20 @@ def create_listing():
         return render_template("listings/listing_form.html", form=form, action="Create")
 
     types = Type.query.order_by(Type.name).all()
-    
+
     form.type.choices = [(t.id, t.name) for t in types]
     # Default to first type's categories
     categories = Category.query.filter_by(type_id=types[0].id).all() if types else []
     form.category.choices = [(c.id, c.name) for c in categories]
 
-    if request.method == 'POST':
+    if request.method == "POST":
         # Update choices for type/category dropdowns in form
         form.type.choices = [(t.id, t.name) for t in Type.query.order_by(Type.name)]
         form.category.choices = [
-            (c.id, c.name) for c in Category.query.filter_by(type_id=form.type.data).order_by(Category.name)
+            (c.id, c.name)
+            for c in Category.query.filter_by(type_id=form.type.data).order_by(
+                Category.name
+            )
         ]
         if form.validate_on_submit():
             listing = Listing(
@@ -141,7 +146,7 @@ def create_listing():
                 price=form.price.data or 0,
                 user_id=current_user.id,
                 type_id=form.type.data,
-                category_id=form.category.data
+                category_id=form.category.data,
             )
 
             upload_dir = current_app.config["UPLOAD_DIR"]
@@ -158,15 +163,22 @@ def create_listing():
                         ext = os.path.splitext(secure_filename(file.filename))[1]
                         unique_filename = f"{uuid.uuid4().hex}{ext}"
                         thumbnail_filename = f"{uuid.uuid4().hex}.jpg"
-                        
+
                         temp_path = os.path.join(temp_dir, unique_filename)
                         temp_thumb_path = os.path.join(temp_dir, thumbnail_filename)
-                        
+
                         file.save(temp_path)
-                        
+
                         # Create thumbnail
                         if create_thumbnail(temp_path, temp_thumb_path):
-                            added_temp_paths.append((temp_path, unique_filename, temp_thumb_path, thumbnail_filename))
+                            added_temp_paths.append(
+                                (
+                                    temp_path,
+                                    unique_filename,
+                                    temp_thumb_path,
+                                    thumbnail_filename,
+                                )
+                            )
                             added_files.append((unique_filename, thumbnail_filename))
                         else:
                             # If thumbnail creation fails, clean up and abort
@@ -178,21 +190,28 @@ def create_listing():
                                     os.remove(temp_thumb_path)
                             except Exception:
                                 pass
-                            
+
                             # Clean up any previously created temp files
-                            for prev_temp_path, _, prev_temp_thumb_path, _ in added_temp_paths:
+                            for (
+                                prev_temp_path,
+                                _,
+                                prev_temp_thumb_path,
+                                _,
+                            ) in added_temp_paths:
                                 try:
                                     if os.path.exists(prev_temp_path):
                                         os.remove(prev_temp_path)
-                                    if prev_temp_thumb_path and os.path.exists(prev_temp_thumb_path):
+                                    if prev_temp_thumb_path and os.path.exists(
+                                        prev_temp_thumb_path
+                                    ):
                                         os.remove(prev_temp_thumb_path)
                                 except Exception:
                                     pass
-                            
+
                             flash(
                                 f"Failed to create thumbnail for image '{file.filename}'. "
                                 "Please try again or use a different image format.",
-                                "danger"
+                                "danger",
                             )
                             return render_template(
                                 "listings/listing_form.html", form=form, action="Create"
@@ -204,9 +223,9 @@ def create_listing():
                 db.session.add(listing)
                 for unique_filename, thumbnail_filename in added_files:
                     image = ListingImage(
-                        filename=unique_filename, 
+                        filename=unique_filename,
                         thumbnail_filename=thumbnail_filename,
-                        listing=listing
+                        listing=listing,
                     )
                     db.session.add(image)
                 db.session.commit()
@@ -233,7 +252,12 @@ def create_listing():
             # --- If commit succeeded: finalize file system changes ---
             if commit_success:
                 # Only move images to UPLOAD_DIR after DB commit
-                for temp_path, unique_filename, temp_thumb_path, thumbnail_filename in added_temp_paths:
+                for (
+                    temp_path,
+                    unique_filename,
+                    temp_thumb_path,
+                    thumbnail_filename,
+                ) in added_temp_paths:
                     final_path = os.path.join(upload_dir, unique_filename)
                     try:
                         if os.path.exists(temp_path):
@@ -243,10 +267,12 @@ def create_listing():
                             f"Warning: Could not finalize upload for {unique_filename}: {e}",
                             "warning",
                         )
-                    
+
                     # Move thumbnail if it exists
                     if temp_thumb_path and thumbnail_filename:
-                        final_thumb_path = os.path.join(thumbnail_dir, thumbnail_filename)
+                        final_thumb_path = os.path.join(
+                            thumbnail_dir, thumbnail_filename
+                        )
                         try:
                             if os.path.exists(temp_thumb_path):
                                 shutil.move(temp_thumb_path, final_thumb_path)
@@ -322,7 +348,9 @@ def edit_listing(listing_id):
             thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
 
             # For rollback
-            moved_to_temp = [] # Images "deleted" from listing, but reversible until commit
+            moved_to_temp = (
+                []
+            )  # Images "deleted" from listing, but reversible until commit
             added_temp_paths = []  # New images, staged in TEMP_DIR
             added_files = []
 
@@ -334,23 +362,34 @@ def edit_listing(listing_id):
                     if image and image in listing.images:
                         image_path = os.path.join(upload_dir, image.filename)
                         temp_path = os.path.join(temp_dir, image.filename)
-                        
+
                         # Handle thumbnail as well
                         thumbnail_path = None
                         temp_thumb_path = None
                         if image.thumbnail_filename:
-                            thumbnail_path = os.path.join(thumbnail_dir, image.thumbnail_filename)
-                            temp_thumb_path = os.path.join(temp_dir, image.thumbnail_filename)
-                        
+                            thumbnail_path = os.path.join(
+                                thumbnail_dir, image.thumbnail_filename
+                            )
+                            temp_thumb_path = os.path.join(
+                                temp_dir, image.thumbnail_filename
+                            )
+
                         try:
                             if os.path.exists(image_path):
                                 shutil.move(image_path, temp_path)
-                                moved_to_temp.append((image_path, temp_path, thumbnail_path, temp_thumb_path))
-                                
+                                moved_to_temp.append(
+                                    (
+                                        image_path,
+                                        temp_path,
+                                        thumbnail_path,
+                                        temp_thumb_path,
+                                    )
+                                )
+
                                 # Move thumbnail if it exists
                                 if thumbnail_path and os.path.exists(thumbnail_path):
                                     shutil.move(thumbnail_path, temp_thumb_path)
-                                
+
                                 db.session.delete(image)
                         except Exception as e:
                             flash(
@@ -365,15 +404,22 @@ def edit_listing(listing_id):
                         ext = os.path.splitext(secure_filename(file.filename))[1]
                         unique_filename = f"{uuid.uuid4().hex}{ext}"
                         thumbnail_filename = f"{uuid.uuid4().hex}.jpg"
-                        
+
                         temp_path = os.path.join(temp_dir, unique_filename)
                         temp_thumb_path = os.path.join(temp_dir, thumbnail_filename)
-                        
+
                         file.save(temp_path)
-                        
+
                         # Create thumbnail
                         if create_thumbnail(temp_path, temp_thumb_path):
-                            added_temp_paths.append((temp_path, unique_filename, temp_thumb_path, thumbnail_filename))
+                            added_temp_paths.append(
+                                (
+                                    temp_path,
+                                    unique_filename,
+                                    temp_thumb_path,
+                                    thumbnail_filename,
+                                )
+                            )
                             added_files.append((unique_filename, thumbnail_filename))
                         else:
                             # If thumbnail creation fails, clean up and abort
@@ -385,31 +431,45 @@ def edit_listing(listing_id):
                                     os.remove(temp_thumb_path)
                             except Exception:
                                 pass
-                            
+
                             # Clean up any previously created temp files
-                            for prev_temp_path, _, prev_temp_thumb_path, _ in added_temp_paths:
+                            for (
+                                prev_temp_path,
+                                _,
+                                prev_temp_thumb_path,
+                                _,
+                            ) in added_temp_paths:
                                 try:
                                     if os.path.exists(prev_temp_path):
                                         os.remove(prev_temp_path)
-                                    if prev_temp_thumb_path and os.path.exists(prev_temp_thumb_path):
+                                    if prev_temp_thumb_path and os.path.exists(
+                                        prev_temp_thumb_path
+                                    ):
                                         os.remove(prev_temp_thumb_path)
                                 except Exception:
                                     pass
-                            
+
                             # Restore deleted images on thumbnail error
-                            for orig_path, temp_path, thumbnail_path, temp_thumb_path in moved_to_temp:
+                            for (
+                                orig_path,
+                                temp_path,
+                                thumbnail_path,
+                                temp_thumb_path,
+                            ) in moved_to_temp:
                                 try:
                                     if os.path.exists(temp_path):
                                         shutil.move(temp_path, orig_path)
-                                    if temp_thumb_path and os.path.exists(temp_thumb_path):
+                                    if temp_thumb_path and os.path.exists(
+                                        temp_thumb_path
+                                    ):
                                         shutil.move(temp_thumb_path, thumbnail_path)
                                 except Exception:
                                     pass
-                            
+
                             flash(
                                 f"Failed to create thumbnail for image '{file.filename}'. "
                                 "Please try again or use a different image format.",
-                                "danger"
+                                "danger",
                             )
                             return render_template(
                                 "listings/listing_form.html",
@@ -423,9 +483,9 @@ def edit_listing(listing_id):
                 # Add new images to DB but don't move to final location yet
                 for unique_filename, thumbnail_filename in added_files:
                     image = ListingImage(
-                        filename=unique_filename, 
+                        filename=unique_filename,
                         thumbnail_filename=thumbnail_filename,
-                        listing=listing
+                        listing=listing,
                     )
                     db.session.add(image)
                 db.session.commit()
@@ -433,7 +493,12 @@ def edit_listing(listing_id):
             except Exception as e:
                 db.session.rollback()
                 # Restore deleted images on DB error
-                for orig_path, temp_path, thumbnail_path, temp_thumb_path in moved_to_temp:
+                for (
+                    orig_path,
+                    temp_path,
+                    thumbnail_path,
+                    temp_thumb_path,
+                ) in moved_to_temp:
                     try:
                         if os.path.exists(temp_path):
                             shutil.move(temp_path, orig_path)
@@ -473,7 +538,12 @@ def edit_listing(listing_id):
                     except Exception:
                         pass
                 # Move new images from temp to upload dir
-                for temp_path, unique_filename, temp_thumb_path, thumbnail_filename in added_temp_paths:
+                for (
+                    temp_path,
+                    unique_filename,
+                    temp_thumb_path,
+                    thumbnail_filename,
+                ) in added_temp_paths:
                     final_path = os.path.join(upload_dir, unique_filename)
                     try:
                         if os.path.exists(temp_path):
@@ -483,10 +553,12 @@ def edit_listing(listing_id):
                             f"Warning: Could not finalize upload for {unique_filename}: {e}",
                             "warning",
                         )
-                    
+
                     # Move thumbnail if it exists
                     if temp_thumb_path and thumbnail_filename:
-                        final_thumb_path = os.path.join(thumbnail_dir, thumbnail_filename)
+                        final_thumb_path = os.path.join(
+                            thumbnail_dir, thumbnail_filename
+                        )
                         try:
                             if os.path.exists(temp_thumb_path):
                                 shutil.move(temp_thumb_path, final_thumb_path)
@@ -549,20 +621,24 @@ def delete_listing(listing_id):
     for image in listing.images:
         orig = os.path.join(current_app.config["UPLOAD_DIR"], image.filename)
         temped = os.path.join(current_app.config["TEMP_DIR"], image.filename)
-        
+
         # Handle thumbnail
         orig_thumb = None
         temped_thumb = None
         if image.thumbnail_filename:
-            orig_thumb = os.path.join(current_app.config["THUMBNAIL_DIR"], image.thumbnail_filename)
-            temped_thumb = os.path.join(current_app.config["TEMP_DIR"], image.thumbnail_filename)
-        
+            orig_thumb = os.path.join(
+                current_app.config["THUMBNAIL_DIR"], image.thumbnail_filename
+            )
+            temped_thumb = os.path.join(
+                current_app.config["TEMP_DIR"], image.thumbnail_filename
+            )
+
         try:
             if os.path.exists(orig):
                 shutil.move(orig, temped)
                 original_paths.append(orig)
                 temp_paths.append(temped)
-                
+
                 # Move thumbnail if it exists
                 if orig_thumb and os.path.exists(orig_thumb):
                     shutil.move(orig_thumb, temped_thumb)
@@ -602,7 +678,7 @@ def delete_listing(listing_id):
                 os.remove(temped)
         except Exception:
             pass
-    
+
     # Permanently delete temped thumbnails after commit
     for temped_thumb in temp_thumb_paths:
         try:

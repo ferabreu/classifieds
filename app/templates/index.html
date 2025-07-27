@@ -12,7 +12,7 @@
                 <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success">+ Post New Listing</a>
             </div>
         {% endif %}
-        
+
         {% if listings|length == 0 %}
             <div class="alert alert-info">
                 <p class="mb-0">No listings found.</p>
@@ -25,14 +25,14 @@
                             <div class="card w-20" style="aspect-ratio: 3/4;">
                                 {% if listing.images and listing.images[0].thumbnail_filename %}
                                     <img src="{{ url_for('static', filename='uploads/thumbnails/' ~ listing.images[0].thumbnail_filename) }}"
-                                        class="card-img-top"
-                                        alt="{{ listing.title }}"
-                                        style="max-width: 192px; object-fit: contain;">
+                                         class="card-img-top"
+                                         alt="{{ listing.title }}"
+                                         style="max-width: 192px; object-fit: contain;">
                                 {% else %}
                                     <img src="{{ url_for('static', filename='img/no-image-thumbnail.png') }}"
-                                        class="card-img-top"
-                                        alt="{{ listing.title }}"
-                                        style="max-width: 192px; object-fit: contain;">
+                                         class="card-img-top"
+                                         alt="{{ listing.title }}"
+                                         style="max-width: 192px; object-fit: contain;">
                                 {% endif %}
                                 <div class="card-body">
                                     <h6 class="card-title mb-2">{{ listing.title }}</h6>
@@ -50,7 +50,7 @@
                 {% endfor %}
             </div>
         {% endif %}
-        
+
         {{ render_pagination(pagination, 'listings.index', sort=sort, direction=direction) }}
     </div>
 {% endblock %}
