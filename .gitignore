@@ -1,6 +1,9 @@
 # Github access token (password)
 token.txt
 
+# VS Code settings
+.vscode
+
 # Standard miscs
 docs/misc
 resources/misc

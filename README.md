@@ -20,7 +20,8 @@ This application allows users to post, browse, and manage classified ads for goo
 ## Features Overview
 
 - **Users:** Register, login, edit profile, reset password
-- **Listings:** Create, edit, delete, view details
+- **Listings:** Create, edit, delete, view details with image thumbnails
+- **Image Thumbnails:** Automatic 224x224 thumbnail generation for fast loading
 - **Types & Categories:** Admin-defined; organize listings for easy browsing
 - **Admin:** Full CRUD for users, types, categories, and listings
 - **LDAP Authentication:** Optional, fallback to local, creates users on first LDAP login
@@ -89,11 +90,20 @@ classifieds/
 - Manage types and categories (CRUD)
 - Manage all listings (delete any listing)
 
+### Images and Thumbnails
+
+- Images are uploaded to `app/static/uploads/`
+- Thumbnails are automatically generated at 224x224 pixels and stored in `app/static/uploads/thumbnails/`
+- Thumbnails maintain aspect ratio and are centered on a white background
+- Supported formats: JPG, JPEG, PNG, GIF (thumbnails are saved as JPEG)
+- Use the `flask backfill-thumbnails` command to generate thumbnails for existing images
+
 ### Classifieds
 
 - Any user can create, edit, or delete their own listings
 - Admins can edit/delete any listing
 - Browse by type/category via sidebar
+- Listings are displayed in a card-based layout with thumbnail previews
 
 ---
 
@@ -151,9 +161,20 @@ FLASK_APP=app flask init
 This creates:
 - `instance/classifieds.db` (SQLite)
 - `app/static/uploads` (uploaded images)
+- `app/static/uploads/thumbnails` (224x224 thumbnails)
 - `app/static/temp` (temp folder for ACIDized transactions when CRUDing listings)
 - Default admin: `admin@classifieds.io` / password: `admin`
 - Types: Good, Service. Each gets a "General" category.
+
+### 3.1. Generate thumbnails for existing images (optional)
+
+If you have existing images from before thumbnail generation was implemented, run:
+
+```bash
+FLASK_APP=app flask backfill-thumbnails
+```
+
+This will generate thumbnails for all existing images that don't have them.
 
 ---
 
