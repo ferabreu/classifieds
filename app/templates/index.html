@@ -21,10 +21,10 @@
             <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-6 g-3 justify-content-center">
                 {% for listing in listings %}
                     <div class="col d-flex justify-content-center">
-                        <div class="card" style="width: 160px; aspect-ratio: 2/3">
+                        <div class="card" style="width: 160px; aspect-ratio: 2/3;">
                             {% if listing.images and listing.images[0].thumbnail_filename %}
                                 <img src="{{ url_for('static', filename='uploads/thumbnails/' ~ listing.images[0].thumbnail_filename) }}"
-                                     class="mx-auto d-block"
+                                     class="card-img-top mx-auto d-block"
                                      alt="Thumbnail"
                                      style="width: 100%; max-width: 224px; height: 224px; object-fit: contain;">
                             {% else %}
