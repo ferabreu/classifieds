@@ -67,7 +67,9 @@ class ListingForm(FlaskForm):
         import re
 
         if not field.data or len(re.findall(r"\b\w+\b", field.data)) < 4:
-            raise ValidationError("Description must contain at least a sentence with 4 words.")
+            raise ValidationError(
+                "Description must contain at least a sentence with 4 words."
+            )
         if not re.search(r"[.!?]", field.data):
             raise ValidationError(
                 "Description should end with a sentence-ending punctuation."
