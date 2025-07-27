@@ -18,37 +18,39 @@
                 <p class="mb-0">No listings found.</p>
             </div>
         {% else %}
-            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-6 g-3 justify-content-center">
+            <div class="row row-cols-auto g-4 justify-content-center mb-4">
                 {% for listing in listings %}
                     <div class="col d-flex justify-content-center">
-                        <div class="card" style="width: 160px; aspect-ratio: 2/3;">
-                            {% if listing.images and listing.images[0].thumbnail_filename %}
-                                <img src="{{ url_for('static', filename='uploads/thumbnails/' ~ listing.images[0].thumbnail_filename) }}"
-                                     class="card-img-top mx-auto d-block"
-                                     alt="Thumbnail"
-                                     style="width: 100%; max-width: 224px; height: 224px; object-fit: contain;">
-                            {% else %}
-                                <div class="bg-secondary d-flex align-items-center justify-content-center"
-                                     style="width: 100%; max-width: 224px; height: 224px;">
-                                    <span class="text-light">No Image</span>
+                        <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}" class="text-decoration-none text-reset">
+                            <div class="card w-20" style="aspect-ratio: 3/4;">
+                                {% if listing.images and listing.images[0].thumbnail_filename %}
+                                    <img src="{{ url_for('static', filename='uploads/thumbnails/' ~ listing.images[0].thumbnail_filename) }}"
+                                        class="card-img-top"
+                                        alt="{{ listing.title }}"
+                                        style="max-width: 192px; object-fit: contain;">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='img/no-image-thumbnail.png') }}"
+                                        class="card-img-top"
+                                        alt="{{ listing.title }}"
+                                        style="max-width: 192px; object-fit: contain;">
+                                {% endif %}
+                                <div class="card-body">
+                                    <h6 class="card-title mb-2">{{ listing.title }}</h6>
+                                    <h5 class="card-subtitle fw-bold">
+                                        {% if listing.price %}
+                                            ${{ "%.2f"|format(listing.price) }}
+                                        {% else %}
+                                            Free
+                                        {% endif %}
+                                    </h5>
                                 </div>
-                            {% endif %}
-                            <div class="card-body p-2 text-center">
-                                <h6 class="card-title mb-1 text-truncate">{{ listing.title }}</h6>
-                                <p class="card-text mb-0 fw-bold">
-                                    {% if listing.price %}
-                                        ${{ "%.2f"|format(listing.price) }}
-                                    {% else %}
-                                        Free
-                                    {% endif %}
-                                </p>
                             </div>
-                        </div>
+                        </a>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
         
-        {{ render_pagination(pagination, 'index', sort=sort, direction=direction) }}
+        {{ render_pagination(pagination, 'listings.index', sort=sort, direction=direction) }}
     </div>
 {% endblock %}

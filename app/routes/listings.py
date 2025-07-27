@@ -39,9 +39,12 @@ listings_bp = Blueprint("listings", __name__)
 
 @listings_bp.route("/")
 def index():
-    """Show all listings, newest first."""
-    listings = Listing.query.order_by(Listing.created_at.desc()).all()
-    return render_template("index.html", listings=listings)
+    """Show all listings, newest first, paginated."""
+    page = request.args.get("page", 1, type=int)
+    per_page = 20  # 6 lines x 6 cards
+    pagination = Listing.query.order_by(Listing.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    listings = pagination.items
+    return render_template("index.html", listings=listings, pagination=pagination)
 
 
 @listings_bp.route("/type/<int:type_id>")
