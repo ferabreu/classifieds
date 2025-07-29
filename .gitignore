@@ -5,8 +5,7 @@ token.txt
 .vscode
 
 # Standard miscs
-docs/misc
-resources/misc
+**/misc*/
 
 # Ignore all uploaded files
 **/uploads*/

@@ -36,9 +36,9 @@ This is a Flask-based classified ads application. The main goals are:
   - [x] admin items
   - [ ] admin users?
   - [ ] admin other stuff?
-- [ ] Add form validation for items:
-  - [ ] Title: at least 1 word.
-  - [ ] Description: at least one sentence.
+- [x] Add form validation for items:
+  - [x] Title: at least 1 word.
+  - [x] Description: at least one sentence.
 - [ ] schedule a cron job or background task to periodically clean up orphaned files in TEMP_DIR (in case something ever goes wrong mid-operation).
 - [ ] Add basic tests for models and routes.
 - [ ] Add unit tests.

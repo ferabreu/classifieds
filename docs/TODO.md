@@ -4,7 +4,7 @@
 
 \* Refer to Mr. Copilot's retailing gold standards.
 
-- [ ] Check what's wrong with the pre-commit hooks.
+- [X] Check what's wrong with the pre-commit hooks.
 - [ ] Index: fix alignment of grid title and "new" button;
 - [ ] Admin pages:
     - [ ] add counters to the right of the top bar;
