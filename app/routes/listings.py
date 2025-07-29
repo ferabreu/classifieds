@@ -475,7 +475,7 @@ def edit_listing(listing_id):
                                 "listings/listing_form.html",
                                 form=form,
                                 listing=listing,
-                                action="Save",
+                                action="Edit",
                             )
 
             commit_success = False
@@ -581,7 +581,7 @@ def edit_listing(listing_id):
         form.price.data = listing.price
 
     return render_template(
-        "listings/listing_form.html", form=form, listing=listing, action="Save"
+        "listings/listing_form.html", form=form, listing=listing, action="Edit"
     )
 
 

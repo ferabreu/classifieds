@@ -1,36 +1,48 @@
 {% extends "base.html" %}
+
+{% block title %}: {{ listing.title }}{% endblock %}
+
 {% block content %}
-    <div class="container mt-4">
-        <h2>{{ listing.title }}</h2>
-        <p><strong>Type:</strong> {{ listing.type.name }}</p>
-        <p><strong>Category:</strong> {{ listing.category.name }}</p>
-        <p><strong>Description:</strong> {{ listing.description }}</p>
-        <p><strong>Price:</strong> {% if listing.price == 0 %}Free{% else %}${{ listing.price }}{% endif %}</p>
-        <p><strong>Posted by:</strong> {{ listing.owner.first_name }} {{ listing.owner.last_name }}</p>
-        <div class="row">
-            {% for image in listing.images %}
-                <div class="col-auto mb-2">
-                    <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
-                        {% if image.thumbnail_filename %}
-                            <img src="{{ url_for('static', filename='uploads/thumbnails/' ~ image.thumbnail_filename) }}"
-                                 alt="Listing image"
-                                 class="img-thumbnail listing-detail-thumbnail"
-                            >
-                        {% else %}
-                            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}"
-                                 alt="Listing image"
-                                 class="img-thumbnail listing-detail-image"
-                            >
-                        {% endif %}
-                    </a>
-                </div>
-            {% endfor %}
-        </div>
-        {% if current_user.is_authenticated and current_user.id == listing.user_id %}
-            <a href="{{ url_for('listings.edit_listing', listing_id=listing.id) }}" class="btn btn-warning">Edit</a>
-            <form action="{{ url_for('listings.delete_listing', listing_id=listing.id) }}" method="post" class="inline-form">
-                <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
-            </form>
+    <h2 class="mb-4">{{ listing.title }}</h2>
+    <p><strong>Type:</strong> {{ listing.type.name }}</p>
+    <p><strong>Category:</strong> {{ listing.category.name }}</p>
+    <p><strong>Description:</strong> {{ listing.description }}</p>
+    <p><strong>Price:</strong> {% if listing.price == 0 %}Free{% else %}${{ listing.price }}{% endif %}</p>
+    <p><strong>Posted by:</strong>
+        {% if listing.user_id == current_user.id %}
+            <strong>You</strong>
+        {% else %}
+            <a href="{{ url_for('users.user_profile', user_id=listing.user_id) }}">
+                {{ listing.owner.first_name ~ ' ' ~ listing.owner.last_name }}
+            </a>
         {% endif %}
+        on {{ listing.created_at.strftime('%Y-%m-%d') }}.
+    </p>
+
+    <div class="row">
+
+        {% for image in listing.images %}
+            <div class="col-auto mb-2">
+                <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
+                    <img src="{{
+                              url_for('static', filename=('uploads/thumbnails/' ~ image.thumbnail_filename
+                              if image.thumbnail_filename
+                              else 'uploads/' ~ image.filename))
+                              }}"
+                         alt="Listing image"
+                         class="img-thumbnail"
+                         style="max-width: 192px; max-height: 192px;"
+                    >
+                </a>
+            </div>
+        {% endfor %}
+
     </div>
+
+    {% if current_user.is_authenticated and current_user.id == listing.user_id %}
+        <a href="{{ url_for('listings.edit_listing', listing_id=listing.id) }}" class="btn btn-warning">Edit</a>
+        <form action="{{ url_for('listings.delete_listing', listing_id=listing.id) }}" method="post">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+        </form>
+    {% endif %}
 {% endblock %}

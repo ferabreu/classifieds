@@ -1,7 +1,28 @@
+{# 
+    Macro: render_pagination
+    Renders Bootstrap pagination controls for paginated Flask views.
+    It includes links for previous, next, and individual page numbers.
+    It also handles sorting parameters if provided.
+    Args:
+        pagination: Flask-SQLAlchemy pagination object
+        endpoint: Flask endpoint name for url_for
+        sort: (optional) current sort field
+        direction: (optional) current sort direction
+    Usage:
+        {{ render_pagination(pagination, 'listings.index', sort=sort, direction=direction) }}
+#}
 {% macro render_pagination(pagination, endpoint, sort=None, direction=None) %}
+
+    {# Ensure sort and direction are set to avoid errors #}
+    {% if not sort %} {% set sort = 'default_sort' %} {% endif %}
+    {% if not direction %} {% set direction = 'asc' %} {% endif %}
+
+    {# Only show pagination if there is more than one page #}
     {% if pagination and pagination.pages > 1 %}
         <nav aria-label="Pagination">
             <ul class="pagination justify-content-center">
+
+                {# Previous page link #}
                 {% if pagination.has_prev %}
                     <li class="page-item">
                         <a class="page-link" href="{{ url_for(endpoint, page=pagination.prev_num, sort=sort, direction=direction) }}">&laquo; Prev</a>
@@ -11,6 +32,8 @@
                         <span class="page-link">&laquo; Prev</span>
                     </li>
                 {% endif %}
+
+                {# Page number links and ellipsis #}
                 {% for page_num in pagination.iter_pages() %}
                     {% if page_num %}
                         {% if page_num == pagination.page %}
@@ -22,6 +45,8 @@
                         <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
                     {% endif %}
                 {% endfor %}
+
+                {# Next page link #}
                 {% if pagination.has_next %}
                     <li class="page-item">
                         <a class="page-link" href="{{ url_for(endpoint, page=pagination.next_num, sort=sort, direction=direction) }}">Next &raquo;</a>
@@ -31,6 +56,7 @@
                         <span class="page-link">Next &raquo;</span>
                     </li>
                 {% endif %}
+
             </ul>
         </nav>
     {% endif %}

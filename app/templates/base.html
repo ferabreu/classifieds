@@ -11,7 +11,8 @@
     <body>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container-fluid d-flex flex-column">
-                <!-- First row: Brand and user dropdown -->
+
+                {# First row: Brand and user dropdown #}
                 <div class="d-flex justify-content-between align-items-end w-100">
                     <ul class="navbar-nav flex-row">
                         <a class="navbar-brand ms-1" href="{{ url_for('listings.index') }}" style="font-size: 2rem;">
@@ -46,10 +47,12 @@
 
                     </ul>
                 </div>
-                <!-- Second row: Dropdowns and admin dashboard -->
+
+                {# Second row: Dropdowns and admin dashboard #}
                 <div class="d-flex justify-content-between align-items-end w-100 navbar-row-gap">
                     <ul class="navbar-nav flex-row">
-                        <!-- Goods Dropdown -->
+
+                        {# Goods Dropdown #}
                         <li class="nav-item dropdown me-1">
                             <button class="nav-link dropdown-toggle text-light bg-transparent border-0"
                                     id="goodsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -65,7 +68,8 @@
 
                             </ul>
                         </li>
-                        <!-- Services Dropdown -->
+
+                        {# Services Dropdown #}
                         <li class="nav-item dropdown ms-1">
                             <button class="nav-link dropdown-toggle text-light bg-transparent border-0"
                                     id="servicesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -126,7 +130,7 @@
 
         </div>
 
-        <!-- Bootstrap JS Bundle with Popper -->
+        {# Bootstrap JS Bundle with Popper #}
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 
         {% block scripts %}{% endblock %}
