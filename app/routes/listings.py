@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Fernando "ferabreu" Mees Abreu
+# Copyright (c) 2025 Fernando "ferabreu" Mees Abreu
 #
 # Licensed under the MIT License. See LICENSE file in the project root for full license information.
 #
@@ -41,7 +41,7 @@ listings_bp = Blueprint("listings", __name__)
 def index():
     """Show all listings, newest first, paginated."""
     page = request.args.get("page", 1, type=int)
-    per_page = 20  # 6 lines x 6 cards
+    per_page = 24  # fits the grid layout
     pagination = Listing.query.order_by(Listing.created_at.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
