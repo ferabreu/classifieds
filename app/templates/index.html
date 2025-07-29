@@ -6,7 +6,7 @@
 
 {% block content %}
     <h2 class="mb-4">
-        {% if selected_type %}{{ selected_type.name }}s{% else %}All Listings{% endif %}
+        {% if selected_type %}{{ selected_type.name }}s{% else %}All listings{% endif %}
         {% if selected_category %}- {{ selected_category.name }}{% endif %}
     </h2>
 
@@ -28,11 +28,11 @@
                                 - If listing.images exists and has a thumbnail_filename, it uses that image.
                                 - Otherwise, it falls back to a default placeholder image.
                             #}
-                            <img src="{{url_for('static',filename=(
-                                      'uploads/thumbnails/' ~ listing.images[0].thumbnail_filename
+                            <img src="{{
+                                      url_for('static',filename=('uploads/thumbnails/' ~ listing.images[0].thumbnail_filename
                                       if listing.images and listing.images[0].thumbnail_filename
-                                      else 'img/no-image-thumbnail.png'
-                                      ))}}"
+                                      else 'img/no-image-thumbnail.png'))
+                                      }}"
                                  class="card-img-top"
                                  alt="{{ listing.title }}"
                                  style="object-fit: contain;"
