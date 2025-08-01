@@ -47,7 +47,12 @@ def index():
     )
     listings = pagination.items
 
-    return render_template("index.html", listings=listings, pagination=pagination)
+    return render_template(
+        "index.html",
+        listings=listings,
+        pagination=pagination,
+        page_title="All listings",
+    )
 
 
 @listings_bp.route("/type/<int:type_id>")
