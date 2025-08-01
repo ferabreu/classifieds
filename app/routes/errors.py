@@ -22,12 +22,15 @@ def not_found_error(error):
     Handler for 404 Not Found errors.
     Renders a custom error page when a page or resource is missing.
     """
+    error_name = "Page not found"
+
     return (
         render_template(
             "error.html",
             error_code=404,
-            error_name="Page Not Found",
+            error_name=error_name,
             error_description="The page or resource you requested could not be found.",
+            page_title=error_name,
         ),
         404,
     )
@@ -39,12 +42,15 @@ def internal_error(error):
     Handler for 500 Internal Server Error.
     Renders a custom error page when an unexpected server error occurs.
     """
+    error_name = "Internal Server Error"
+
     return (
         render_template(
             "error.html",
             error_code=500,
-            error_name="Internal Server Error",
+            error_name=error_name,
             error_description="An unexpected error has occurred. Please try again later.",
+            page_title=error_name,
         ),
         500,
     )
@@ -56,12 +62,15 @@ def forbidden_error(error):
     Handler for 403 Forbidden errors.
     Renders a custom error page when access to a resource is denied.
     """
+    error_name = "Forbidden"
+
     return (
         render_template(
             "error.html",
             error_code=403,
-            error_name="Forbidden",
+            error_name=error_name,
             error_description="You do not have permission to access this resource.",
+            page_title=error_name,
         ),
         403,
     )

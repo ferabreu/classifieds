@@ -3,7 +3,13 @@
 
     <head>
         <meta charset="UTF-8">
-        <title>Classifieds{% block title %}{% endblock %}</title>
+        <title>
+            {% if page_title %}
+                {{ page_title }}{{ title_separator }}Classifieds
+            {% else %}
+                Classifieds
+            {% endif %}
+        </title>
         <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     </head>
@@ -125,6 +131,10 @@
                     {% endfor %}
                 {% endif %}
             {% endwith %}
+
+            {% if page_title %}
+                <h2 class="mb-4">{{ page_title }}</h2>
+            {% endif %}
 
             {% block content %}{% endblock %}
 

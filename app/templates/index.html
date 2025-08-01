@@ -2,13 +2,11 @@
 
 {% from "macros/pagination.html" import render_pagination %}
 
-{% block title %}: {% if selected_type %}{{ selected_type.name }}s{% else %}all listings{% endif %}{% endblock %}
-
 {% block content %}
-    <h2 class="mb-4">
-        {% if selected_type %}{{ selected_type.name }}s{% else %}All listings{% endif %}
-        {% if selected_category %}- {{ selected_category.name }}{% endif %}
-    </h2>
+
+    {% if not page_title %}
+        <h2 class="mb-4">All listings</h2>
+    {% endif %}
 
     {% if current_user.is_authenticated %}
         <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success mb-4">+ Post New Listing</a>
@@ -17,7 +15,7 @@
     {% if listings|length == 0 %}
         <p class="alert alert-info alert-heading mb-4">No listings found.</p>
     {% else %}
-        <div class="row row-cols-xxl-6 row-cols-xl-4 row-cols-lg-4 row-cols-md-3 row-cols-sm-2 row-cols-xs-2 g-4 mb-4 d-flex justify-content-center">
+        <div class="row row-cols-xxl-6 row-cols-xl-4 row-cols-lg-4 row-cols-md-3 row-cols-sm-2 row-cols-xs-2 g-4 mb-4 d-flex">
 
             {% for listing in listings %}
                 <div class="col">

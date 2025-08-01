@@ -87,7 +87,9 @@ def login():
             flash("Logged in with LDAP.", "success")
             return redirect(url_for("listings.index"))
         flash("Invalid credentials.", "danger")
-    return render_template("login.html", form=form, ldap_enabled=ldap_enabled)
+    return render_template(
+        "login.html", form=form, ldap_enabled=ldap_enabled, page_title="Sign in"
+    )
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -100,11 +102,15 @@ def register():
         return redirect(url_for("listings.index"))
 
     form = RegistrationForm()
+    register_title = "Sign up"
+
     if form.validate_on_submit():
         email = form.email.data.lower()
         if User.query.filter_by(email=email).first():
             flash("Email already registered.", "danger")
-            return render_template("register.html", form=form)
+            return render_template(
+                "register.html", form=form, page_title=register_title
+            )
         user = User(
             email=email, first_name=form.first_name.data, last_name=form.last_name.data
         )
@@ -113,7 +119,7 @@ def register():
         db.session.commit()
         flash("Registration successful. Please log in.", "success")
         return redirect(url_for("auth.login"))
-    return render_template("register.html", form=form)
+    return render_template("register.html", form=form, page_title=register_title)
 
 
 @auth_bp.route("/logout")
@@ -164,7 +170,9 @@ def forgot_password():
             # Do not reveal whether the email exists or is LDAP user
             flash("If that account exists, a reset link has been sent.", "info")
         return redirect(url_for("auth.login"))
-    return render_template("forgot_password.html", form=form)
+    return render_template(
+        "forgot_password.html", form=form, page_title="Forgot password"
+    )
 
 
 @auth_bp.route("/reset/<token>", methods=["GET", "POST"])
@@ -192,4 +200,6 @@ def reset_password(token):
         else:
             flash("User not found.", "danger")
             return redirect(url_for("auth.login"))
-    return render_template("reset_password.html", form=form)
+    return render_template(
+        "reset_password.html", form=form, page_title="Reset password"
+    )

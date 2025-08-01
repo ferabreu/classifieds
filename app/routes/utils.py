@@ -16,7 +16,7 @@ from functools import wraps
 
 from flask import flash, redirect, url_for
 from flask_login import current_user
-from PIL import Image
+from PIL import Image  # type: ignore
 
 
 def admin_required(func):

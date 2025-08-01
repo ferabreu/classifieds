@@ -46,6 +46,7 @@ def index():
         page=page, per_page=per_page, error_out=False
     )
     listings = pagination.items
+
     return render_template("index.html", listings=listings, pagination=pagination)
 
 
@@ -58,7 +59,13 @@ def by_type(type_id):
         .all()
     )
     selected_type = Type.query.get_or_404(type_id)
-    return render_template("index.html", listings=listings, selected_type=selected_type)
+
+    return render_template(
+        "index.html",
+        listings=listings,
+        selected_type=selected_type,
+        page_title=selected_type.name,
+    )
 
 
 @listings_bp.route("/type/<int:type_id>/category/<int:category_id>")
@@ -71,11 +78,13 @@ def by_type_category(type_id, category_id):
     )
     selected_type = Type.query.get_or_404(type_id)
     selected_category = Category.query.get_or_404(category_id)
+
     return render_template(
         "index.html",
         listings=listings,
         selected_type=selected_type,
         selected_category=selected_category,
+        page_title=selected_category.name,
     )
 
 
@@ -83,7 +92,10 @@ def by_type_category(type_id, category_id):
 def listing_detail(listing_id):
     """Show details for a single listing."""
     listing = Listing.query.get_or_404(listing_id)
-    return render_template("listings/listing_detail.html", listing=listing)
+
+    return render_template(
+        "listings/listing_detail.html", listing=listing, page_title=listing.title
+    )
 
 
 @listings_bp.route("/categories_for_type/<int:type_id>")
@@ -110,18 +122,29 @@ def create_listing():
     - On success: redirect to detail page of the new listing (not index).
     """
     form = ListingForm()
+    create_title = "New listing"
 
     # Defensive: Temp directory must be configured and exist
     if not current_app.config["TEMP_DIR"]:
         flash("Temp directory is not configured.", "danger")
-        return render_template("listings/listing_form.html", form=form, action="Create")
+        return render_template(
+            "listings/listing_form.html",
+            form=form,
+            action="Create",
+            page_title=create_title,
+        )
 
     if not os.path.exists(current_app.config["TEMP_DIR"]):
         flash(
             "Temp directory does not exist. Please initialize the application.",
             "danger",
         )
-        return render_template("listings/listing_form.html", form=form, action="Create")
+        return render_template(
+            "listings/listing_form.html",
+            form=form,
+            action="Create",
+            page_title=create_title,
+        )
 
     types = Type.query.order_by(Type.name).all()
 
@@ -214,7 +237,10 @@ def create_listing():
                                 "danger",
                             )
                             return render_template(
-                                "listings/listing_form.html", form=form, action="Create"
+                                "listings/listing_form.html",
+                                form=form,
+                                action="Create",
+                                page_title=create_title,
                             )
 
             commit_success = False
@@ -246,7 +272,10 @@ def create_listing():
                     "danger",
                 )
                 return render_template(
-                    "listings/listing_form.html", form=form, action="Create"
+                    "listings/listing_form.html",
+                    form=form,
+                    action="Create",
+                    page_title=create_title,
                 )
 
             # --- If commit succeeded: finalize file system changes ---
@@ -287,7 +316,12 @@ def create_listing():
                 return redirect(
                     url_for("listings.listing_detail", listing_id=listing.id)
                 )
-    return render_template("listings/listing_form.html", form=form, action="Create")
+    return render_template(
+        "listings/listing_form.html",
+        form=form,
+        action="Create",
+        page_title=create_title,
+    )
 
 
 @listings_bp.route("/edit/<int:listing_id>", methods=["GET", "POST"])
@@ -305,21 +339,29 @@ def edit_listing(listing_id):
     - On error: stay on listing detail with flash message.
     """
     listing = Listing.query.get_or_404(listing_id)
+    detail_title = listing.title
+    edit_title = "Edit listing"
 
     if current_user.id != listing.user_id and not current_user.is_admin:
         flash("You do not have permission to edit this listing.", "danger")
-        return render_template("listings/listing_detail.html", listing=listing)
+        return render_template(
+            "listings/listing_detail.html", listing=listing, page_title=detail_title
+        )
 
     if not current_app.config["TEMP_DIR"]:
         flash("Temp directory is not configured.", "danger")
-        return render_template("listings/listing_detail.html", listing=listing)
+        return render_template(
+            "listings/listing_detail.html", listing=listing, page_title=detail_title
+        )
 
     if not os.path.exists(current_app.config["TEMP_DIR"]):
         flash(
             "Temp directory does not exist. Please initialize the application.",
             "danger",
         )
-        return render_template("listings/listing_detail.html", listing=listing)
+        return render_template(
+            "listings/listing_detail.html", listing=listing, page_title=detail_title
+        )
 
     types = Type.query.order_by(Type.name).all()
     form = ListingForm()
@@ -476,6 +518,7 @@ def edit_listing(listing_id):
                                 form=form,
                                 listing=listing,
                                 action="Edit",
+                                page_title=edit_title,
                             )
 
             commit_success = False
@@ -524,6 +567,7 @@ def edit_listing(listing_id):
                     form=form,
                     listing=listing,
                     action="Save",
+                    page_title=edit_title,
                 )
 
             # --- If commit succeeded: finalize file system changes ---
@@ -581,7 +625,11 @@ def edit_listing(listing_id):
         form.price.data = listing.price
 
     return render_template(
-        "listings/listing_form.html", form=form, listing=listing, action="Edit"
+        "listings/listing_form.html",
+        form=form,
+        listing=listing,
+        action="Edit",
+        page_title=edit_title,
     )
 
 
@@ -596,21 +644,28 @@ def delete_listing(listing_id):
     - On success: if DB commit succeeds, deletes files from temp and redirect to index.
     """
     listing = Listing.query.get_or_404(listing_id)
+    detail_title = listing.title
 
     if current_user.id != listing.user_id and not current_user.is_admin:
         flash("You do not have permission to delete this listing.", "danger")
-        return render_template("listings/listing_detail.html", listing=listing)
+        return render_template(
+            "listings/listing_detail.html", listing=listing, page_title=detail_title
+        )
 
     if not current_app.config["TEMP_DIR"]:
         flash("Temp directory is not configured.", "danger")
-        return render_template("listings/listing_detail.html", listing=listing)
+        return render_template(
+            "listings/listing_detail.html", listing=listing, page_title=detail_title
+        )
 
     if not os.path.exists(current_app.config["TEMP_DIR"]):
         flash(
             "Temp directory does not exist. Please initialize the application.",
             "danger",
         )
-        return render_template("listings/listing_detail.html", listing=listing)
+        return render_template(
+            "listings/listing_detail.html", listing=listing, page_title=detail_title
+        )
 
     original_paths = []
     temp_paths = []
@@ -669,7 +724,9 @@ def delete_listing(listing_id):
         flash(
             f"Database error. Listing was not deleted. Files restored. ({e})", "danger"
         )
-        return render_template("listings/listing_detail.html", listing=listing)
+        return render_template(
+            "listings/listing_detail.html", listing=listing, page_title=detail_title
+        )
 
     # Permanently delete temped files after commit
     for temped in temp_paths:

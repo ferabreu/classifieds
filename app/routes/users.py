@@ -25,7 +25,9 @@ users_bp = Blueprint("users", __name__)
 @users_bp.route("/profile")
 @login_required
 def user_profile():
-    return render_template("users/user_profile.html", user=current_user)
+    return render_template(
+        "users/user_profile.html", user=current_user, page_title="Your profile"
+    )
 
 
 @users_bp.route("/profile/edit", methods=["GET", "POST"])
@@ -33,6 +35,7 @@ def user_profile():
 def edit_user_profile():
     user = current_user
     form = UserEditForm(obj=user)
+
     # Never allow changing is_admin on self-edit in user routes
     if hasattr(form, "is_admin"):
         delattr(form, "is_admin")
@@ -44,5 +47,9 @@ def edit_user_profile():
         flash("Profile updated.", "success")
         return redirect(url_for("users.user_profile"))
     return render_template(
-        "users/user_edit.html", form=form, user=user, admin_panel=False
+        "users/user_edit.html",
+        form=form,
+        user=user,
+        admin_panel=False,
+        page_title="Edit profile",
     )

@@ -65,6 +65,10 @@ def create_app(config_class=None):
             "services_type_id": services_type_id,
         }
 
+    @app.context_processor
+    def inject_title_separator():
+        return dict(title_separator=" | ")
+
     from .routes.admin import admin_bp
     from .routes.auth import auth_bp
     from .routes.errors import errors_bp

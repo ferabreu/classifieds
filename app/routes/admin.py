@@ -34,6 +34,7 @@ from .utils import admin_required
 # Blueprint for admin routes
 admin_bp = Blueprint("admin", __name__)
 
+
 # -------------------- DASHBOARD --------------------
 
 
@@ -54,6 +55,7 @@ def dashboard():
         type_count=type_count,
         category_count=category_count,
         listing_count=listing_count,
+        page_title="Admin dashboard",
     )
 
 
@@ -89,6 +91,7 @@ def users():
         pagination=pagination,
         sort=sort,
         direction=direction,
+        page_title="Manage users",
     )
 
 
@@ -100,7 +103,9 @@ def user_profile(user_id):
     Displays a user's profile page for admin review.
     """
     user = User.query.get_or_404(user_id)
-    return render_template("users/user_profile.html", user=user)
+    return render_template(
+        "users/user_profile.html", user=user, page_title="User profile"
+    )
 
 
 @admin_bp.route("/users/edit/<int:user_id>", methods=["GET", "POST"])
@@ -128,7 +133,11 @@ def edit_user(user_id):
         flash("User updated.", "success")
         return redirect(url_for("admin.users"))
     return render_template(
-        "users/user_edit.html", form=form, user=user, admin_panel=True
+        "users/user_edit.html",
+        form=form,
+        user=user,
+        admin_panel=True,
+        page_title="Edit user",
     )
 
 
@@ -162,7 +171,9 @@ def types():
     Lists all listing types in the system.
     """
     types = Type.query.order_by(Type.name).all()
-    return render_template("admin/admin_types.html", types=types)
+    return render_template(
+        "admin/admin_types.html", types=types, page_title="Manage types"
+    )
 
 
 @admin_bp.route("/types/new", methods=["GET", "POST"])
@@ -179,7 +190,12 @@ def new_type():
         db.session.commit()
         flash("Type created.", "success")
         return redirect(url_for("admin.types"))
-    return render_template("admin/admin_type_form.html", form=form, action="Create")
+    return render_template(
+        "admin/admin_type_form.html",
+        form=form,
+        action="Create",
+        page_title="Create type",
+    )
 
 
 @admin_bp.route("/types/edit/<int:type_id>", methods=["GET", "POST"])
@@ -197,7 +213,11 @@ def edit_type(type_id):
         flash("Type updated.", "success")
         return redirect(url_for("admin.types"))
     return render_template(
-        "admin/admin_type_form.html", form=form, action="Edit", type_obj=t
+        "admin/admin_type_form.html",
+        form=form,
+        action="Edit",
+        type_obj=t,
+        page_title="Edit type",
     )
 
 
@@ -231,7 +251,10 @@ def categories():
     categories = Category.query.order_by(Category.name).all()
     types = Type.query.order_by(Type.name).all()
     return render_template(
-        "admin/admin_categories.html", categories=categories, types=types
+        "admin/admin_categories.html",
+        categories=categories,
+        types=types,
+        page_title="Manage categories",
     )
 
 
@@ -250,7 +273,12 @@ def new_category():
         db.session.commit()
         flash("Category created.", "success")
         return redirect(url_for("admin.categories"))
-    return render_template("admin/admin_category_form.html", form=form, action="Create")
+    return render_template(
+        "admin/admin_category_form.html",
+        form=form,
+        action="Create",
+        page_title="Create category",
+    )
 
 
 @admin_bp.route("/categories/edit/<int:category_id>", methods=["GET", "POST"])
@@ -270,7 +298,11 @@ def edit_category(category_id):
         flash("Category updated.", "success")
         return redirect(url_for("admin.categories"))
     return render_template(
-        "admin/admin_category_form.html", form=form, action="Edit", category_obj=c
+        "admin/admin_category_form.html",
+        form=form,
+        action="Edit",
+        category_obj=c,
+        page_title="Edit category",
     )
 
 
@@ -323,6 +355,7 @@ def listings():
         pagination=pagination,
         sort=sort,
         direction=direction,
+        page_title="Manage listings",
     )
 
 
