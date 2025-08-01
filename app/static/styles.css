@@ -1,3 +1,14 @@
+/* Solves the vertical scrollbar effect (sometimes called "layout shift"):
+ when one page is just long enough to need a scrollbar and another isn't,
+ the presence or absence of the scrollbar shifts content horizontally.*/
+html {
+  /* Always reserve space for a scrollbar - fallback for old browsers */
+  overflow-y: scroll;
+
+  /* Modern solution for browsers that support it */
+  scrollbar-gutter: stable;
+}
+
 .navbar-row-gap {
     margin-top: -8px;
 }

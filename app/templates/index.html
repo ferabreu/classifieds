@@ -11,12 +11,12 @@
     {% if listings|length == 0 %}
         <p class="alert alert-info alert-heading mb-4">No listings found.</p>
     {% else %}
-        <div class="row row-cols-xxl-6 row-cols-xl-4 row-cols-lg-4 row-cols-md-3 row-cols-sm-2 row-cols-xs-2 g-4 mb-4 d-flex">
+        <div class="row row-cols-xxl-6 row-cols-xl-4 row-cols-lg-4 row-cols-md-3 row-cols-sm-2 row-cols-xs-2 g-4 mb-4">
 
             {% for listing in listings %}
                 <div class="col">
                     <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}" class="text-decoration-none text-reset">
-                        <div class="card" style="aspect-ratio: 3/4; width: 192px;">
+                        <div class="card" style="aspect-ratio: 3/4; max-width: 192px;">
                             {#
                                 The src attribute uses a Jinja inline conditional:
                                 - If listing.images exists and has a thumbnail_filename, it uses that image.
