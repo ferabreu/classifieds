@@ -22,6 +22,9 @@ class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), nullable=False)
     type_id = db.Column(db.Integer, db.ForeignKey("type.id"), nullable=False)
+    # Recursive fields for multi-level categories
+    parent_id = db.Column(db.Integer, db.ForeignKey("category.id"), nullable=True)
+    parent = db.relationship("Category", remote_side=[id], backref="children")
     listings = db.relationship("Listing", backref="category", lazy=True)
     __table_args__ = (db.UniqueConstraint("name", "type_id", name="_cat_type_uc"),)
 
