@@ -15,7 +15,7 @@
         <a href="{{
                  url_for('admin.edit_user', user_id=user.id)
                  if current_user.is_admin
-                 else url_for('users.edit_my_profile')
+                 else url_for('users.edit_user_profile')
                  }}" class="btn btn-primary">Edit Profile</a>
     {% endif %}
 
