@@ -1,8 +1,7 @@
 import os
 
-from config import DevelopmentConfig, ProductionConfig, TestingConfig
-
 from app import create_app
+from app.config import DevelopmentConfig, ProductionConfig, TestingConfig
 
 config_map = {
     "development": DevelopmentConfig,
