@@ -12,3 +12,12 @@ html {
 .navbar-row-gap {
     margin-top: -8px;
 }
+
+.card-dimensions {
+    aspect-ratio: 3/4;
+    width: 192px;
+}
+
+.card-img-top-fit {
+    object-fit: contain;
+}
