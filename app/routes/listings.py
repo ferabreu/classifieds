@@ -147,21 +147,17 @@ def create_listing():
             page_title=create_title,
         )
 
-    types = Type.query.order_by(Type.name).all()
-
-    form.type.choices = [(t.id, t.name) for t in types]
-    # Default to first type's categories
-    categories = Category.query.filter_by(type_id=types[0].id).all() if types else []
-    form.category.choices = [(c.id, c.name) for c in categories]
+    # ---- UPDATED: Only one Category model, hierarchical ----
+    # Show flat list of all categories, or ideally, render in a tree/cascading dropdown
+    categories = Category.query.order_by(Category.name).all()
+    form.category.choices = [
+        (c.id, c.get_full_name()) for c in categories
+    ]  # get_full_name() shows hierarchy
 
     if request.method == "POST":
-        # Update choices for type/category dropdowns in form
-        form.type.choices = [(t.id, t.name) for t in Type.query.order_by(Type.name)]
+        # On POST, just reload all categories (optional: could filter by parent if using cascading selects)
         form.category.choices = [
-            (c.id, c.name)
-            for c in Category.query.filter_by(type_id=form.type.data).order_by(
-                Category.name
-            )
+            (c.id, c.get_full_name()) for c in Category.query.order_by(Category.name)
         ]
         if form.validate_on_submit():
             listing = Listing(
@@ -169,8 +165,7 @@ def create_listing():
                 description=form.description.data,
                 price=form.price.data or 0,
                 user_id=current_user.id,
-                type_id=form.type.data,
-                category_id=form.category.data,
+                category_id=form.category.data,  # Only one category now!
             )
 
             upload_dir = current_app.config["UPLOAD_DIR"]
@@ -206,7 +201,6 @@ def create_listing():
                             added_files.append((unique_filename, thumbnail_filename))
                         else:
                             # If thumbnail creation fails, clean up and abort
-                            # Clean up current temp file
                             try:
                                 if os.path.exists(temp_path):
                                     os.remove(temp_path)
@@ -215,7 +209,6 @@ def create_listing():
                             except Exception:
                                 pass
 
-                            # Clean up any previously created temp files
                             for (
                                 prev_temp_path,
                                 _,
@@ -246,7 +239,6 @@ def create_listing():
 
             commit_success = False
             try:
-                # Add listing and new images to DB but don't move to final location yet
                 db.session.add(listing)
                 for unique_filename, thumbnail_filename in added_files:
                     image = ListingImage(
@@ -259,7 +251,6 @@ def create_listing():
                 commit_success = True
             except Exception as e:
                 db.session.rollback()
-                # Remove any temp-uploaded files
                 for temp_path, _, temp_thumb_path, _ in added_temp_paths:
                     try:
                         if os.path.exists(temp_path):
@@ -279,9 +270,7 @@ def create_listing():
                     page_title=create_title,
                 )
 
-            # --- If commit succeeded: finalize file system changes ---
             if commit_success:
-                # Only move images to UPLOAD_DIR after DB commit
                 for (
                     temp_path,
                     unique_filename,
@@ -298,7 +287,6 @@ def create_listing():
                             "warning",
                         )
 
-                    # Move thumbnail if it exists
                     if temp_thumb_path and thumbnail_filename:
                         final_thumb_path = os.path.join(
                             thumbnail_dir, thumbnail_filename
@@ -313,7 +301,6 @@ def create_listing():
                             )
 
                 flash("Listing created successfully!", "success")
-                # Redirect to detail page of the new listing
                 return redirect(
                     url_for("listings.listing_detail", listing_id=listing.id)
                 )
@@ -364,26 +351,21 @@ def edit_listing(listing_id):
             "listings/listing_detail.html", listing=listing, page_title=detail_title
         )
 
-    types = Type.query.order_by(Type.name).all()
+    # Remove Type model logic and refactor category logic for compatibility
+    categories = Category.query.order_by(Category.name).all()
     form = ListingForm()
-    form.type.choices = [(t.id, t.name) for t in types]
-    categories = Category.query.filter_by(type_id=listing.type_id).all()
     form.category.choices = [(c.id, c.name) for c in categories]
 
     if request.method == "POST":
-        # Update choices for type/category dropdowns in form
-        form.type.choices = [(t.id, t.name) for t in Type.query.order_by(Type.name)]
+        # Update choices for category dropdown in form
         form.category.choices = [
-            (c.id, c.name)
-            for c in Category.query.filter_by(type_id=form.type.data).order_by(
-                Category.name
-            )
+            (c.id, c.name) for c in Category.query.order_by(Category.name)
         ]
         if form.validate_on_submit():
             listing.title = form.title.data
             listing.description = form.description.data
             listing.price = form.price.data or 0
-            listing.type_id = form.type.data
+            # Only update category_id
             listing.category_id = form.category.data
 
             upload_dir = current_app.config["UPLOAD_DIR"]
@@ -466,7 +448,6 @@ def edit_listing(listing_id):
                             added_files.append((unique_filename, thumbnail_filename))
                         else:
                             # If thumbnail creation fails, clean up and abort
-                            # Clean up current temp file
                             try:
                                 if os.path.exists(temp_path):
                                     os.remove(temp_path)
@@ -475,7 +456,6 @@ def edit_listing(listing_id):
                             except Exception:
                                 pass
 
-                            # Clean up any previously created temp files
                             for (
                                 prev_temp_path,
                                 _,
@@ -620,7 +600,6 @@ def edit_listing(listing_id):
     else:
         # Only on GET: Pre-populate form fields from listing
         form.title.data = listing.title
-        form.type.data = listing.type_id
         form.category.data = listing.category_id
         form.description.data = listing.description
         form.price.data = listing.price
@@ -643,20 +622,40 @@ def delete_listing(listing_id):
     - Moves image files to a temp directory before DB operation.
     - On error: if DB commit fails, restores files from temp and stay on detail page with error flash.
     - On success: if DB commit succeeds, deletes files from temp and redirect to index.
+    - Hierarchical categories: properly display full category path in messages.
     """
     listing = Listing.query.get_or_404(listing_id)
     detail_title = listing.title
 
+    # Build the full hierarchical category path for display
+    def get_full_category_path(category):
+        names = []
+        node = category
+        while node:
+            names.append(node.name)
+            node = getattr(node, "parent", None)  # works if Category.parent is set
+        return " > ".join(reversed(names))
+
+    category_path = (
+        get_full_category_path(listing.category) if listing.category else None
+    )
+
     if current_user.id != listing.user_id and not current_user.is_admin:
         flash("You do not have permission to delete this listing.", "danger")
         return render_template(
-            "listings/listing_detail.html", listing=listing, page_title=detail_title
+            "listings/listing_detail.html",
+            listing=listing,
+            page_title=detail_title,
+            category_path=category_path,
         )
 
     if not current_app.config["TEMP_DIR"]:
         flash("Temp directory is not configured.", "danger")
         return render_template(
-            "listings/listing_detail.html", listing=listing, page_title=detail_title
+            "listings/listing_detail.html",
+            listing=listing,
+            page_title=detail_title,
+            category_path=category_path,
         )
 
     if not os.path.exists(current_app.config["TEMP_DIR"]):
@@ -665,7 +664,10 @@ def delete_listing(listing_id):
             "danger",
         )
         return render_template(
-            "listings/listing_detail.html", listing=listing, page_title=detail_title
+            "listings/listing_detail.html",
+            listing=listing,
+            page_title=detail_title,
+            category_path=category_path,
         )
 
     original_paths = []
@@ -726,7 +728,10 @@ def delete_listing(listing_id):
             f"Database error. Listing was not deleted. Files restored. ({e})", "danger"
         )
         return render_template(
-            "listings/listing_detail.html", listing=listing, page_title=detail_title
+            "listings/listing_detail.html",
+            listing=listing,
+            page_title=detail_title,
+            category_path=category_path,
         )
 
     # Permanently delete temped files after commit
@@ -745,5 +750,5 @@ def delete_listing(listing_id):
         except Exception:
             pass
 
-    flash("Listing deleted successfully!", "success")
+    flash(f"Listing deleted successfully! (Category: {category_path})", "success")
     return redirect(url_for("listings.index"))
