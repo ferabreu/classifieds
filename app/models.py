@@ -1,6 +1,6 @@
 # Created by GitHub Copilot for Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu)
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
@@ -9,24 +9,14 @@ from werkzeug.security import check_password_hash, generate_password_hash
 db = SQLAlchemy()
 
 
-class Type(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(32), unique=True, nullable=False)
-    categories = db.relationship(
-        "Category", backref="type", lazy=True, cascade="all, delete"
-    )
-    listings = db.relationship("Listing", backref="type", lazy=True)
-
-
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), nullable=False)
-    type_id = db.Column(db.Integer, db.ForeignKey("type.id"), nullable=False)
     # Recursive fields for multi-level categories
     parent_id = db.Column(db.Integer, db.ForeignKey("category.id"), nullable=True)
     parent = db.relationship("Category", remote_side=[id], backref="children")
     listings = db.relationship("Listing", backref="category", lazy=True)
-    __table_args__ = (db.UniqueConstraint("name", "type_id", name="_cat_type_uc"),)
+    __table_args__ = (db.UniqueConstraint("name", "parent_id", name="_cat_parent_uc"),)
 
 
 class User(UserMixin, db.Model):
@@ -52,9 +42,8 @@ class Listing(db.Model):
     description = db.Column(db.Text, nullable=False)
     price = db.Column(db.Float, default=0)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    type_id = db.Column(db.Integer, db.ForeignKey("type.id"), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey("category.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     images = db.relationship(
         "ListingImage", backref="listing", cascade="all, delete-orphan"
     )
