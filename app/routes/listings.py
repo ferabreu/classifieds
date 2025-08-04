@@ -31,7 +31,7 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from ..forms import ListingForm
-from ..models import Category, Listing, ListingImage, Type, db
+from ..models import Category, Listing, ListingImage, db
 from .utils import create_thumbnail
 
 listings_bp = Blueprint("listings", __name__)
@@ -55,39 +55,32 @@ def index():
     )
 
 
-@listings_bp.route("/type/<int:type_id>")
-def by_type(type_id):
-    """Show listings filtered by type."""
-    listings = (
-        Listing.query.filter_by(type_id=type_id)
-        .order_by(Listing.created_at.desc())
-        .all()
-    )
-    selected_type = Type.query.get_or_404(type_id)
+@listings_bp.route("/category/<int:category_id>")
+def by_category(category_id):
+    """Show listings filtered by category (top-level or subcategory)."""
+    page = request.args.get("page", 1, type=int)
+    per_page = 24
 
-    return render_template(
-        "index.html",
-        listings=listings,
-        selected_type=selected_type,
-        page_title=selected_type.name,
-    )
-
-
-@listings_bp.route("/type/<int:type_id>/category/<int:category_id>")
-def by_type_category(type_id, category_id):
-    """Show listings filtered by type and category."""
-    listings = (
-        Listing.query.filter_by(type_id=type_id, category_id=category_id)
-        .order_by(Listing.created_at.desc())
-        .all()
-    )
-    selected_type = Type.query.get_or_404(type_id)
+    # Get the selected category
     selected_category = Category.query.get_or_404(category_id)
 
+    # If it's a top-level category, show listings from all its subcategories
+    if selected_category.parent_id is None:
+        subcategory_ids = [c.id for c in selected_category.children]
+        listings_query = Listing.query.filter(Listing.category_id.in_(subcategory_ids))
+    else:
+        # If it's a subcategory, show only listings from this category
+        listings_query = Listing.query.filter_by(category_id=category_id)
+
+    pagination = listings_query.order_by(Listing.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    listings = pagination.items
+
     return render_template(
         "index.html",
         listings=listings,
-        selected_type=selected_type,
+        pagination=pagination,
         selected_category=selected_category,
         page_title=selected_category.name,
     )
@@ -103,14 +96,17 @@ def listing_detail(listing_id):
     )
 
 
-@listings_bp.route("/categories_for_type/<int:type_id>")
+@listings_bp.route("/subcategories_for_parent/<int:parent_id>")
 @login_required
-def categories_for_type(type_id):
+def subcategories_for_parent(parent_id):
     """
-    Returns a JSON list of categories for a given type. Used for dynamic form population.
+    Returns a JSON list of subcategories for a given parent category.
+    Used for dynamic form population.
     """
-    categories = Category.query.filter_by(type_id=type_id).order_by(Category.name).all()
-    category_list = [{"id": c.id, "name": c.name} for c in categories]
+    subcategories = (
+        Category.query.filter_by(parent_id=parent_id).order_by(Category.name).all()
+    )
+    category_list = [{"id": c.id, "name": c.name} for c in subcategories]
     return jsonify(category_list)
 
 

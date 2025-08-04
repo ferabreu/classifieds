@@ -47,7 +47,6 @@ class ResetPasswordForm(FlaskForm):
 
 class ListingForm(FlaskForm):
     title = StringField("Title", validators=[DataRequired(), Length(max=128)])
-    type = SelectField("Type", coerce=int, validators=[DataRequired()], choices=[])
     category = SelectField(
         "Category", coerce=int, validators=[DataRequired()], choices=[]
     )
@@ -88,14 +87,11 @@ class ListingForm(FlaskForm):
             raise ValidationError("Price must have at most 2 decimal places.")
 
 
-class TypeForm(FlaskForm):
-    name = StringField("Type Name", validators=[DataRequired(), Length(max=32)])
-    submit = SubmitField("Save")
-
-
 class CategoryForm(FlaskForm):
     name = StringField("Category Name", validators=[DataRequired(), Length(max=64)])
-    type_id = SelectField("Type", coerce=int, validators=[DataRequired()])
+    parent_id = SelectField(
+        "Parent Category", coerce=int, validators=[Optional()], choices=[]
+    )
     submit = SubmitField("Save")
 
 
