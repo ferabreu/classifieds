@@ -9,6 +9,7 @@ Admin Blueprint routes and logic for Flask app.
 
 This module contains administrative views and utilities, including user, type, category, and listing management.
 It ensures only admin users (with is_admin=True) can access these endpoints, and handles deletion of related images on the filesystem.
+Category admin now supports hierarchical categories (parent-child).
 """
 
 import os
@@ -18,7 +19,6 @@ from flask import (
     Blueprint,
     current_app,
     flash,
-    jsonify,
     redirect,
     render_template,
     request,
@@ -27,13 +27,11 @@ from flask import (
 from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload
 
-from ..forms import CategoryForm, TypeForm, UserEditForm
-from ..models import Category, Listing, Type, User, db
+from ..forms import CategoryForm, UserEditForm
+from ..models import Category, Listing, User, db
 from .utils import admin_required
 
-# Blueprint for admin routes
 admin_bp = Blueprint("admin", __name__)
-
 
 # -------------------- DASHBOARD --------------------
 
@@ -42,17 +40,13 @@ admin_bp = Blueprint("admin", __name__)
 @login_required
 @admin_required
 def dashboard():
-    """
-    Renders the admin dashboard with simple statistics on users, types, categories, and listings.
-    """
+    """Renders the admin dashboard with statistics on users, categories, listings."""
     user_count = User.query.count()
-    type_count = Type.query.count()
     category_count = Category.query.count()
     listing_count = Listing.query.count()
     return render_template(
         "admin/admin_dashboard.html",
         user_count=user_count,
-        type_count=type_count,
         category_count=category_count,
         listing_count=listing_count,
         page_title="Admin dashboard",
@@ -66,16 +60,14 @@ def dashboard():
 @login_required
 @admin_required
 def users():
-    """
-    Lists all users in the system, with sorting and pagination.
-    """
+    """Lists all users in the system, with sorting and pagination."""
     page = request.args.get("page", 1, type=int)
     sort = request.args.get("sort", "email")
     direction = request.args.get("direction", "asc")
 
     sort_column_map = {
         "email": User.email,
-        "name": User.first_name,  # "Name" column sorts by first_name
+        "name": User.first_name,
         "is_admin": User.is_admin,
         "is_ldap_user": User.is_ldap_user,
         "id": User.id,
@@ -99,9 +91,7 @@ def users():
 @login_required
 @admin_required
 def user_profile(user_id):
-    """
-    Displays a user's profile page for admin review.
-    """
+    """Displays a user's profile page for admin review."""
     user = User.query.get_or_404(user_id)
     return render_template(
         "users/user_profile.html", user=user, page_title="User profile"
@@ -119,7 +109,6 @@ def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     form = UserEditForm(obj=user)
     if form.validate_on_submit():
-        # Prevent removing the last admin
         if form.is_admin.data is False:
             admins = User.query.filter_by(is_admin=True).count()
             if admins == 1 and user.is_admin:
@@ -145,12 +134,9 @@ def edit_user(user_id):
 @login_required
 @admin_required
 def delete_user(user_id):
-    """
-    Allows admins to delete a user, except for the last admin user.
-    """
+    """Allows admins to delete a user, except for the last admin user."""
     user = User.query.get_or_404(user_id)
     admins = User.query.filter_by(is_admin=True).count()
-    # Prevent deletion if this is the last admin
     if admins == 1 and user.is_admin:
         flash("Must have at least one admin user in the system.", "danger")
         return redirect(url_for("admin.users"))
@@ -158,84 +144,6 @@ def delete_user(user_id):
     db.session.commit()
     flash("User deleted.", "success")
     return redirect(url_for("admin.users"))
-
-
-# -------------------- TYPE ADMIN --------------------
-
-
-@admin_bp.route("/types")
-@login_required
-@admin_required
-def types():
-    """
-    Lists all listing types in the system.
-    """
-    types = Type.query.order_by(Type.name).all()
-    return render_template(
-        "admin/admin_types.html", types=types, page_title="Manage types"
-    )
-
-
-@admin_bp.route("/types/new", methods=["GET", "POST"])
-@login_required
-@admin_required
-def new_type():
-    """
-    Allows admins to create a new listing type.
-    """
-    form = TypeForm()
-    if form.validate_on_submit():
-        t = Type(name=form.name.data)
-        db.session.add(t)
-        db.session.commit()
-        flash("Type created.", "success")
-        return redirect(url_for("admin.types"))
-    return render_template(
-        "admin/admin_type_form.html",
-        form=form,
-        action="Create",
-        page_title="Create type",
-    )
-
-
-@admin_bp.route("/types/edit/<int:type_id>", methods=["GET", "POST"])
-@login_required
-@admin_required
-def edit_type(type_id):
-    """
-    Allows admins to edit an existing type's name.
-    """
-    t = Type.query.get_or_404(type_id)
-    form = TypeForm(obj=t)
-    if form.validate_on_submit():
-        t.name = form.name.data
-        db.session.commit()
-        flash("Type updated.", "success")
-        return redirect(url_for("admin.types"))
-    return render_template(
-        "admin/admin_type_form.html",
-        form=form,
-        action="Edit",
-        type_obj=t,
-        page_title="Edit type",
-    )
-
-
-@admin_bp.route("/types/delete/<int:type_id>", methods=["POST"])
-@login_required
-@admin_required
-def delete_type(type_id):
-    """
-    Allows admins to delete a type only if it has no categories.
-    """
-    t = Type.query.get_or_404(type_id)
-    if t.categories:  # If there are any categories, do not delete
-        flash("You must delete all categories under this type first.", "danger")
-        return redirect(url_for("admin.types"))
-    db.session.delete(t)
-    db.session.commit()
-    flash("Type deleted.", "success")
-    return redirect(url_for("admin.types"))
 
 
 # -------------------- CATEGORY ADMIN --------------------
@@ -246,14 +154,13 @@ def delete_type(type_id):
 @admin_required
 def categories():
     """
-    Lists all categories and types for admin management.
+    Lists all categories for admin management.
+    Shows hierarchy: parent and children.
     """
     categories = Category.query.order_by(Category.name).all()
-    types = Type.query.order_by(Type.name).all()
     return render_template(
         "admin/admin_categories.html",
         categories=categories,
-        types=types,
         page_title="Manage categories",
     )
 
@@ -263,12 +170,18 @@ def categories():
 @admin_required
 def new_category():
     """
-    Allows admins to create a new category and assign it to a type.
+    Allows admins to create a new category.
+    Assigns a parent category if desired (for hierarchy).
     """
     form = CategoryForm()
-    form.type_id.choices = [(t.id, t.name) for t in Type.query.order_by(Type.name)]
+    # Populate parent_id choices: show all categories except self (no actual self yet)
+    form.parent_id.choices = [(0, "- None -")] + [
+        (cat.id, cat.get_full_path())
+        for cat in Category.query.order_by(Category.name).all()
+    ]
     if form.validate_on_submit():
-        c = Category(name=form.name.data, type_id=form.type_id.data)
+        parent_id = form.parent_id.data if form.parent_id.data != 0 else None
+        c = Category(name=form.name.data, parent_id=parent_id)
         db.session.add(c)
         db.session.commit()
         flash("Category created.", "success")
@@ -286,17 +199,43 @@ def new_category():
 @admin_required
 def edit_category(category_id):
     """
-    Allows admins to edit a category's name and type assignment.
+    Allows admins to edit a category's name and parent.
+    Prevents cyclic parent assignment.
     """
     c = Category.query.get_or_404(category_id)
     form = CategoryForm(obj=c)
-    form.type_id.choices = [(t.id, t.name) for t in Type.query.order_by(Type.name)]
-    if form.validate_on_submit():
-        c.name = form.name.data
-        c.type_id = form.type_id.data
-        db.session.commit()
-        flash("Category updated.", "success")
-        return redirect(url_for("admin.categories"))
+    # Exclude self and descendants from parent choices to avoid cycles
+    all_categories = Category.query.order_by(Category.name).all()
+    excluded_ids = [c.id] + c.get_descendant_ids()
+    parent_choices = [(0, "- None -")] + [
+        (cat.id, cat.get_full_path())
+        for cat in all_categories
+        if cat.id not in excluded_ids
+    ]
+    form.parent_id.choices = parent_choices
+    if request.method == "POST":
+        if form.validate_on_submit():
+            c.name = form.name.data
+            new_parent_id = form.parent_id.data if form.parent_id.data != 0 else None
+            # Prevent setting self or descendant as parent
+            if new_parent_id in excluded_ids:
+                flash(
+                    "Cannot set category itself or its descendant as parent.", "danger"
+                )
+                return render_template(
+                    "admin/admin_category_form.html",
+                    form=form,
+                    action="Edit",
+                    category_obj=c,
+                    page_title="Edit category",
+                )
+            c.parent_id = new_parent_id
+            db.session.commit()
+            flash("Category updated.", "success")
+            return redirect(url_for("admin.categories"))
+    else:
+        # Pre-select parent_id in form
+        form.parent_id.data = c.parent_id if c.parent_id else 0
     return render_template(
         "admin/admin_category_form.html",
         form=form,
@@ -312,6 +251,7 @@ def edit_category(category_id):
 def delete_category(category_id):
     """
     Allows admins to delete a category.
+    Also deletes all descendant subcategories (cascade).
     """
     c = Category.query.get_or_404(category_id)
     db.session.delete(c)
@@ -327,18 +267,14 @@ def delete_category(category_id):
 @login_required
 @admin_required
 def listings():
-    """
-    Lists all listings (ordered by least recent) for admin management.
-    """
+    """Lists all listings (ordered by least recent) for admin management."""
     page = request.args.get("page", 1, type=int)
-
     sort = request.args.get("sort", "created_at")
     direction = request.args.get("direction", "desc")
 
     sort_column_map = {
         "title": Listing.title,
         "price": Listing.price,
-        "type": Listing.type_id,
         "category": Listing.category_id,
         "user": Listing.user_id,
         "created_at": Listing.created_at,
@@ -366,17 +302,11 @@ def delete_listing(listing_id):
     """
     Deletes a single listing and its associated image files using a 'temp' strategy
     to approximate atomicity between database and filesystem operations.
-
-    - Assumes the permanent temp directory exists (created at app init and referenced in config as TEMP_DIR).
-    - Moves files to the temp before DB operation.
-    - If DB commit fails, restores files from temp.
-    - If DB commit succeeds, deletes files from temp.
     """
     listing = Listing.query.options(joinedload(Listing.images)).get_or_404(listing_id)
     original_paths = []
     temp_paths = []
 
-    # Move all image files to the temp directory
     for image in listing.images:
         orig = os.path.join(current_app.config["UPLOAD_DIR"], image.filename)
         temped = os.path.join(current_app.config["TEMP_DIR"], image.filename)
@@ -385,30 +315,26 @@ def delete_listing(listing_id):
             original_paths.append(orig)
             temp_paths.append(temped)
         except FileNotFoundError:
-            # If file doesn't exist, just skip it
             pass
 
     try:
-        # Attempt to delete the listing from the DB
         db.session.delete(listing)
         db.session.commit()
-    except Exception as e:
-        # If DB delete fails, move files back from temp
+    except Exception:
         for orig, temped in zip(original_paths, temp_paths):
             try:
                 shutil.move(temped, orig)
             except Exception:
-                pass  # Could log this if desired
+                pass
         db.session.rollback()
         flash("Database error. Listing was not deleted. Files restored.", "danger")
         return redirect(url_for("admin.listings"))
 
-    # If DB commit succeeded, permanently delete files from temp
     for temped in temp_paths:
         try:
             os.remove(temped)
         except Exception:
-            pass  # Could log this if desired
+            pass
 
     flash("Listing deleted.", "success")
     return redirect(url_for("admin.listings"))
@@ -419,19 +345,13 @@ def delete_listing(listing_id):
 @admin_required
 def delete_selected_listings():
     """
-    Deletes multiple selected listings and all their associated image files using a 'temp' strategy
-    to approximate atomicity between database and filesystem operations.
-
-    - Moves files to the temp before DB operation.
-    - If DB commit fails, restores files from temp.
-    - If DB commit succeeds, deletes files from temp and also sweeps upload dir for any remaining orphans.
+    Deletes multiple selected listings and all their associated image files using a 'temp' strategy.
     """
     selected_ids = request.form.getlist("selected_listings")
     if not selected_ids:
         flash("No listings selected for deletion.", "warning")
         return redirect(url_for("admin.listings"))
 
-    # Eagerly load images for all selected listings
     listings = (
         Listing.query.options(joinedload(Listing.images))
         .filter(Listing.id.in_(selected_ids))
@@ -441,7 +361,6 @@ def delete_selected_listings():
     temp_paths = []
     all_image_filenames = set()
 
-    # Move all related image files to temp and track all filenames
     for listing in listings:
         for image in listing.images:
             all_image_filenames.add(image.filename)
@@ -452,16 +371,13 @@ def delete_selected_listings():
                 original_paths.append(orig)
                 temp_paths.append(temped)
             except FileNotFoundError:
-                # If file doesn't exist, just skip it
                 pass
 
     try:
-        # Attempt to delete listings from the DB in a single transaction
         for listing in listings:
             db.session.delete(listing)
         db.session.commit()
-    except Exception as e:
-        # If DB delete fails, move files back from temp
+    except Exception:
         for orig, temped in zip(original_paths, temp_paths):
             try:
                 shutil.move(temped, orig)
@@ -471,24 +387,19 @@ def delete_selected_listings():
         flash("Database error. Listings were not deleted. Files restored.", "danger")
         return redirect(url_for("admin.listings"))
 
-    # If DB commit succeeded, permanently delete files from temp
     for temped in temp_paths:
         try:
             os.remove(temped)
         except Exception:
-            pass  # Could log this if desired
+            pass
 
-    # Final sweep: delete any remaining files in upload dir associated with deleted listings
     for filename in all_image_filenames:
         path = os.path.join(current_app.config["UPLOAD_DIR"], filename)
         try:
             if os.path.exists(path):
                 os.remove(path)
         except Exception:
-            pass  # Could log this if desired
+            pass
 
     flash(f"Deleted {len(listings)} listing(s).", "success")
     return redirect(url_for("admin.listings"))
-
-
-# ----- End of admin.py -----
