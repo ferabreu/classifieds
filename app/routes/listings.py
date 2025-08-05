@@ -3,6 +3,8 @@
 # Licensed under the MIT License. See LICENSE file in the project root for full license information.
 #
 """
+This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+
 Routes for listings management in the classifieds Flask app.
 
 Implements ACID-like file handling for listing image uploads and deletions:
