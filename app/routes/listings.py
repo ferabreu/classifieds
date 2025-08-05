@@ -37,6 +37,27 @@ from .utils import create_thumbnail
 listings_bp = Blueprint("listings", __name__)
 
 
+# --- Helper for hierarchical category full path ---
+def get_full_path(category):
+    """Return the full hierarchical path for a category, e.g. 'Electronics > Computers > Laptops'"""
+    names = []
+    node = category
+    while node:
+        names.append(node.name)
+        node = getattr(node, "parent", None)
+    return " > ".join(reversed(names))
+
+
+def get_descendant_ids(category):
+    """
+    Recursively get all descendant category ids, including the category itself.
+    """
+    ids = [category.id]
+    for child in getattr(category, "children", []):
+        ids += get_descendant_ids(child)
+    return ids
+
+
 @listings_bp.route("/")
 def index():
     """Show all listings, newest first, paginated."""
@@ -57,32 +78,31 @@ def index():
 
 @listings_bp.route("/category/<int:category_id>")
 def by_category(category_id):
-    """Show listings filtered by category (top-level or subcategory)."""
+    """Show listings filtered by category (top-level or subcategory), recursively."""
     page = request.args.get("page", 1, type=int)
     per_page = 24
 
     # Get the selected category
     selected_category = Category.query.get_or_404(category_id)
 
-    # If it's a top-level category, show listings from all its subcategories
-    if selected_category.parent_id is None:
-        subcategory_ids = [c.id for c in selected_category.children]
-        listings_query = Listing.query.filter(Listing.category_id.in_(subcategory_ids))
-    else:
-        # If it's a subcategory, show only listings from this category
-        listings_query = Listing.query.filter_by(category_id=category_id)
+    # Recursively get all descendant categories (including self)
+    all_cat_ids = get_descendant_ids(selected_category)
+    listings_query = Listing.query.filter(Listing.category_id.in_(all_cat_ids))
 
     pagination = listings_query.order_by(Listing.created_at.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
     listings = pagination.items
 
+    selected_category_path = selected_category.get_full_path()
+
     return render_template(
         "index.html",
         listings=listings,
         pagination=pagination,
         selected_category=selected_category,
-        page_title=selected_category.name,
+        selected_category_path=selected_category_path,
+        page_title=selected_category_path,
     )
 
 
@@ -90,9 +110,13 @@ def by_category(category_id):
 def listing_detail(listing_id):
     """Show details for a single listing."""
     listing = Listing.query.get_or_404(listing_id)
+    category_path = get_full_path(listing.category) if listing.category else None
 
     return render_template(
-        "listings/listing_detail.html", listing=listing, page_title=listing.title
+        "listings/listing_detail.html",
+        listing=listing,
+        page_title=listing.title,
+        category_path=category_path,
     )
 
 
@@ -106,7 +130,7 @@ def subcategories_for_parent(parent_id):
     subcategories = (
         Category.query.filter_by(parent_id=parent_id).order_by(Category.name).all()
     )
-    category_list = [{"id": c.id, "name": c.name} for c in subcategories]
+    category_list = [{"id": c.id, "name": get_full_path(c)} for c in subcategories]
     return jsonify(category_list)
 
 
@@ -147,17 +171,13 @@ def create_listing():
             page_title=create_title,
         )
 
-    # ---- UPDATED: Only one Category model, hierarchical ----
-    # Show flat list of all categories, or ideally, render in a tree/cascading dropdown
+    # Hierarchical category choices
     categories = Category.query.order_by(Category.name).all()
-    form.category.choices = [
-        (c.id, c.get_full_name()) for c in categories
-    ]  # get_full_name() shows hierarchy
+    form.category.choices = [(c.id, get_full_path(c)) for c in categories]
 
     if request.method == "POST":
-        # On POST, just reload all categories (optional: could filter by parent if using cascading selects)
         form.category.choices = [
-            (c.id, c.get_full_name()) for c in Category.query.order_by(Category.name)
+            (c.id, get_full_path(c)) for c in Category.query.order_by(Category.name)
         ]
         if form.validate_on_submit():
             listing = Listing(
@@ -165,7 +185,7 @@ def create_listing():
                 description=form.description.data,
                 price=form.price.data or 0,
                 user_id=current_user.id,
-                category_id=form.category.data,  # Only one category now!
+                category_id=form.category.data,
             )
 
             upload_dir = current_app.config["UPLOAD_DIR"]
@@ -351,32 +371,26 @@ def edit_listing(listing_id):
             "listings/listing_detail.html", listing=listing, page_title=detail_title
         )
 
-    # Remove Type model logic and refactor category logic for compatibility
     categories = Category.query.order_by(Category.name).all()
     form = ListingForm()
-    form.category.choices = [(c.id, c.name) for c in categories]
+    form.category.choices = [(c.id, get_full_path(c)) for c in categories]
 
     if request.method == "POST":
-        # Update choices for category dropdown in form
         form.category.choices = [
-            (c.id, c.name) for c in Category.query.order_by(Category.name)
+            (c.id, get_full_path(c)) for c in Category.query.order_by(Category.name)
         ]
         if form.validate_on_submit():
             listing.title = form.title.data
             listing.description = form.description.data
             listing.price = form.price.data or 0
-            # Only update category_id
             listing.category_id = form.category.data
 
             upload_dir = current_app.config["UPLOAD_DIR"]
             temp_dir = current_app.config["TEMP_DIR"]
             thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
 
-            # For rollback
-            moved_to_temp = (
-                []
-            )  # Images "deleted" from listing, but reversible until commit
-            added_temp_paths = []  # New images, staged in TEMP_DIR
+            moved_to_temp = []
+            added_temp_paths = []
             added_files = []
 
             # Image deletions: move to temp, do not delete yet (enables rollback on DB error)
@@ -388,7 +402,6 @@ def edit_listing(listing_id):
                         image_path = os.path.join(upload_dir, image.filename)
                         temp_path = os.path.join(temp_dir, image.filename)
 
-                        # Handle thumbnail as well
                         thumbnail_path = None
                         temp_thumb_path = None
                         if image.thumbnail_filename:
@@ -411,7 +424,6 @@ def edit_listing(listing_id):
                                     )
                                 )
 
-                                # Move thumbnail if it exists
                                 if thumbnail_path and os.path.exists(thumbnail_path):
                                     shutil.move(thumbnail_path, temp_thumb_path)
 
@@ -435,7 +447,6 @@ def edit_listing(listing_id):
 
                         file.save(temp_path)
 
-                        # Create thumbnail
                         if create_thumbnail(temp_path, temp_thumb_path):
                             added_temp_paths.append(
                                 (
@@ -447,7 +458,6 @@ def edit_listing(listing_id):
                             )
                             added_files.append((unique_filename, thumbnail_filename))
                         else:
-                            # If thumbnail creation fails, clean up and abort
                             try:
                                 if os.path.exists(temp_path):
                                     os.remove(temp_path)
@@ -472,7 +482,6 @@ def edit_listing(listing_id):
                                 except Exception:
                                     pass
 
-                            # Restore deleted images on thumbnail error
                             for (
                                 orig_path,
                                 temp_path,
@@ -504,7 +513,6 @@ def edit_listing(listing_id):
 
             commit_success = False
             try:
-                # Add new images to DB but don't move to final location yet
                 for unique_filename, thumbnail_filename in added_files:
                     image = ListingImage(
                         filename=unique_filename,
@@ -516,7 +524,6 @@ def edit_listing(listing_id):
                 commit_success = True
             except Exception as e:
                 db.session.rollback()
-                # Restore deleted images on DB error
                 for (
                     orig_path,
                     temp_path,
@@ -530,7 +537,6 @@ def edit_listing(listing_id):
                             shutil.move(temp_thumb_path, thumbnail_path)
                     except Exception:
                         pass
-                # Remove any temp-uploaded files
                 for temp_path, _, temp_thumb_path, _ in added_temp_paths:
                     try:
                         if os.path.exists(temp_path):
@@ -551,9 +557,7 @@ def edit_listing(listing_id):
                     page_title=edit_title,
                 )
 
-            # --- If commit succeeded: finalize file system changes ---
             if commit_success:
-                # Delete images from TEMP_DIR after DB commit (no longer needed)
                 for _, temp_path, _, temp_thumb_path in moved_to_temp:
                     try:
                         if os.path.exists(temp_path):
@@ -562,7 +566,6 @@ def edit_listing(listing_id):
                             os.remove(temp_thumb_path)
                     except Exception:
                         pass
-                # Move new images from temp to upload dir
                 for (
                     temp_path,
                     unique_filename,
@@ -579,7 +582,6 @@ def edit_listing(listing_id):
                             "warning",
                         )
 
-                    # Move thumbnail if it exists
                     if temp_thumb_path and thumbnail_filename:
                         final_thumb_path = os.path.join(
                             thumbnail_dir, thumbnail_filename
@@ -598,11 +600,12 @@ def edit_listing(listing_id):
                     url_for("listings.listing_detail", listing_id=listing.id)
                 )
     else:
-        # Only on GET: Pre-populate form fields from listing
         form.title.data = listing.title
         form.category.data = listing.category_id
         form.description.data = listing.description
         form.price.data = listing.price
+
+    category_path = get_full_path(listing.category) if listing.category else None
 
     return render_template(
         "listings/listing_form.html",
@@ -610,6 +613,7 @@ def edit_listing(listing_id):
         listing=listing,
         action="Edit",
         page_title=edit_title,
+        category_path=category_path,
     )
 
 
@@ -626,19 +630,7 @@ def delete_listing(listing_id):
     """
     listing = Listing.query.get_or_404(listing_id)
     detail_title = listing.title
-
-    # Build the full hierarchical category path for display
-    def get_full_category_path(category):
-        names = []
-        node = category
-        while node:
-            names.append(node.name)
-            node = getattr(node, "parent", None)  # works if Category.parent is set
-        return " > ".join(reversed(names))
-
-    category_path = (
-        get_full_category_path(listing.category) if listing.category else None
-    )
+    category_path = get_full_path(listing.category) if listing.category else None
 
     if current_user.id != listing.user_id and not current_user.is_admin:
         flash("You do not have permission to delete this listing.", "danger")
@@ -680,7 +672,6 @@ def delete_listing(listing_id):
         orig = os.path.join(current_app.config["UPLOAD_DIR"], image.filename)
         temped = os.path.join(current_app.config["TEMP_DIR"], image.filename)
 
-        # Handle thumbnail
         orig_thumb = None
         temped_thumb = None
         if image.thumbnail_filename:
@@ -697,7 +688,6 @@ def delete_listing(listing_id):
                 original_paths.append(orig)
                 temp_paths.append(temped)
 
-                # Move thumbnail if it exists
                 if orig_thumb and os.path.exists(orig_thumb):
                     shutil.move(orig_thumb, temped_thumb)
                     original_thumb_paths.append(orig_thumb)
@@ -709,14 +699,12 @@ def delete_listing(listing_id):
         db.session.delete(listing)
         db.session.commit()
     except Exception as e:
-        # Rollback: restore files if DB commit failed
         for orig, temped in zip(original_paths, temp_paths):
             try:
                 if os.path.exists(temped):
                     shutil.move(temped, orig)
             except Exception:
                 pass
-        # Restore thumbnails
         for orig_thumb, temped_thumb in zip(original_thumb_paths, temp_thumb_paths):
             try:
                 if os.path.exists(temped_thumb):
@@ -734,7 +722,6 @@ def delete_listing(listing_id):
             category_path=category_path,
         )
 
-    # Permanently delete temped files after commit
     for temped in temp_paths:
         try:
             if os.path.exists(temped):
@@ -742,7 +729,6 @@ def delete_listing(listing_id):
         except Exception:
             pass
 
-    # Permanently delete temped thumbnails after commit
     for temped_thumb in temp_thumb_paths:
         try:
             if os.path.exists(temped_thumb):
