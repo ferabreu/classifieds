@@ -18,6 +18,20 @@ class Category(db.Model):
     listings = db.relationship("Listing", backref="category", lazy=True)
     __table_args__ = (db.UniqueConstraint("name", "parent_id", name="_cat_parent_uc"),)
 
+    def get_full_name(self):
+        names = []
+        node = self
+        while node:
+            names.append(node.name)
+            node = node.parent
+        return " > ".join(reversed(names))
+
+    def get_descendant_ids(self):
+        ids = [self.id]
+        for child in self.children:
+            ids += child.get_descendant_ids()
+        return ids
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
