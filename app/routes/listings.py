@@ -1,18 +1,3 @@
-# Copyright (c) 2025 Fernando "ferabreu" Mees Abreu
-#
-# Licensed under the MIT License. See LICENSE file in the project root for full license information.
-#
-"""
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
-
-Routes for listings management in the classifieds Flask app.
-
-Implements ACID-like file handling for listing image uploads and deletions:
-- Images are first moved to a temp directory until DB commits succeed,
-  ensuring DB and storage consistency even on errors.
-- Only listing owners or admins can edit/delete listings.
-"""
-
 import os
 import shutil
 import uuid
@@ -36,20 +21,11 @@ from .utils import create_thumbnail
 
 listings_bp = Blueprint("listings", __name__)
 
-# === Configuration values ===
-# These are set from Flask app config for file storage directories.
-UPLOAD_DIR = current_app.config["UPLOAD_DIR"]
-TEMP_DIR = current_app.config["TEMP_DIR"]
-THUMBNAIL_DIR = current_app.config["THUMBNAIL_DIR"]
-
 # === Routes ===
 
 
 @listings_bp.route("/")
 def index():
-    """
-    Display all listings, newest first, paginated.
-    """
     page = request.args.get("page", 1, type=int)
     per_page = 24  # Fits the grid layout in the UI
     pagination = Listing.query.order_by(Listing.created_at.desc()).paginate(
@@ -67,11 +43,6 @@ def index():
 
 @listings_bp.route("/category/<int:category_id>")
 def category_listings(category_id):
-    """
-    Display listings filtered by category and its descendants.
-
-    Uses Category.get_descendant_ids() to include all subcategories.
-    """
     page = request.args.get("page", 1, type=int)
     per_page = 24
 
@@ -97,11 +68,6 @@ def category_listings(category_id):
 
 @listings_bp.route("/listing/<int:listing_id>")
 def listing_detail(listing_id):
-    """
-    Display details for a single listing.
-
-    Shows category path (breadcrumb) for navigation context.
-    """
     listing = Listing.query.get_or_404(listing_id)
     category = listing.category
     category_path = category.get_full_path() if category else None
@@ -118,10 +84,6 @@ def listing_detail(listing_id):
 @listings_bp.route("/subcategories_for_parent/<int:parent_id>")
 @login_required
 def subcategories_for_parent(parent_id):
-    """
-    Returns a JSON list of subcategories for a given parent category.
-    Used for dynamic form population (AJAX/chained selects).
-    """
     subcategories = (
         Category.query.filter_by(parent_id=parent_id).order_by(Category.name).all()
     )
@@ -134,21 +96,12 @@ def subcategories_for_parent(parent_id):
 @listings_bp.route("/new", methods=["GET", "POST"])
 @login_required
 def create_listing():
-    """
-    Create a new listing with ACID-like file handling using TEMP_DIR.
-
-    Steps:
-    - Display form.
-    - Validate submission.
-    - Stage image files in TEMP_DIR.
-    - On DB commit success, move images/thumbnails to final directory.
-    - On DB failure, remove staged files.
-    """
     form = ListingForm()
     page_title = "New listing"
 
-    # Defensive: Temp directory must be configured and exist
-    if not TEMP_DIR:
+    temp_dir = current_app.config["TEMP_DIR"]
+
+    if not temp_dir:
         flash("Temp directory is not configured.", "danger")
         return render_template(
             "listings/listing_form.html",
@@ -156,7 +109,7 @@ def create_listing():
             action="Create",
             page_title=page_title,
         )
-    if not os.path.exists(TEMP_DIR):
+    if not os.path.exists(temp_dir):
         flash(
             "Temp directory does not exist. Please initialize the application.",
             "danger",
@@ -196,8 +149,8 @@ def create_listing():
                         ext = os.path.splitext(secure_filename(file.filename))[1]
                         unique_filename = f"{uuid.uuid4().hex}{ext}"
                         thumbnail_filename = f"{uuid.uuid4().hex}.jpg"
-                        temp_path = os.path.join(TEMP_DIR, unique_filename)
-                        temp_thumb_path = os.path.join(TEMP_DIR, thumbnail_filename)
+                        temp_path = os.path.join(temp_dir, unique_filename)
+                        temp_thumb_path = os.path.join(temp_dir, thumbnail_filename)
                         file.save(temp_path)
                         # Create thumbnail
                         if create_thumbnail(temp_path, temp_thumb_path):
@@ -211,7 +164,6 @@ def create_listing():
                             )
                             added_files.append((unique_filename, thumbnail_filename))
                         else:
-                            # Thumbnail creation failed: clean up staged files and abort
                             try:
                                 if os.path.exists(temp_path):
                                     os.remove(temp_path)
@@ -247,7 +199,6 @@ def create_listing():
 
             commit_success = False
             try:
-                # Add listing and images to DB
                 db.session.add(listing)
                 for unique_filename, thumbnail_filename in added_files:
                     image = ListingImage(
@@ -259,7 +210,6 @@ def create_listing():
                 db.session.commit()
                 commit_success = True
             except Exception as e:
-                # DB commit failed: rollback and clean up staged files
                 db.session.rollback()
                 for temp_path, _, temp_thumb_path, _ in added_temp_paths:
                     try:
@@ -281,14 +231,15 @@ def create_listing():
                 )
 
             if commit_success:
-                # Move staged files to permanent storage
+                upload_dir = current_app.config["UPLOAD_DIR"]
+                thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
                 for (
                     temp_path,
                     unique_filename,
                     temp_thumb_path,
                     thumbnail_filename,
                 ) in added_temp_paths:
-                    final_path = os.path.join(UPLOAD_DIR, unique_filename)
+                    final_path = os.path.join(upload_dir, unique_filename)
                     try:
                         if os.path.exists(temp_path):
                             shutil.move(temp_path, final_path)
@@ -299,7 +250,7 @@ def create_listing():
                         )
                     if temp_thumb_path and thumbnail_filename:
                         final_thumb_path = os.path.join(
-                            THUMBNAIL_DIR, thumbnail_filename
+                            thumbnail_dir, thumbnail_filename
                         )
                         try:
                             if os.path.exists(temp_thumb_path):
@@ -321,16 +272,6 @@ def create_listing():
 @listings_bp.route("/edit/<int:listing_id>", methods=["GET", "POST"])
 @login_required
 def edit_listing(listing_id):
-    """
-    Edit an existing listing with ACID-like file handling using TEMP_DIR.
-
-    Steps:
-    - Only owner or admin can edit.
-    - Deleted images are moved to temp before DB commit.
-    - New images are staged in temp before DB commit.
-    - On DB failure, all file changes are rolled back.
-    - On DB success, files are permanently changed.
-    """
     listing = Listing.query.get_or_404(listing_id)
     page_title = "Edit listing"
     category = listing.category
@@ -347,8 +288,9 @@ def edit_listing(listing_id):
             page_title=listing.title,
         )
 
-    # Defensive: Temp directory must be configured and exist
-    if not TEMP_DIR:
+    temp_dir = current_app.config["TEMP_DIR"]
+
+    if not temp_dir:
         flash("Temp directory is not configured.", "danger")
         return render_template(
             "listings/listing_detail.html",
@@ -357,7 +299,7 @@ def edit_listing(listing_id):
             category_path=category_path,
             page_title=listing.title,
         )
-    if not os.path.exists(TEMP_DIR):
+    if not os.path.exists(temp_dir):
         flash(
             "Temp directory does not exist. Please initialize the application.",
             "danger",
@@ -381,7 +323,6 @@ def edit_listing(listing_id):
             for cat in Category.query.order_by(Category.name)
         ]
         if form.validate_on_submit():
-            # Update listing fields
             listing.title = form.title.data
             listing.description = form.description.data
             listing.price = form.price.data or 0
@@ -391,21 +332,24 @@ def edit_listing(listing_id):
             added_temp_paths = []
             added_files = []
 
+            upload_dir = current_app.config["UPLOAD_DIR"]
+            thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
+
             # Handle image deletions: move to temp, do not delete yet (enables rollback on DB error)
             delete_image_ids = request.form.getlist("delete_images")
             for img_id in delete_image_ids:
                 image = ListingImage.query.get(int(img_id))
                 if image and image in listing.images:
-                    image_path = os.path.join(UPLOAD_DIR, image.filename)
-                    temp_path = os.path.join(TEMP_DIR, image.filename)
+                    image_path = os.path.join(upload_dir, image.filename)
+                    temp_path = os.path.join(temp_dir, image.filename)
                     thumbnail_path = None
                     temp_thumb_path = None
                     if image.thumbnail_filename:
                         thumbnail_path = os.path.join(
-                            THUMBNAIL_DIR, image.thumbnail_filename
+                            thumbnail_dir, image.thumbnail_filename
                         )
                         temp_thumb_path = os.path.join(
-                            TEMP_DIR, image.thumbnail_filename
+                            temp_dir, image.thumbnail_filename
                         )
                     try:
                         if os.path.exists(image_path):
@@ -429,8 +373,8 @@ def edit_listing(listing_id):
                         ext = os.path.splitext(secure_filename(file.filename))[1]
                         unique_filename = f"{uuid.uuid4().hex}{ext}"
                         thumbnail_filename = f"{uuid.uuid4().hex}.jpg"
-                        temp_path = os.path.join(TEMP_DIR, unique_filename)
-                        temp_thumb_path = os.path.join(TEMP_DIR, thumbnail_filename)
+                        temp_path = os.path.join(temp_dir, unique_filename)
+                        temp_thumb_path = os.path.join(temp_dir, thumbnail_filename)
                         file.save(temp_path)
                         if create_thumbnail(temp_path, temp_thumb_path):
                             added_temp_paths.append(
@@ -443,7 +387,6 @@ def edit_listing(listing_id):
                             )
                             added_files.append((unique_filename, thumbnail_filename))
                         else:
-                            # Thumbnail creation failed: clean up staged files and restore deleted images
                             try:
                                 if os.path.exists(temp_path):
                                     os.remove(temp_path)
@@ -497,7 +440,6 @@ def edit_listing(listing_id):
 
             commit_success = False
             try:
-                # Add new images to DB and commit changes
                 for unique_filename, thumbnail_filename in added_files:
                     image = ListingImage(
                         filename=unique_filename,
@@ -508,7 +450,6 @@ def edit_listing(listing_id):
                 db.session.commit()
                 commit_success = True
             except Exception as e:
-                # DB commit failed: restore deleted images and clean up staged files
                 db.session.rollback()
                 for (
                     orig_path,
@@ -546,7 +487,6 @@ def edit_listing(listing_id):
                 )
 
             if commit_success:
-                # Finalize file deletions and move new images to permanent storage
                 for _, temp_path, _, temp_thumb_path in moved_to_temp:
                     try:
                         if os.path.exists(temp_path):
@@ -561,7 +501,7 @@ def edit_listing(listing_id):
                     temp_thumb_path,
                     thumbnail_filename,
                 ) in added_temp_paths:
-                    final_path = os.path.join(UPLOAD_DIR, unique_filename)
+                    final_path = os.path.join(upload_dir, unique_filename)
                     try:
                         if os.path.exists(temp_path):
                             shutil.move(temp_path, final_path)
@@ -572,7 +512,7 @@ def edit_listing(listing_id):
                         )
                     if temp_thumb_path and thumbnail_filename:
                         final_thumb_path = os.path.join(
-                            THUMBNAIL_DIR, thumbnail_filename
+                            thumbnail_dir, thumbnail_filename
                         )
                         try:
                             if os.path.exists(temp_thumb_path):
@@ -587,7 +527,6 @@ def edit_listing(listing_id):
                     url_for("listings.listing_detail", listing_id=listing.id)
                 )
     else:
-        # On GET: populate form fields from current listing
         form.title.data = listing.title
         form.category.data = listing.category_id
         form.description.data = listing.description
@@ -607,20 +546,10 @@ def edit_listing(listing_id):
 @listings_bp.route("/delete/<int:listing_id>", methods=["POST"])
 @login_required
 def delete_listing(listing_id):
-    """
-    Delete a listing and its images with ACID-like safety.
-
-    Steps:
-    - Only owner or admin can delete.
-    - Images are moved to TEMP_DIR before DB commit.
-    - On DB failure, images are restored.
-    - On DB success, images are deleted from temp.
-    """
     listing = Listing.query.get_or_404(listing_id)
     category = listing.category
     category_path = category.get_full_path() if category else None
 
-    # Permission check
     if current_user.id != listing.user_id and not current_user.is_admin:
         flash("You do not have permission to delete this listing.", "danger")
         return render_template(
@@ -631,8 +560,11 @@ def delete_listing(listing_id):
             page_title=listing.title,
         )
 
-    # Defensive: Temp directory must be configured and exist
-    if not TEMP_DIR:
+    temp_dir = current_app.config["TEMP_DIR"]
+    upload_dir = current_app.config["UPLOAD_DIR"]
+    thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
+
+    if not temp_dir:
         flash("Temp directory is not configured.", "danger")
         return render_template(
             "listings/listing_detail.html",
@@ -641,7 +573,7 @@ def delete_listing(listing_id):
             category_path=category_path,
             page_title=listing.title,
         )
-    if not os.path.exists(TEMP_DIR):
+    if not os.path.exists(temp_dir):
         flash(
             "Temp directory does not exist. Please initialize the application.",
             "danger",
@@ -659,15 +591,14 @@ def delete_listing(listing_id):
     original_thumb_paths = []
     temp_thumb_paths = []
 
-    # Move images to TEMP_DIR; only delete after DB commit
     for image in listing.images:
-        orig = os.path.join(UPLOAD_DIR, image.filename)
-        temped = os.path.join(TEMP_DIR, image.filename)
+        orig = os.path.join(upload_dir, image.filename)
+        temped = os.path.join(temp_dir, image.filename)
         orig_thumb = None
         temped_thumb = None
         if image.thumbnail_filename:
-            orig_thumb = os.path.join(THUMBNAIL_DIR, image.thumbnail_filename)
-            temped_thumb = os.path.join(TEMP_DIR, image.thumbnail_filename)
+            orig_thumb = os.path.join(thumbnail_dir, image.thumbnail_filename)
+            temped_thumb = os.path.join(temp_dir, image.thumbnail_filename)
         try:
             if os.path.exists(orig):
                 shutil.move(orig, temped)
@@ -681,11 +612,9 @@ def delete_listing(listing_id):
             flash(f"Error moving image {image.filename} to temp: {e}", "warning")
 
     try:
-        # Delete listing from DB (cascade deletes images)
         db.session.delete(listing)
         db.session.commit()
     except Exception as e:
-        # DB commit failed: restore images from TEMP_DIR
         for orig, temped in zip(original_paths, temp_paths):
             try:
                 if os.path.exists(temped):
@@ -710,7 +639,6 @@ def delete_listing(listing_id):
             page_title=listing.title,
         )
 
-    # DB commit succeeded: images can be deleted from TEMP_DIR
     for temped in temp_paths:
         try:
             if os.path.exists(temped):
