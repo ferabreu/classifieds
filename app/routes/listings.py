@@ -56,12 +56,24 @@ def category_listings(category_id):
 
     category_path = category.get_full_path()
 
+    # --- Sidebar context additions ---
+    # 1. Get all root categories with their children (for sidebar)
+    categories = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
+    # 2. Compute ancestor IDs for expansion
+    from .utils import get_category_ancestor_ids  # Adjust import as needed
+
+    ancestor_ids = get_category_ancestor_ids(categories, category_id) or []
+    expanded_ids = ancestor_ids  # List of IDs to auto-expand
+
     return render_template(
         "index.html",
         listings=listings,
         pagination=pagination,
         selected_category=category,
         category_path=category_path,
+        categories=categories,  # <-- for sidebar macro
+        active_category_id=category_id,
+        expanded_ids=expanded_ids,
         page_title=category_path,
     )
 

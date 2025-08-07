@@ -96,16 +96,16 @@ def serialize_category(cat):
     return {"id": cat.id, "name": cat.name}
 
 
-def serialize_type(t):
+def get_category_ancestor_ids(categories, target_id):
     """
-    Serializes a type object into a dictionary.
-    Args:
-        t: An object representing a type, expected to have 'id', 'name', and 'categories' attributes.
-    Returns:
-        dict: A dictionary containing the 'id', 'name', and 'categories' of the type.
+    Recursively find all ancestor IDs for the target_id in the nested category tree.
+    Returns a list of IDs from root to the parent of target_id.
     """
-    return {
-        "id": t.id,
-        "name": t.name,
-        "categories": [serialize_category(c) for c in t.categories],
-    }
+    for cat in categories:
+        if cat.id == target_id:
+            return []
+        if getattr(cat, "children", None):
+            path = get_category_ancestor_ids(cat.children, target_id)
+            if path is not None:
+                return [cat.id] + path
+    return None
