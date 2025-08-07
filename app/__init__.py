@@ -7,7 +7,7 @@ from flask_mail import Mail
 from flask_migrate import Migrate
 
 from .config import Config, DevelopmentConfig, ProductionConfig, TestingConfig
-from .models import Category, ListingImage, Type, User, db
+from .models import Category, ListingImage, User, db
 
 login_manager = LoginManager()
 mail = Mail()
@@ -51,19 +51,10 @@ def create_app(config_class=None):
 
     @app.context_processor
     def inject_navbar_data():
-        types = Type.query.order_by(Type.name).all()
-        good_type = next((t for t in types if t.name.lower() == "good"), None)
-        service_type = next((t for t in types if t.name.lower() == "service"), None)
-        goods_categories = good_type.categories if good_type else []
-        goods_type_id = good_type.id if good_type else None
-        services_categories = service_type.categories if service_type else []
-        services_type_id = service_type.id if service_type else None
-        return {
-            "goods_categories": goods_categories,
-            "goods_type_id": goods_type_id,
-            "services_categories": services_categories,
-            "services_type_id": services_type_id,
-        }
+        categories = (
+            Category.query.filter_by(parent_id=None).order_by(Category.name).all()
+        )
+        return {"categories": categories}
 
     @app.context_processor
     def inject_title_separator():

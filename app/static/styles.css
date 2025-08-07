@@ -9,6 +9,10 @@ html {
   scrollbar-gutter: stable;
 }
 
+.navbar-brand-font {
+    font-size: 2rem;
+}
+
 .navbar-row-gap {
     margin-top: -8px;
 }
