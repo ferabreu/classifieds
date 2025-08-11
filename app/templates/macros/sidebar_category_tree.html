@@ -1,0 +1,48 @@
+{#
+    Macro: render_category_tree
+
+    Recursively renders a hierarchical list of categories as a Bootstrap collapsible sidebar menu.
+    - Highlights the active category.
+    - Expands all ancestors of the active category.
+
+    Parameters:
+    - categories: List of Category objects to render at this level.
+    - parent_prefix: String for unique collapse IDs (used for nested collapses).
+    - active_category_id: The ID of the currently selected category (for highlight).
+    - expanded_ids: List of IDs to keep expanded (ancestors of the active category).
+#}
+{% macro render_category_tree(categories, parent_prefix="", active_category_id=None, expanded_ids=[]) %}
+    {%- for category in categories %}
+        {%- set collapse_id = "catcollapse" ~ parent_prefix ~ category.id %}
+        <li class="nav-item mb-1">
+            <div class="d-flex align-items-center">
+                <a class="nav-link px-0 flex-grow-1
+                          {% if category.id == active_category_id %} active{% endif %}"
+                   href="{{ url_for('listings.category_listings', category_id=category.id) }}">
+                    {{ category.name }}
+                </a>
+                {% if category.children %}
+                    <button class="btn btn-sm ms-1 p-0" type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#{{ collapse_id }}"
+                            aria-expanded="{{ 'true' if category.id in expanded_ids else 'false' }}"
+                            aria-controls="{{ collapse_id }}"
+                            tabindex="-1"
+                            aria-label="Toggle subcategories">
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
+                {% endif %}
+            </div>
+            {% if category.children %}
+                <div class="collapse ms-3{% if category.id in expanded_ids %} show{% endif %}" id="{{ collapse_id }}">
+                    <ul class="nav flex-column">
+                        {{ render_category_tree(category.children,
+                        parent_prefix=collapse_id ~ "_",
+                        active_category_id=active_category_id,
+                        expanded_ids=expanded_ids) }}
+                    </ul>
+                </div>
+            {% endif %}
+        </li>
+    {%- endfor %}
+{% endmacro %}
