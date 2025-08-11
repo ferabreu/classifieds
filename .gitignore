@@ -207,5 +207,5 @@ cython_debug/
 .cursorindexingignore
 
 # FORCE TRACKING OF APP (damn git!)
-!app/
-!app/**
+!app/templates
+!app/templates/**
