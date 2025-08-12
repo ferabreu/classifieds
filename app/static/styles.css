@@ -27,12 +27,12 @@ html {
 }
 
 /* For a light highlight on dark sidebars */
-/* .offcanvas .nav-link.active,
+.offcanvas .nav-link.active,
 .offcanvas .nav-link.active:focus,
 .offcanvas .nav-link.active:hover {
     background-color: #0d6efd !important; /* Bootstrap's primary */
-    /*color: #fff !important;
-} */
+    color: #fff !important;
+}
 
 .sidebar {
   min-width: 220px;
