@@ -61,7 +61,7 @@
                 <div class="d-flex justify-content-between align-items-end w-100 navbar-row-gap">
             <!-- Sidebar toggle button -->
                     <li class="nav-item me-2">
-                        <button class="btn btn-outline-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#categorySidebar" aria-controls="categorySidebar" aria-label="Toggle category sidebar">
+                        <button class="btn btn-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#categorySidebar" aria-controls="categorySidebar" aria-label="Toggle category sidebar">
                             <span class="navbar-toggler-icon"></span>
                         </button>
                     </li>
@@ -117,7 +117,7 @@
                 <div class="mb-2">
                     <a href="{{ url_for('listings.index') }}" class="nav-link d-flex align-items-center px-0 fw-semibold">
                         <i class="bi bi-house-door me-2"></i>
-                        All Categories
+                        Index
                     </a>
                 </div>
                 <!-- Category tree -->
@@ -155,5 +155,6 @@
     <!-- Bootstrap JS Bundle with Popper -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
         {% block scripts %}{% endblock %}
+
     </body>
 </html>
