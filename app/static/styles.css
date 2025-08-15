@@ -1,14 +1,3 @@
-/* Solves the vertical scrollbar effect (sometimes called "layout shift"):
- when one page is just long enough to need a scrollbar and another isn't,
- the presence or absence of the scrollbar shifts content horizontally.*/
-html {
-  /* Always reserve space for a scrollbar - fallback for old browsers */
-  overflow-y: scroll;
-
-  /* Modern solution for browsers that support it */
-  scrollbar-gutter: stable;
-}
-
 .navbar-brand-font {
     font-size: 2rem;
 }
@@ -33,7 +22,7 @@ html {
     background-color: #0d6efd !important; /* Bootstrap's primary */
     color: #fff !important;
 }
-
+/*
 .sidebar {
   min-width: 220px;
   max-width: 280px;
@@ -50,4 +39,4 @@ html {
 }
 .sidebar .nav-link i {
   font-size: 1rem;
-}
+}*/
