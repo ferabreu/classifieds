@@ -131,20 +131,9 @@ def create_app(config_class=None):
             admin.set_password("admin")
             db.session.add(admin)
 
-        # Types
-        for type_name in ["Good", "Service"]:
-            t = Type.query.filter_by(name=type_name).first()
-            if not t:
-                t = Type(name=type_name)
-                db.session.add(t)
-                db.session.flush()
-            # Category "General" for each type
-            c = Category.query.filter_by(name="General", type_id=t.id).first()
-            if not c:
-                c = Category(name="General", type_id=t.id)
-                db.session.add(c)
         db.session.commit()
-        print("Database initialized with default admin, types, and categories.")
+        print("Database initialized with default admin user.")
+        print("No default categories created. Please create categories via the admin dashboard as needed.")
 
     @app.cli.command("backfill-thumbnails")
     def backfill_thumbnails():
