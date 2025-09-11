@@ -135,65 +135,11 @@ def create_app(config_class=None):
         print("Database initialized with default admin user.")
         print("No default categories created. Please create categories via the admin dashboard as needed.")
 
-    @app.cli.command("backfill-thumbnails")
-    def backfill_thumbnails():
-        """Generate thumbnails for existing images that don't have them."""
-        from .routes.utils import create_thumbnail
-
-        # Get all images without thumbnails
-        images_without_thumbnails = ListingImage.query.filter(
-            ListingImage.thumbnail_filename.is_(None)
-        ).all()
-
-        if not images_without_thumbnails:
-            print("No images found that need thumbnail generation.")
-            return
-
-        print(f"Found {len(images_without_thumbnails)} images without thumbnails.")
-
-        upload_dir = app.config["UPLOAD_DIR"]
-        thumbnail_dir = app.config["THUMBNAIL_DIR"]
-
-        success_count = 0
-        error_count = 0
-
-        for image in images_without_thumbnails:
-            try:
-                # Check if original image exists
-                original_path = os.path.join(upload_dir, image.filename)
-                if not os.path.exists(original_path):
-                    print(f"Warning: Original image not found: {image.filename}")
-                    error_count += 1
-                    continue
-
-                # Generate unique thumbnail filename
-                import uuid
-
-                thumbnail_filename = f"{uuid.uuid4().hex}.jpg"
-                thumbnail_path = os.path.join(thumbnail_dir, thumbnail_filename)
-
-                # Create thumbnail
-                if create_thumbnail(original_path, thumbnail_path):
-                    # Update database record
-                    image.thumbnail_filename = thumbnail_filename
-                    db.session.add(image)
-                    success_count += 1
-                    print(f"Generated thumbnail for {image.filename}")
-                else:
-                    print(f"Failed to generate thumbnail for {image.filename}")
-                    error_count += 1
-
-            except Exception as e:
-                print(f"Error processing {image.filename}: {e}")
-                error_count += 1
-
-        try:
-            db.session.commit()
-            print(f"\nThumbnail generation completed:")
-            print(f"Successfully processed: {success_count}")
-            print(f"Errors: {error_count}")
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error committing changes to database: {e}")
+    # Import CLI commands from separate modules based on environment
+    if os.environ.get("FLASK_ENV") == "development":
+        from app.cli.maintenance import backfill_thumbnails
+        app.cli.add_command(backfill_thumbnails)
+        # from app.cli.demo import demo_data
+        # app.cli.add_command(demo_data)
 
     return app
