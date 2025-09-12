@@ -1,6 +1,8 @@
 import click
 import os
 import shutil
+import hashlib
+import time
 from flask import current_app
 from app import db
 from app.models import Category, Listing, ListingImage, User
@@ -10,22 +12,46 @@ from faker import Faker
 import random
 import requests
 
-fake = Faker()
-
+# ==========================
+# CONFIGURABLE CONSTANTS
+# ==========================
 UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY")
 
+N_USERS = 5
+MIN_LISTINGS_PER_SUBCATEGORY = 3
+MAX_LISTINGS_PER_SUBCATEGORY = 9
+MAX_UNSPLASH_IMAGES = 10          # Max Unsplash API calls per run
+UNSPLASH_API_DELAY = 1.2          # Seconds to wait between Unsplash API calls
+DEMO_IMAGES_FOLDER = "static/demo_images"
+UPLOAD_IMAGES_FOLDER = "static/uploads"
+FALLBACK_IMAGE_COUNT = 8          # Ensure at least this many images exist
 
-def fetch_unsplash_image(query, dest_path, access_key=UNSPLASH_ACCESS_KEY):
-    """Fetches a random Unsplash image based on a query and saves it to dest_path."""
+# Optional: load from .env if present
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+fake = Faker()
+
+
+def fetch_unsplash_image(query, dest_path, access_key=UNSPLASH_ACCESS_KEY, delay=UNSPLASH_API_DELAY):
+    """Fetches a random Unsplash image for a query and saves it to dest_path. Returns True if successful.
+    Respects delay to avoid hitting API rate limits."""
+    if not access_key:
+        print("Unsplash API key not set. Skipping Unsplash fetch.")
+        return False
     url = f"https://api.unsplash.com/photos/random?query={query}&client_id={access_key}"
     try:
         resp = requests.get(url, timeout=10)
-        if resp.status_code == 200:
+        if resp.status_code == 200 and 'urls' in resp.json():
             img_url = resp.json()['urls']['regular']
             img_data = requests.get(img_url, timeout=10).content
             with open(dest_path, 'wb') as f:
                 f.write(img_data)
             print(f"Fetched Unsplash image for '{query}'")
+            time.sleep(delay)  # Be kind to the API
             return True
         else:
             print(f"Unsplash API error: {resp.status_code} for '{query}'")
@@ -45,33 +71,54 @@ def generate_random_jpg(path, width=400, height=300, text=None):
             font = ImageFont.truetype("arial.ttf", font_size)
         except IOError:
             font = ImageFont.load_default()
-        draw.text((10, 10), text, (255, 255, 255), font=font)
+        draw.text((10, 10), text[:20], (255, 255, 255), font=font)
     img.save(path, format="JPEG")
 
-def ensure_demo_images(folder, queries, fallback_count=8):
+def get_image_cache_filename(query):
+    """Returns a filename for caching Unsplash images based on query string."""
+    key = hashlib.sha256(query.encode("utf-8")).hexdigest()[:16]
+    return f"unsplash_{key}.jpg"
+
+def ensure_demo_images(folder, queries, fallback_count=FALLBACK_IMAGE_COUNT, max_unsplash_images=MAX_UNSPLASH_IMAGES):
     """
-    Download images from Unsplash for each query.
-    If Unsplash fails, generate random images instead.
-    Returns list of image filenames in the folder.
+    For the first N queries, fetch from Unsplash (with caching, so repeated titles reuse images).
+    For all others, generate random images.
+    Returns list of image filenames (relative to folder).
     """
     os.makedirs(folder, exist_ok=True)
     filenames = []
+    unsplash_calls = 0
+
     for i, query in enumerate(queries):
-        fname = f"demo_{i+1}.jpg"
-        img_path = os.path.join(folder, fname)
-        success = fetch_unsplash_image(query, img_path)
-        if not success:
-            generate_random_jpg(img_path, text=query.capitalize())
-        filenames.append(fname)
-    # If not enough images, fill with randoms
+        if unsplash_calls < max_unsplash_images:
+            cache_fname = get_image_cache_filename(query)
+            img_path = os.path.join(folder, cache_fname)
+            if not os.path.exists(img_path):
+                if fetch_unsplash_image(query, img_path):
+                    unsplash_calls += 1
+                else:
+                    generate_random_jpg(img_path, text=query.capitalize())
+            else:
+                print(f"Using cached Unsplash image for '{query}'")
+            filenames.append(cache_fname)
+        else:
+            # Use random local image for overflow
+            fname = f"demo_{i+1}.jpg"
+            img_path = os.path.join(folder, fname)
+            if not os.path.exists(img_path):
+                generate_random_jpg(img_path, text=query.capitalize())
+            filenames.append(fname)
+
+    # Ensure at least fallback_count images exist
     existing = [f for f in os.listdir(folder) if f.lower().endswith('.jpg')]
     while len(existing) < fallback_count:
         fname = f"random_{len(existing)+1}.jpg"
         generate_random_jpg(os.path.join(folder, fname), text=fake.word().capitalize())
         existing.append(fname)
-    return [f for f in os.listdir(folder) if f.lower().endswith('.jpg')]
+    # Return the list of filenames in order of listing queries
+    return filenames
 
-def create_demo_users(count=5):
+def create_demo_users(count=N_USERS):
     """Creates and commits demo users, returns them."""
     users = []
     for i in range(count):
@@ -88,60 +135,80 @@ def create_demo_users(count=5):
     db.session.commit()
     return users
 
+def get_or_create_categories():
+    """Get existing categories/subcategories, or create if missing."""
+    categories = Category.query.filter(Category.parent_id == None).all()
+    if not categories:
+        categories = [
+            Category(name="Electronics"),
+            Category(name="Home & Garden"),
+            Category(name="Vehicles"),
+            Category(name="Fashion"),
+        ]
+        db.session.add_all(categories)
+        db.session.commit()
+    # Get subcategories for each
+    subcats = Category.query.filter(Category.parent_id != None).all()
+    if not subcats:
+        parent_map = {c.name: c for c in categories}
+        subcats = [
+            Category(name="Phones", parent=parent_map["Electronics"]),
+            Category(name="Computers", parent=parent_map["Electronics"]),
+            Category(name="Furniture", parent=parent_map["Home & Garden"]),
+            Category(name="Tools", parent=parent_map["Home & Garden"]),
+            Category(name="Cars", parent=parent_map["Vehicles"]),
+            Category(name="Motorcycles", parent=parent_map["Vehicles"]),
+            Category(name="Clothing", parent=parent_map["Fashion"]),
+            Category(name="Shoes", parent=parent_map["Fashion"]),
+        ]
+        db.session.add_all(subcats)
+        db.session.commit()
+    categories = Category.query.filter(Category.parent_id == None).all()
+    subcats = Category.query.filter(Category.parent_id != None).all()
+    return categories, subcats
+
 @click.command('demo-data')
-def demo_data():
-    """Seed demo categories, users, listings, and images with realistic data using Unsplash or random images."""
-    db.drop_all()
-    db.create_all()
+@click.option('--replace/--no-replace', default=False, help="Replace all demo data (drop and recreate tables).")
+def demo_data(replace):
+    """
+    Seed demo categories, users, listings, and images with realistic data using Unsplash or random images (cached).
+    By default, adds more data each run. Use --replace to remove all and start fresh.
+    """
+    if replace:
+        db.drop_all()
+        db.create_all()
+        print("All demo data cleared! Starting fresh.")
 
     # Categories & subcategories
-    categories = [
-        Category(name="Electronics"),
-        Category(name="Home & Garden"),
-        Category(name="Vehicles"),
-        Category(name="Fashion"),
-    ]
-    subcats = [
-        Category(name="Phones", parent=categories[0]),
-        Category(name="Computers", parent=categories[0]),
-        Category(name="Furniture", parent=categories[1]),
-        Category(name="Tools", parent=categories[1]),
-        Category(name="Cars", parent=categories[2]),
-        Category(name="Motorcycles", parent=categories[2]),
-        Category(name="Clothing", parent=categories[3]),
-        Category(name="Shoes", parent=categories[3]),
-    ]
-    db.session.add_all(categories + subcats)
-    db.session.commit()
+    categories, subcats = get_or_create_categories()
 
     # Demo users
-    users = create_demo_users(count=5)
+    users = create_demo_users(count=N_USERS)
 
-    # Demo listings (generate titles, descriptions, queries for images)
-    listing_queries = []
+    # Demo listings: random number per subcategory (adds more each run!)
     demo_listings = []
-    for i in range(9):
-        cat = random.choice(subcats)
-        user = random.choice(users)
-        title = fake.sentence(nb_words=4)
-        description = fake.paragraph(nb_sentences=2)
-        price = round(random.uniform(10, 5000), 2)
-        listing = Listing(
-            title=title,
-            description=f"{description}\nPrice: ${price}",
-            category=cat,
-            user=user,
-        )
-        db.session.add(listing)
-        demo_listings.append(listing)
-        # Use category name or title for image search
-        query = cat.name
-        listing_queries.append(query)
+    listing_queries = []
+    for cat in subcats:
+        num_listings = random.randint(MIN_LISTINGS_PER_SUBCATEGORY, MAX_LISTINGS_PER_SUBCATEGORY)
+        for _ in range(num_listings):
+            user = random.choice(users)
+            title = fake.sentence(nb_words=random.randint(3, 6)).replace('.', '')
+            description = fake.paragraph(nb_sentences=2)
+            price = round(random.uniform(10, 5000), 2)
+            listing = Listing(
+                title=title,
+                description=f"{description}\nPrice: ${price}",
+                category_id=cat.id,
+                user_id=user.id,
+            )
+            db.session.add(listing)
+            demo_listings.append(listing)
+            listing_queries.append(title)
     db.session.commit()
 
-    # Demo images: fetch from Unsplash or generate random
-    src_folder = os.path.join(current_app.root_path, 'static', 'demo_images')
-    dest_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+    # Demo images: fetch from Unsplash for a limited number, cache locally, generate random for the rest
+    src_folder = os.path.join(current_app.root_path, DEMO_IMAGES_FOLDER)
+    dest_folder = os.path.join(current_app.root_path, UPLOAD_IMAGES_FOLDER)
     image_files = ensure_demo_images(src_folder, queries=listing_queries)
     os.makedirs(dest_folder, exist_ok=True)
     # Copy images to uploads folder
@@ -156,7 +223,7 @@ def demo_data():
         db.session.add(ListingImage(listing=listing, filename=img_name))
     db.session.commit()
 
-    print("Realistic demo data seeded: categories, users, listings, images.")
-    print("Demo user passwords: demopass")
-    print("Images downloaded from Unsplash when possible, otherwise generated randomly.")
-    print("Remember to set your Unsplash access key in app/cli/demo.py.")
+    print(f"Demo data seeded: categories, users, listings, images. {'(Tables replaced)' if replace else '(Added to existing data)'}")
+    print(f"Demo user passwords: demopass")
+    print(f"Up to {MAX_UNSPLASH_IMAGES} images downloaded from Unsplash (cached locally), rest generated randomly.")
+    print("Set UNSPLASH_ACCESS_KEY environment variable before running for best results.")
