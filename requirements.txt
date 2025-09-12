@@ -11,3 +11,6 @@ gunicorn
 Pillow
 python-dotenv
 WTForms
+Faker
+numpy
+requests
