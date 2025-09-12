@@ -99,6 +99,7 @@ class Listing(db.Model):
     images = db.relationship(
         "ListingImage", backref="listing", cascade="all, delete-orphan"
     )
+    #user = db.relationship('User', backref='listings')
 
 
 class ListingImage(db.Model):

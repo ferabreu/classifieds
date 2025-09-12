@@ -139,7 +139,7 @@ def create_app(config_class=None):
     if os.environ.get("FLASK_ENV") == "development":
         from app.cli.maintenance import backfill_thumbnails
         app.cli.add_command(backfill_thumbnails)
-        # from app.cli.demo import demo_data
-        # app.cli.add_command(demo_data)
+        from app.cli.demo import demo_data
+        app.cli.add_command(demo_data)
 
     return app
