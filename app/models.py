@@ -8,9 +8,11 @@ Handles hierarchical categories, user accounts, and listing image management.
 """
 
 from datetime import datetime, timezone
+from typing import Optional
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
@@ -30,6 +32,14 @@ class Category(db.Model):
     parent = db.relationship("Category", remote_side=[id], backref="children")
     listings = db.relationship("Listing", backref="category", lazy=True)
     __table_args__ = (db.UniqueConstraint("name", "parent_id", name="_cat_parent_uc"),)
+
+    def __init__(
+        self,
+        name: str,
+        parent_id: Optional[int] = None,
+    ):
+        self.name = name
+        self.parent_id = parent_id
 
     def get_full_path(self):
         """
@@ -52,7 +62,7 @@ class Category(db.Model):
         Used for recursive category filtering.
         """
         ids = [self.id]
-        for child in self.children:
+        for child in self.children:  # type: ignore # created dynamically by SQLAlchemy
             ids += child.get_descendant_ids()
         return ids
 
@@ -72,6 +82,23 @@ class User(UserMixin, db.Model):
     is_ldap_user = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
     listings = db.relationship("Listing", backref="owner", lazy=True)
+
+    def __init__(
+        self,
+        email: str,
+        first_name: str,
+        last_name: str,
+        password: Optional[str] = None,
+        is_ldap_user: bool = False,
+        is_admin: bool = False,
+    ):
+        self.email = email
+        self.first_name = first_name
+        self.last_name = last_name
+        self.is_ldap_user = is_ldap_user
+        self.is_admin = is_admin
+        if password:
+            self.set_password(password)
 
     def set_password(self, password):
         """Hashes and sets the user's password."""
@@ -95,11 +122,26 @@ class Listing(db.Model):
     price = db.Column(db.Float, default=0)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey("category.id"), nullable=False)
+    category_id: InstrumentedAttribute[int]
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     images = db.relationship(
         "ListingImage", backref="listing", cascade="all, delete-orphan"
     )
-    #user = db.relationship('User', backref='listings')
+    # user = db.relationship('User', backref='listings')
+
+    def __init__(
+        self,
+        title: str,
+        description: str,
+        price: float,
+        user_id: int,
+        category_id: int,
+    ):
+        self.title = title
+        self.description = description
+        self.price = price
+        self.user_id = user_id
+        self.category_id = category_id
 
 
 class ListingImage(db.Model):
@@ -120,3 +162,13 @@ class ListingImage(db.Model):
         nullable=False,
     )
     # The listing attribute on ListingImage will be available automatically due to the backref in Listing
+
+    def __init__(
+        self,
+        filename: str,
+        listing_id: int,
+        thumbnail_filename: Optional[str] = None,
+    ):
+        self.filename = filename
+        self.listing_id = listing_id
+        self.thumbnail_filename = thumbnail_filename

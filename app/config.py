@@ -37,6 +37,7 @@ class Config:
     UPLOAD_DIR = os.path.join("static", "uploads")
     TEMP_DIR = os.path.join("static", "temp")
     THUMBNAIL_DIR = os.path.join("static", "uploads", "thumbnails")
+    THUMBNAIL_SIZE = (224, 224)
 
 
 class DevelopmentConfig(Config):
