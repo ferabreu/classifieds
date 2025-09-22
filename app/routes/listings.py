@@ -143,6 +143,51 @@ def create_listing():
             for cat in Category.query.order_by(Category.name)
         ]
         if form.validate_on_submit():
+            # Backend checks for None on required fields (PyLance type safety)
+            if form.title.data is None:
+                flash(
+                    "Title is missing. Please provide a title for your listing.",
+                    "danger",
+                )
+                return render_template(
+                    "listings/listing_form.html",
+                    form=form,
+                    action="Create",
+                    page_title=page_title,
+                )
+            if form.description.data is None:
+                flash(
+                    "Description is missing. Please provide a description for your listing.",
+                    "danger",
+                )
+                return render_template(
+                    "listings/listing_form.html",
+                    form=form,
+                    action="Create",
+                    page_title=page_title,
+                )
+            if form.price.data is None:
+                flash(
+                    "Price is missing. Please provide a price for your listing.",
+                    "danger",
+                )
+                return render_template(
+                    "listings/listing_form.html",
+                    form=form,
+                    action="Create",
+                    page_title=page_title,
+                )
+            if form.category.data is None:
+                flash(
+                    "Category is missing. Please select a category for your listing.",
+                    "danger",
+                )
+                return render_template(
+                    "listings/listing_form.html",
+                    form=form,
+                    action="Create",
+                    page_title=page_title,
+                )
             listing = Listing(
                 title=form.title.data,
                 description=form.description.data,
@@ -212,11 +257,12 @@ def create_listing():
             commit_success = False
             try:
                 db.session.add(listing)
+                db.session.flush()  # Assigns an id to listing
                 for unique_filename, thumbnail_filename in added_files:
                     image = ListingImage(
                         filename=unique_filename,
                         thumbnail_filename=thumbnail_filename,
-                        listing=listing,
+                        listing_id=listing.id,
                     )
                     db.session.add(image)
                 db.session.commit()
@@ -335,6 +381,63 @@ def edit_listing(listing_id):
             for cat in Category.query.order_by(Category.name)
         ]
         if form.validate_on_submit():
+            # Backend checks for None on required fields (PyLance type safety)
+            if form.title.data is None:
+                flash(
+                    "Title is missing. Please provide a title for your listing.",
+                    "danger",
+                )
+                return render_template(
+                    "listings/listing_form.html",
+                    form=form,
+                    listing=listing,
+                    action="Edit",
+                    page_title=page_title,
+                    category=category,
+                    category_path=category_path,
+                )
+            if form.description.data is None:
+                flash(
+                    "Description is missing. Please provide a description for your listing.",
+                    "danger",
+                )
+                return render_template(
+                    "listings/listing_form.html",
+                    form=form,
+                    listing=listing,
+                    action="Edit",
+                    page_title=page_title,
+                    category=category,
+                    category_path=category_path,
+                )
+            if form.price.data is None:
+                flash(
+                    "Price is missing. Please provide a price for your listing.",
+                    "danger",
+                )
+                return render_template(
+                    "listings/listing_form.html",
+                    form=form,
+                    listing=listing,
+                    action="Edit",
+                    page_title=page_title,
+                    category=category,
+                    category_path=category_path,
+                )
+            if form.category.data is None:
+                flash(
+                    "Category is missing. Please select a category for your listing.",
+                    "danger",
+                )
+                return render_template(
+                    "listings/listing_form.html",
+                    form=form,
+                    listing=listing,
+                    action="Edit",
+                    page_title=page_title,
+                    category=category,
+                    category_path=category_path,
+                )
             listing.title = form.title.data
             listing.description = form.description.data
             listing.price = form.price.data or 0
@@ -369,7 +472,12 @@ def edit_listing(listing_id):
                             moved_to_temp.append(
                                 (image_path, temp_path, thumbnail_path, temp_thumb_path)
                             )
-                        if thumbnail_path and os.path.exists(thumbnail_path):
+                        if (
+                            thumbnail_path
+                            and temp_thumb_path
+                            and os.path.exists(thumbnail_path)
+                            and os.path.exists(temp_thumb_path)
+                        ):
                             shutil.move(thumbnail_path, temp_thumb_path)
                         db.session.delete(image)
                     except Exception as e:
@@ -455,8 +563,8 @@ def edit_listing(listing_id):
                 for unique_filename, thumbnail_filename in added_files:
                     image = ListingImage(
                         filename=unique_filename,
+                        listing_id=listing.id,
                         thumbnail_filename=thumbnail_filename,
-                        listing=listing,
                     )
                     db.session.add(image)
                 db.session.commit()
@@ -616,7 +724,12 @@ def delete_listing(listing_id):
                 shutil.move(orig, temped)
                 original_paths.append(orig)
                 temp_paths.append(temped)
-                if orig_thumb and os.path.exists(orig_thumb):
+                if (
+                    orig_thumb
+                    and temped_thumb
+                    and os.path.exists(orig_thumb)
+                    and os.path.exists(temped_thumb)
+                ):
                     shutil.move(orig_thumb, temped_thumb)
                     original_thumb_paths.append(orig_thumb)
                     temp_thumb_paths.append(temped_thumb)

@@ -14,9 +14,9 @@ Currently, it provides the admin_required decorator for restricting access to ad
 import os
 from functools import wraps
 
-from flask import flash, redirect, url_for
+from flask import current_app, flash, redirect, url_for
 from flask_login import current_user
-from PIL import Image  # type: ignore
+from PIL import Image
 
 
 def admin_required(func):
@@ -44,7 +44,7 @@ def admin_required(func):
     return wrapper
 
 
-def create_thumbnail(image_path, thumbnail_path, size=(224, 224)):
+def create_thumbnail(image_path, thumbnail_path):
     """
     Create a thumbnail from an image file.
 
@@ -56,6 +56,8 @@ def create_thumbnail(image_path, thumbnail_path, size=(224, 224)):
     Returns:
         bool: True if thumbnail was created successfully, False otherwise
     """
+    size = current_app.config["THUMBNAIL_SIZE"]
+
     try:
         with Image.open(image_path) as img:
             # Convert palette images (P mode) with transparency to RGBA
