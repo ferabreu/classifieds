@@ -30,6 +30,21 @@ MAX_IMAGES_PER_LISTING = 3  # Maximum images per listing
 MIN_PRICE = 5.0
 MAX_PRICE = 5000.0
 
+# ==========================
+# SUBCATEGORY KEYWORD MAPPING
+# ==========================
+# Map subcategory names to related keywords for Unsplash
+SUBCATEGORY_KEYWORDS = {
+    "Furniture": ["furniture", "table", "chair", "sofa", "desk", "couch", "cabinet"],
+    "Phones": ["phone", "smartphone", "mobile", "cellphone", "iphone", "android"],
+    "Computers": ["computer", "laptop", "desktop", "notebook", "pc", "macbook"],
+    "Tools": ["tools", "hammer", "drill", "saw", "wrench", "toolbox"],
+    "Cars": ["car", "automobile", "sedan", "convertible", "hatchback", "vehicle"],
+    "Motorcycles": ["motorcycle", "bike", "scooter", "motorbike", "chopper"],
+    "Clothing": ["clothing", "shirt", "pants", "dress", "jacket", "fashion"],
+    "Shoes": ["shoes", "sneakers", "boots", "sandals", "footwear", "heels"],
+}
+
 # Optional: load from .env if present
 try:
     from dotenv import load_dotenv
@@ -265,9 +280,11 @@ def demo_data(replace):
         n_listings = listings_per_subcategory + (1 if idx < remainder else 0)
         for i in range(n_listings):
             if USE_RANDOM_TITLES:
-                title = fake.sentence(nb_words=random.randint(3, 6)).replace(".", "")
-                # Use the entire title string for Unsplash query
-                listing_queries.append(title)
+                # Use a keyword related to the subcategory for Unsplash
+                keywords_list = SUBCATEGORY_KEYWORDS.get(cat.name, [cat.name])
+                keyword = random.choice(keywords_list)
+                title = f"{keyword.title()} {cat.name} #{i+1}"
+                listing_queries.append(keyword)
             else:
                 keywords = fixed_titles[i % len(fixed_titles)]
                 title = f"{keywords} {cat.name} #{i+1}"

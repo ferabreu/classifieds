@@ -19,6 +19,17 @@ db = SQLAlchemy()
 
 
 class Category(db.Model):
+    @property
+    def breadcrumb(self):
+        """
+        Returns a list of categories from root to self for breadcrumb navigation.
+        """
+        node = self
+        nodes = []
+        while node:
+            nodes.insert(0, node)
+            node = node.parent
+        return nodes
     """
     Category model for hierarchical organization of listings.
 

@@ -19,14 +19,20 @@ from ..models import User, db
 
 users_bp = Blueprint("users", __name__)
 
-# -------------------- USER PROFILE (SELF) --------------------
-
+# -------------------- USER PROFILE --------------------
 
 @users_bp.route("/profile")
 @login_required
 def user_profile():
+    user_id = request.args.get("user_id", type=int)
+    if user_id and user_id != current_user.id:
+        user = User.query.get_or_404(user_id)
+        page_title = f"{user.first_name} {user.last_name}"
+    else:
+        user = current_user
+        page_title = "Your profile"
     return render_template(
-        "users/user_profile.html", user=current_user, page_title="Your profile"
+        "users/user_profile.html", user=user, page_title=page_title
     )
 
 
