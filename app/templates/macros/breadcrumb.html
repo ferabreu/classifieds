@@ -1,0 +1,19 @@
+{#
+    Macro: breadcrumb
+    Usage: {{ macros.breadcrumb(category) }}
+    Renders a breadcrumb navigation bar for a given category (self-referring tree).
+    Expects a category object with 'breadcrumb' property (list of categories from root to self).
+#}
+{% macro breadcrumb(category) %}
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('listings.index') }}">Home</a></li>
+            {% for cat in category.breadcrumb[:-1] %}
+                <li class="breadcrumb-item">
+                    <a href="{{ url_for('listings.category_listings', category_id=cat.id) }}">{{ cat.name }}</a>
+                </li>
+            {% endfor %}
+            <li class="breadcrumb-item active" aria-current="page">{{ category.breadcrumb[-1].name }}</li>
+        </ol>
+    </nav>
+{% endmacro %}

@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 
+{% import 'macros/breadcrumb.html' as macros %}
 {% block content %}
-    <p><strong>Type:</strong> {{ listing.type.name }}</p>
-    <p><strong>Category:</strong> {{ listing.category.name }}</p>
+    {{ macros.breadcrumb(listing.category) }}
+    <h2 class="mt-3 mb-3">{{ listing.title }}</h2>
     <p><strong>Description:</strong> {{ listing.description }}</p>
     <p><strong>Price:</strong> {% if listing.price == 0 %}Free{% else %}${{ listing.price }}{% endif %}</p>
     <p><strong>Posted by:</strong>
