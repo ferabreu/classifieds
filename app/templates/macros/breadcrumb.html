@@ -13,7 +13,9 @@
                     <a href="{{ url_for('listings.category_listings', category_id=cat.id) }}">{{ cat.name }}</a>
                 </li>
             {% endfor %}
-            <li class="breadcrumb-item active" aria-current="page">{{ category.breadcrumb[-1].name }}</li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <a href="{{ url_for('listings.category_listings', category_id=category.breadcrumb[-1].id) }}">{{ category.breadcrumb[-1].name }}</a>
+            </li>
         </ol>
     </nav>
 {% endmacro %}
