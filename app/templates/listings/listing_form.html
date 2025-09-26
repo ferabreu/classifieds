@@ -37,17 +37,12 @@
             {% endfor %}
         </div>
 
-        <div class="mb-3">
-            {{ form.type.label(class="form-label") }}
-            {{ form.type(class="form-select", id="type") }}
-            {% for error in form.type.errors %}
-                <div class="text-danger">{{ error }}</div>
-            {% endfor %}
-        </div>
+
 
         <div class="mb-3">
             {{ form.category.label(class="form-label") }}
-            {{ form.category(class="form-select", id="category") }}
+            {{ form.category(class="form-select", id="category", style="display:none;") }}
+            <div id="category-dropdowns"></div>
             {% for error in form.category.errors %}
                 <div class="text-danger">{{ error }}</div>
             {% endfor %}
@@ -88,18 +83,5 @@
 
 {% block scripts %}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        $(function() {
-            $('#type').change(function() {
-                var typeId = $(this).val();
-                $.getJSON('/categories_for_type/' + typeId, function(data) {
-                    var $category = $('#category');
-                    $category.empty();
-                    $.each(data, function(idx, cat) {
-                        $category.append($('<option>').attr('value', cat.id).text(cat.name));
-                    });
-                });
-            });
-        });
-    </script>
+    <script src="{{ url_for('static', filename='category_dropdowns.js') }}"></script>
 {% endblock %}

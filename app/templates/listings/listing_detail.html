@@ -10,8 +10,8 @@
         {% if listing.user_id == current_user.id %}
             <strong>You</strong>
         {% else %}
-            <a href="{{ url_for('users.user_profile', user_id=listing.user_id) }}">
-                {{ listing.owner.first_name ~ ' ' ~ listing.owner.last_name }}
+            <a href="mailto:{{ listing.owner.email }}">
+                {{ listing.owner.first_name ~ ' ' ~ listing.owner.last_name ~ ' (' ~ listing.owner.email ~ ')' }}
             </a>
         {% endif %}
         on {{ listing.created_at.strftime('%Y-%m-%d') }}.

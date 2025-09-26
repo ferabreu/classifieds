@@ -76,7 +76,7 @@ class ListingForm(FlaskForm):
 
     title = StringField("Title", validators=[DataRequired(), Length(max=128)])
     category = SelectField(
-        "Category", coerce=int, validators=[DataRequired()], choices=[]
+        "Category", coerce=str, validators=[DataRequired()], choices=[]
     )
     description = TextAreaField("Description", validators=[DataRequired()])
     price = FloatField("Price", validators=[Optional()])
