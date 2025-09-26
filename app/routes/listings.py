@@ -96,19 +96,35 @@ def listing_detail(listing_id):
 @listings_bp.route("/subcategories_for_parent/<int:parent_id>")
 @login_required
 def subcategories_for_parent(parent_id):
-    subcategories = (
-        Category.query.filter_by(parent_id=parent_id).order_by(Category.name).all()
-    )
+    if parent_id == 0:
+        subcategories = Category.query.filter(Category.parent_id.is_(None)).order_by(Category.name).all()
+    else:
+        subcategories = Category.query.filter_by(parent_id=parent_id).order_by(Category.name).all()
     data = [
-        {"id": subcat.id, "name": subcat.get_full_path()} for subcat in subcategories
+        {"id": subcat.id, "name": subcat.name} for subcat in subcategories
     ]
     return jsonify(data)
+
+
+# Endpoint to return the breadcrumb path for a category (for pre-selecting dropdowns)
+@listings_bp.route("/category_breadcrumb/<int:category_id>")
+@login_required
+def category_breadcrumb(category_id):
+    category = Category.query.get_or_404(category_id)
+    path = [
+        {"id": cat.id, "name": cat.name}
+        for cat in category.breadcrumb
+    ]
+    return jsonify(path)
 
 
 @listings_bp.route("/new", methods=["GET", "POST"])
 @login_required
 def create_listing():
     form = ListingForm()
+    # For new listing, ensure category field is empty so JS shows only root dropdown
+    if request.method == "GET":
+        form.category.data = ""
     page_title = "New listing"
 
     temp_dir = current_app.config["TEMP_DIR"]
@@ -133,16 +149,18 @@ def create_listing():
             page_title=page_title,
         )
 
-    # Populate form category choices with hierarchical names
+    # Populate form category choices with hierarchical names, add blank option
     categories = Category.query.order_by(Category.name).all()
-    form.category.choices = [(cat.id, cat.get_full_path()) for cat in categories]
+    form.category.choices = [('', 'Select...')] + [(str(cat.id), cat.get_full_path()) for cat in categories]  # type: ignore
 
     if request.method == "POST":
-        form.category.choices = [
-            (cat.id, cat.get_full_path())
+        form.category.choices = [('', 'Select...')] + [
+            (str(cat.id), cat.get_full_path())
             for cat in Category.query.order_by(Category.name)
-        ]
+        ]  # type: ignore
         if form.validate_on_submit():
+            # Convert category to int if selected
+            category_id = int(form.category.data) if form.category.data else None
             # Backend checks for None on required fields (PyLance type safety)
             if form.title.data is None:
                 flash(
@@ -177,7 +195,7 @@ def create_listing():
                     action="Create",
                     page_title=page_title,
                 )
-            if form.category.data is None:
+            if not category_id:
                 flash(
                     "Category is missing. Please select a category for your listing.",
                     "danger",
@@ -193,7 +211,7 @@ def create_listing():
                 description=form.description.data,
                 price=form.price.data or 0,
                 user_id=current_user.id,
-                category_id=form.category.data,
+                category_id=category_id,
             )
 
             added_temp_paths = []
