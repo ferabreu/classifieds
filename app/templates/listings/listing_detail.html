@@ -11,7 +11,7 @@
             <strong>You</strong>
         {% else %}
             <a href="mailto:{{ listing.owner.email }}">
-                {{ listing.owner.first_name ~ ' ' ~ listing.owner.last_name ~ ' (' ~ listing.owner.email ~ ')' }}
+                {{ listing.owner.first_name ~ ' ' ~ listing.owner.last_name ~ ' (' ~ listing.owner.email ~ ')' -}}
             </a>
         {% endif %}
         on {{ listing.created_at.strftime('%Y-%m-%d') }}.

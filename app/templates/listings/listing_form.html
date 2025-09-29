@@ -37,10 +37,8 @@
             {% endfor %}
         </div>
 
-
-
         <div class="mb-3">
-            {{ form.category.label(class="form-label") }}
+            <div id="category-dropdowns-label">{{ form.category.label(class="form-label") }}</div>
             {{ form.category(class="form-select", id="category", style="display:none;") }}
             <div id="category-dropdowns"></div>
             {% for error in form.category.errors %}
@@ -83,5 +81,5 @@
 
 {% block scripts %}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ url_for('static', filename='category_dropdowns.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/category_dropdowns.js') }}"></script>
 {% endblock %}
