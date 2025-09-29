@@ -25,7 +25,7 @@ def upgrade():
         parent_map.setdefault(cat.parent_id, []).append(cat.id)
     updates = []
     for parent_id, ids in parent_map.items():
-        for order, cat_id in enumerate(ids):
+        for order, cat_id in enumerate(ids, start=1):
             updates.append({'id': cat_id, 'sort_order': order})
     for upd in updates:
         conn.execute(sa.text('UPDATE category SET sort_order = :sort_order WHERE id = :id'), upd)
