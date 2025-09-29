@@ -19,17 +19,7 @@ db = SQLAlchemy()
 
 
 class Category(db.Model):
-    @property
-    def breadcrumb(self):
-        """
-        Returns a list of categories from root to self for breadcrumb navigation.
-        """
-        node = self
-        nodes = []
-        while node:
-            nodes.insert(0, node)
-            node = node.parent
-        return nodes
+
     """
     Category model for hierarchical organization of listings.
 
@@ -42,7 +32,20 @@ class Category(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey("category.id"), nullable=True)
     parent = db.relationship("Category", remote_side=[id], backref="children")
     listings = db.relationship("Listing", backref="category", lazy=True)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
     __table_args__ = (db.UniqueConstraint("name", "parent_id", name="_cat_parent_uc"),)
+
+    @property
+    def breadcrumb(self):
+        """
+        Returns a list of categories from root to self for breadcrumb navigation.
+        """
+        node = self
+        nodes = []
+        while node:
+            nodes.insert(0, node)
+            node = node.parent
+        return nodes
 
     def __init__(
         self,
