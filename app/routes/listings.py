@@ -97,12 +97,16 @@ def listing_detail(listing_id):
 @login_required
 def subcategories_for_parent(parent_id):
     if parent_id == 0:
-        subcategories = Category.query.filter(Category.parent_id.is_(None)).order_by(Category.name).all()
+        subcategories = (
+            Category.query.filter(Category.parent_id.is_(None))
+            .order_by(Category.name)
+            .all()
+        )
     else:
-        subcategories = Category.query.filter_by(parent_id=parent_id).order_by(Category.name).all()
-    data = [
-        {"id": subcat.id, "name": subcat.name} for subcat in subcategories
-    ]
+        subcategories = (
+            Category.query.filter_by(parent_id=parent_id).order_by(Category.name).all()
+        )
+    data = [{"id": subcat.id, "name": subcat.name} for subcat in subcategories]
     return jsonify(data)
 
 
@@ -111,10 +115,7 @@ def subcategories_for_parent(parent_id):
 @login_required
 def category_breadcrumb(category_id):
     category = Category.query.get_or_404(category_id)
-    path = [
-        {"id": cat.id, "name": cat.name}
-        for cat in category.breadcrumb
-    ]
+    path = [{"id": cat.id, "name": cat.name} for cat in category.breadcrumb]
     return jsonify(path)
 
 
@@ -151,10 +152,10 @@ def create_listing():
 
     # Populate form category choices with hierarchical names, add blank option
     categories = Category.query.order_by(Category.name).all()
-    form.category.choices = [('', 'Select...')] + [(str(cat.id), cat.get_full_path()) for cat in categories]  # type: ignore
+    form.category.choices = [("", "Select...")] + [(str(cat.id), cat.get_full_path()) for cat in categories]  # type: ignore
 
     if request.method == "POST":
-        form.category.choices = [('', 'Select...')] + [
+        form.category.choices = [("", "Select...")] + [
             (str(cat.id), cat.get_full_path())
             for cat in Category.query.order_by(Category.name)
         ]  # type: ignore
@@ -666,7 +667,7 @@ def edit_listing(listing_id):
                 )
     else:
         form.title.data = listing.title
-        form.category.data = listing.category_id
+        form.category.data = str(listing.category_id)
         form.description.data = listing.description
         form.price.data = listing.price
 
