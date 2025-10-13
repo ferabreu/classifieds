@@ -158,9 +158,22 @@ def categories():
     Shows hierarchy: parent and children.
     """
     categories = Category.query.order_by(Category.name).all()
+    from app.forms import CategoryForm
+
+    forms = {}
+    for c in categories:
+        form = CategoryForm(obj=c)
+        # Set parent_id choices, exclude self
+        form.parent_id.choices = [(0, "- None -")] + [
+            (cat.id, cat.get_full_path()) for cat in categories if cat.id != c.id
+        ]
+        # Set the current parent_id value
+        form.parent_id.data = c.parent_id if c.parent_id else 0
+        forms[c.id] = form
     return render_template(
         "admin/admin_categories.html",
         categories=categories,
+        forms=forms,
         page_title="Manage categories",
     )
 

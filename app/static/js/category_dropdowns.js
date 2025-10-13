@@ -73,13 +73,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Start with only one root dropdown
+    // Initialize dropdowns for new or edit forms
     categoryContainer.innerHTML = '';
-    categoryContainer.appendChild(createDropdown(0, 0, null));
-
-    // If editing, pre-select the correct path
     var initialId = categoryHidden ? categoryHidden.value : null;
     if (initialId) {
+        // If editing: build the breadcrumb path, then check for children and add next-level dropdown if needed
         fetch('/category_breadcrumb/' + initialId)
             .then(response => response.json())
             .then(function(path) {
@@ -87,7 +85,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 var parentId = 0;
                 var lastIdx = path.length - 1;
                 function addDropdown(idx) {
-                    if (idx > lastIdx) return;
+                    if (idx > lastIdx) {
+                        // After last breadcrumb, check for children and add dropdown if needed
+                        fetch('/subcategories_for_parent/' + parentId)
+                            .then(response => response.json())
+                            .then(function(data) {
+                                if (data.length > 0) {
+                                    // Add a new dropdown for the next level, no selection
+                                    var newDropdown = createDropdown(idx, parentId, null, function(dropdown, data) {
+                                        categoryContainer.appendChild(dropdown);
+                                    });
+                                }
+                            });
+                        return;
+                    }
                     var cat = path[idx];
                     createDropdown(idx, parentId, cat.id, function(dropdown, data) {
                         categoryContainer.appendChild(dropdown);
@@ -97,5 +108,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 addDropdown(0);
             });
+    } else {
+        // If creating new: show only the root dropdown
+        categoryContainer.appendChild(createDropdown(0, 0, null));
     }
 });

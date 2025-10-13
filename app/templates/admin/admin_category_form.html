@@ -7,9 +7,17 @@
             {{ form.name.label }} {{ form.name(class="form-control") }}
         </div>
         <div class="mb-3">
-            {{ form.type_id.label }} {{ form.type_id(class="form-select") }}
+            <div id="parent-dropdowns-label">{{ form.parent_id.label(class="form-label") }}</div>
+            <input type="hidden" id="category" name="parent_id" value="{{ form.parent_id.data or '' }}">
+            <div id="category-dropdowns"></div>
+            {% for error in form.parent_id.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
         </div>
         <button type="submit" class="btn btn-primary">{{ action }}</button>
         <a href="{{ url_for('admin.categories') }}" class="btn btn-secondary">Cancel</a>
     </form>
+    {% block scripts %}
+        <script src="{{ url_for('static', filename='js/category_dropdowns.js') }}"></script>
+    {% endblock %}
 {% endblock %}
