@@ -131,7 +131,7 @@ class CategoryForm(FlaskForm):
 
     name = StringField("Category Name", validators=[DataRequired(), Length(max=64)])
     parent_id = SelectField(
-        "Parent Category", coerce=int, validators=[Optional()], choices=[]
+        "Parent Category", coerce=str, validators=[Optional()], choices=[]
     )
     submit = SubmitField("Save")
 
