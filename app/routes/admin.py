@@ -214,14 +214,17 @@ def edit_category(category_id):
     """
     Allows admins to edit a category's name and parent.
     Prevents cyclic parent assignment.
+    Uses 'parent_id' as the form field for parent category (clearer semantics).
     """
     c = Category.query.get_or_404(category_id)
+    from ..forms import CategoryForm
+
     form = CategoryForm(obj=c)
     # Exclude self and descendants from parent choices to avoid cycles
     all_categories = Category.query.order_by(Category.name).all()
     excluded_ids = [c.id] + c.get_descendant_ids()
-    parent_choices = [(0, "- None -")] + [
-        (cat.id, cat.get_full_path())
+    parent_choices = [("0", "- None -")] + [
+        (str(cat.id), cat.get_full_path())
         for cat in all_categories
         if cat.id not in excluded_ids
     ]
@@ -229,9 +232,9 @@ def edit_category(category_id):
     if request.method == "POST":
         if form.validate_on_submit():
             c.name = form.name.data
-            new_parent_id = form.parent_id.data if form.parent_id.data != 0 else None
+            new_parent_id = form.parent_id.data if form.parent_id.data != "0" else None
             # Prevent setting self or descendant as parent
-            if new_parent_id in excluded_ids:
+            if new_parent_id and int(new_parent_id) in excluded_ids:
                 flash(
                     "Cannot set category itself or its descendant as parent.", "danger"
                 )
@@ -242,18 +245,22 @@ def edit_category(category_id):
                     category_obj=c,
                     page_title="Edit category",
                 )
-            c.parent_id = new_parent_id
+            c.parent_id = int(new_parent_id) if new_parent_id else None
             db.session.commit()
             flash("Category updated.", "success")
             return redirect(url_for("admin.categories"))
     else:
-        # Pre-select parent_id in form
-        form.parent_id.data = c.parent_id if c.parent_id else 0
+        # Pre-select parent in form as string
+        form.parent_id.data = str(c.parent_id) if c.parent_id else "0"
+    print("[DEBUG] parent_id.data:", repr(form.parent_id.data))
+    print("[DEBUG] parent_id.choices:", repr(form.parent_id.choices))
+    # Pass the current category's ID for JS initialization
     return render_template(
         "admin/admin_category_form.html",
         form=form,
         action="Edit",
         category_obj=c,
+        category_id=c.id,
         page_title="Edit category",
     )
 
