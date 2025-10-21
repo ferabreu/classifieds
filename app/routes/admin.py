@@ -164,11 +164,11 @@ def categories():
     for c in categories:
         form = CategoryForm(obj=c)
         # Set parent_id choices, exclude self
-        form.parent_id.choices = [(0, "- None -")] + [
-            (cat.id, cat.get_full_path()) for cat in categories if cat.id != c.id
-        ]
+        form.parent_id.choices = [("0", "- None -")] + [
+            (str(cat.id), cat.get_full_path()) for cat in categories if cat.id != c.id
+        ]  # type: ignore
         # Set the current parent_id value
-        form.parent_id.data = c.parent_id if c.parent_id else 0
+        form.parent_id.data = str(c.parent_id) if c.parent_id else "0"
         forms[c.id] = form
     return render_template(
         "admin/admin_categories.html",
@@ -188,13 +188,15 @@ def new_category():
     """
     form = CategoryForm()
     # Populate parent_id choices: show all categories except self (no actual self yet)
-    form.parent_id.choices = [(0, "- None -")] + [
-        (cat.id, cat.get_full_path())
+    form.parent_id.choices = [("0", "- None -")] + [
+        (str(cat.id), cat.get_full_path())
         for cat in Category.query.order_by(Category.name).all()
-    ]
+    ]  # type: ignore
     if form.validate_on_submit():
-        parent_id = form.parent_id.data if form.parent_id.data != 0 else None
-        c = Category(name=form.name.data, parent_id=parent_id)
+        name = form.name.data
+        assert isinstance(name, str)
+        parent_id = int(form.parent_id.data) if form.parent_id.data != "0" else None
+        c = Category(name=name, parent_id=parent_id)
         db.session.add(c)
         db.session.commit()
         flash("Category created.", "success")
@@ -228,13 +230,13 @@ def edit_category(category_id):
         for cat in all_categories
         if cat.id not in excluded_ids
     ]
-    form.parent_id.choices = parent_choices
+    form.parent_id.choices = parent_choices  # type: ignore
     if request.method == "POST":
         if form.validate_on_submit():
             c.name = form.name.data
-            new_parent_id = form.parent_id.data if form.parent_id.data != "0" else None
+            c.parent_id = int(form.parent_id.data) if form.parent_id.data != "0" else None
             # Prevent setting self or descendant as parent
-            if new_parent_id and int(new_parent_id) in excluded_ids:
+            if c.parent_id is not None and c.parent_id in excluded_ids:
                 flash(
                     "Cannot set category itself or its descendant as parent.", "danger"
                 )
@@ -245,7 +247,6 @@ def edit_category(category_id):
                     category_obj=c,
                     page_title="Edit category",
                 )
-            c.parent_id = int(new_parent_id) if new_parent_id else None
             db.session.commit()
             flash("Category updated.", "success")
             return redirect(url_for("admin.categories"))
@@ -323,7 +324,7 @@ def delete_listing(listing_id):
     Deletes a single listing and its associated image files using a 'temp' strategy
     to approximate atomicity between database and filesystem operations.
     """
-    listing = Listing.query.options(joinedload(Listing.images)).get_or_404(listing_id)
+    listing = Listing.query.options(joinedload(Listing.images)).get_or_404(listing_id)  # type: ignore
     original_paths = []
     temp_paths = []
 
@@ -373,7 +374,7 @@ def delete_selected_listings():
         return redirect(url_for("admin.listings"))
 
     listings = (
-        Listing.query.options(joinedload(Listing.images))
+        Listing.query.options(joinedload(Listing.images))  # type: ignore
         .filter(Listing.id.in_(selected_ids))
         .all()
     )
