@@ -164,7 +164,6 @@ This creates:
 - `app/static/uploads/thumbnails` (224x224 thumbnails)
 - `app/static/temp` (temp folder for ACIDized transactions when CRUDing listings)
 - Default admin: `admin@classifieds.io` / password: `admin`
-- Types: Good, Service. Each gets a "General" category.
 
 ### 3.1. Generate thumbnails for existing images (optional)
 
@@ -332,7 +331,7 @@ LDAP_DOMAIN=
 
 ## License
 
-MIT or your choice.
+GPLv2.
 
 ---
 
