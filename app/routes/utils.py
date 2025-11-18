@@ -16,9 +16,13 @@ Currently, it provides the admin_required decorator for restricting access to ad
 import os
 from functools import wraps
 
-from flask import current_app, flash, redirect, url_for
-from flask_login import current_user
+from flask import Blueprint, current_app, flash, jsonify, redirect, url_for
+from flask_login import current_user, login_required
 from PIL import Image
+from ..models import Category
+
+
+utils_bp = Blueprint("utils", __name__)
 
 
 def admin_required(func):
@@ -100,16 +104,12 @@ def serialize_category(cat):
     return {"id": cat.id, "name": cat.name}
 
 
-def get_category_ancestor_ids(categories, target_id):
-    """
-    Recursively find all ancestor IDs for the target_id in the nested category tree.
-    Returns a list of IDs from root to the parent of target_id.
-    """
-    for cat in categories:
-        if cat.id == target_id:
-            return []
-        if getattr(cat, "children", None):
-            path = get_category_ancestor_ids(cat.children, target_id)
-            if path is not None:
-                return [cat.id] + path
-    return None
+# Endpoint to return the breadcrumb path for a category (for pre-selecting dropdowns)
+@utils_bp.route("/category_breadcrumb/<int:category_id>")
+@login_required
+def category_breadcrumb(category_id):
+    if category_id == 0:
+        return jsonify([])  # No breadcrumb for root
+    category = Category.query.get_or_404(category_id)
+    path = [{"id": cat.id, "name": cat.name} for cat in category.breadcrumb]
+    return jsonify(path)

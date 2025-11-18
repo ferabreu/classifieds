@@ -59,10 +59,8 @@ def category_listings(category_id):
     # --- Sidebar context additions ---
     # 1. Get all root categories with their children (for sidebar)
     categories = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
-    # 2. Compute ancestor IDs for expansion
-    from .utils import get_category_ancestor_ids  # Adjust import as needed
-
-    ancestor_ids = get_category_ancestor_ids(categories, category_id) or []
+    # 2. Compute ancestor IDs for expansion using breadcrumb property
+    ancestor_ids = [cat.id for cat in category.breadcrumb[:-1]]
     expanded_ids = ancestor_ids  # List of IDs to auto-expand
 
     return render_template(
@@ -108,15 +106,6 @@ def subcategories_for_parent(parent_id):
         )
     data = [{"id": subcat.id, "name": subcat.name} for subcat in subcategories]
     return jsonify(data)
-
-
-# Endpoint to return the breadcrumb path for a category (for pre-selecting dropdowns)
-@listings_bp.route("/category_breadcrumb/<int:category_id>")
-@login_required
-def category_breadcrumb(category_id):
-    category = Category.query.get_or_404(category_id)
-    path = [{"id": cat.id, "name": cat.name} for cat in category.breadcrumb]
-    return jsonify(path)
 
 
 @listings_bp.route("/new", methods=["GET", "POST"])
