@@ -42,7 +42,7 @@ def create_app(config_class=None):
     db.init_app(app)
     migrate = Migrate(app, db)
     login_manager.init_app(app)
-    login_manager.login_view = "auth.login"
+    login_manager.login_view = "auth.login"  # type: ignore
     mail.init_app(app)
 
     @login_manager.user_loader
@@ -65,12 +65,14 @@ def create_app(config_class=None):
     from .routes.errors import errors_bp
     from .routes.listings import listings_bp
     from .routes.users import users_bp
+    from .routes.utils import utils_bp
 
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(errors_bp)
     app.register_blueprint(listings_bp, url_prefix="/")
     app.register_blueprint(users_bp, url_prefix="/users")
+    app.register_blueprint(utils_bp, url_prefix="/utils")
 
     @app.cli.command("init")
     def init():
