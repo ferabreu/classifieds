@@ -30,22 +30,11 @@ class Category(db.Model):
     name = db.Column(db.String(64), nullable=False)
     # Recursive fields for multi-level categories
     parent_id = db.Column(db.Integer, db.ForeignKey("category.id"), nullable=True)
+    parent_id: InstrumentedAttribute[Optional[int]]
     parent = db.relationship("Category", remote_side=[id], backref="children")
     listings = db.relationship("Listing", backref="category", lazy=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     __table_args__ = (db.UniqueConstraint("name", "parent_id", name="_cat_parent_uc"),)
-
-    @property
-    def breadcrumb(self):
-        """
-        Returns a list of categories from root to self for breadcrumb navigation.
-        """
-        node = self
-        nodes = []
-        while node:
-            nodes.insert(0, node)
-            node = node.parent
-        return nodes
 
     def __init__(
         self,
@@ -55,6 +44,19 @@ class Category(db.Model):
         self.name = name
         self.parent_id = parent_id
 
+    @property
+    def breadcrumb(self):
+        """
+        Returns a list of categories from root to self for breadcrumb navigation.
+        """
+        node = self
+        nodes = []
+        while node:
+            # insert at front to build root -> ... -> self order
+            nodes.insert(0, node)
+            node = node.parent
+        return nodes
+
     def get_full_path(self):
         """
         Return the full hierarchical path for this category.
@@ -62,12 +64,15 @@ class Category(db.Model):
         Example:
             Electronics > Computers > Laptops
         """
-        names = []
-        node = self
-        while node:
-            names.append(node.name)
-            node = node.parent
-        return " > ".join(reversed(names))
+        # reuse breadcrumb to avoid duplicate traversal logic
+        return " > ".join([cat.name for cat in self.breadcrumb])
+
+    # Small serializer used by routes and APIs
+    def to_dict(self):
+        """
+        Serialize minimal category info for API responses.
+        """
+        return {"id": self.id, "name": self.name}
 
     def get_descendant_ids(self):
         """
@@ -79,6 +84,16 @@ class Category(db.Model):
         for child in self.children:  # type: ignore # created dynamically by SQLAlchemy
             ids += child.get_descendant_ids()
         return ids
+    
+    @classmethod
+    def get_children(cls, parent_id: Optional[int]):
+        """
+        Return immediate children for parent_id.
+        parent_id == 0 -> return root categories (parent_id IS NULL).
+        """
+        if parent_id == 0 or parent_id is None:
+            return cls.query.filter(cls.parent_id.is_(None)).order_by(cls.name).all()
+        return cls.query.filter_by(parent_id=parent_id).order_by(cls.name).all()
 
 
 class User(UserMixin, db.Model):

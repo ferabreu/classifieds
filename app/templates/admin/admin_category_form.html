@@ -13,10 +13,10 @@
         </div>
         
         <div class="mb-3">
-            <div id="parent_id-dropdowns-label">{{ form.parent_id.label(class="form-label") }}</div>
-            {{ form.parent_id(class="form-select", id="category", style="display:none;") }}
+            <div id="category-dropdowns-label">{{ form.category.label(class="form-label") }}</div>
+            {{ form.category(class="form-select", id="category", style="display:none;") }}
             <div id="category-dropdowns"></div>
-            {% for error in form.parent_id.errors %}
+            {% for error in form.category.errors %}
                 <div class="text-danger">{{ error }}</div>
             {% endfor %}
         </div>

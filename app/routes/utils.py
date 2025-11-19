@@ -93,17 +93,6 @@ def create_thumbnail(image_path, thumbnail_path):
         return False
 
 
-def serialize_category(cat):
-    """
-    Serializes a category object into a dictionary.
-    Args:
-        cat: An object representing a category, expected to have 'id' and 'name' attributes.
-    Returns:
-        dict: A dictionary containing the 'id' and 'name' of the category.
-    """
-    return {"id": cat.id, "name": cat.name}
-
-
 # Endpoint to return the breadcrumb path for a category (for pre-selecting dropdowns)
 @utils_bp.route("/category_breadcrumb/<int:category_id>")
 @login_required
@@ -111,5 +100,4 @@ def category_breadcrumb(category_id):
     if category_id == 0:
         return jsonify([])  # No breadcrumb for root
     category = Category.query.get_or_404(category_id)
-    path = [{"id": cat.id, "name": cat.name} for cat in category.breadcrumb]
-    return jsonify(path)
+    return jsonify([c.to_dict() for c in category.breadcrumb])
