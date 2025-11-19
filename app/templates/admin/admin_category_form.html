@@ -18,7 +18,9 @@
             <div id="category-dropdowns"
                  data-hidden-field-id="parent_id"
                  data-subcategories-url="{{ url_for('listings.subcategories_for_parent', parent_id=0) | replace('0','{parent_id}') }}"
-                 data-breadcrumb-url="{{ url_for('utils.category_breadcrumb', category_id=0) | replace('0','{category_id}') }}"></div>
+                 data-breadcrumb-url="{{ url_for('utils.category_breadcrumb', category_id=0) | replace('0','{category_id}') }}"
+                 data-exclude-ids="{{ exclude_ids | tojson }}">
+            </div>
             {% for error in form.parent_id.errors %}
                 <div class="text-danger">{{ error }}</div>
             {% endfor %}

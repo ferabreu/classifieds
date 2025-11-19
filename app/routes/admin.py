@@ -212,59 +212,49 @@ def new_category():
 
 
 @admin_bp.route("/categories/edit/<int:category_id>", methods=["GET", "POST"])
-@login_required
 @admin_required
 def edit_category(category_id):
-    """
-    Allows admins to edit a category's name and parent.
-    Prevents cyclic parent assignment.
-    Uses 'parent_id' as the form field for parent category (clearer semantics).
-    """
-    c = Category.query.get_or_404(category_id)
-    from ..forms import CategoryForm
+    category = Category.query.get_or_404(category_id)
+    form = CategoryForm(obj=category)
+    # compute ids to exclude (the category itself + all descendants) to avoid cycles
+    exclude_ids = category.get_descendant_ids()
 
-    form = CategoryForm(obj=c)
-    # Exclude self and descendants from parent choices to avoid cycles
-    all_categories = Category.query.order_by(Category.name).all()
-    excluded_ids = [c.id] + c.get_descendant_ids()
-    parent_choices = [("0", "- None -")] + [
-        (str(cat.id), cat.get_full_path())
-        for cat in all_categories
-        if cat.id not in excluded_ids
-    ]
-    form.parent_id.choices = parent_choices  # type: ignore
-    if request.method == "POST":
-        if form.validate_on_submit():
-            c.name = form.name.data
-            c.parent_id = int(form.parent_id.data) if form.parent_id.data != "0" else None
-            # Prevent setting self or descendant as parent
-            if c.parent_id is not None and c.parent_id in excluded_ids:
-                flash(
-                    "Cannot set category itself or its descendant as parent.", "danger"
-                )
-                return render_template(
-                    "admin/admin_category_form.html",
-                    form=form,
-                    action="Edit",
-                    category_obj=c,
-                    page_title="Edit category",
-                )
-            db.session.commit()
-            flash("Category updated.", "success")
-            return redirect(url_for("admin.categories"))
-    else:
-        # Pre-select parent in form as string
-        form.parent_id.data = str(c.parent_id) if c.parent_id else "0"
-    print("[DEBUG] parent_id.data:", repr(form.parent_id.data))
-    print("[DEBUG] parent_id.choices:", repr(form.parent_id.choices))
-    # Pass the current category's ID for JS initialization
+    # Populate parent_id choices (exclude self + descendants) so the hidden select has valid options
+    all_cats = Category.query.order_by(Category.name).all()
+    form.parent_id.choices = [("0", "- None -")] + [
+        (str(cat.id), cat.get_full_path()) for cat in all_cats if cat.id not in exclude_ids
+    ]  # type: ignore
+
+    if request.method == "GET":
+        # Set the current parent value as a string to match SelectField choice values
+        form.parent_id.data = str(category.parent_id) if category.parent_id else "0"
+
+    if form.validate_on_submit():
+        category.name = form.name.data
+        category.parent_id = (
+            int(form.parent_id.data) if form.parent_id.data != "0" else None
+        )
+        # Prevent setting self or descendant as parent
+        if category.parent_id is not None and category.parent_id in exclude_ids:
+            flash(
+                "Cannot set category itself or its descendant as parent.", "danger"
+            )
+            return render_template(
+                "admin/admin_category_form.html",
+                form=form,
+                action="Edit",
+                category_obj=category,
+                page_title="Edit category",
+            )
+        db.session.commit()
+        flash("Category updated.", "success")
+        return redirect(url_for("admin.categories"))
     return render_template(
         "admin/admin_category_form.html",
         form=form,
-        action="Edit",
-        category_obj=c,
-        category_id=c.id,
-        page_title="Edit category",
+        action="Save",
+        exclude_ids=exclude_ids,
+        category=category,
     )
 
 
