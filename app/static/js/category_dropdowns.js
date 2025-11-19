@@ -1,10 +1,39 @@
 // This script dynamically creates category dropdowns for each level of the category tree.
-// It uses the /subcategories_for_parent/<parent_id> endpoint to fetch children.
+// It requires the template to provide configuration via data-* attributes on the container:
+//   - data-hidden-field-id: id of the original WTForms <select> (hidden)
+//   - data-subcategories-url: URL template with "{parent_id}" placeholder
+//   - data-breadcrumb-url: URL template with "{category_id}" placeholder
 document.addEventListener('DOMContentLoaded', function() {
     // Container for dynamic dropdowns
     var categoryContainer = document.getElementById('category-dropdowns');
-    var categoryHidden = document.getElementById('category');
-    if (categoryHidden) categoryHidden.style.display = 'none'; // Hide the original WTForms dropdown
+    if (!categoryContainer) {
+        console.error('category_dropdowns: container with id "category-dropdowns" not found. Abort.');
+        return;
+    }
+
+    // Read required configuration from data-attributes
+    var hiddenFieldId = categoryContainer.dataset.hiddenFieldId;
+    var subcategoriesUrlTpl = categoryContainer.dataset.subcategoriesUrl;
+    var breadcrumbUrlTpl = categoryContainer.dataset.breadcrumbUrl;
+
+    if (!hiddenFieldId || !subcategoriesUrlTpl || !breadcrumbUrlTpl) {
+        console.error('category_dropdowns: missing required data-* attributes on #category-dropdowns. Required: data-hidden-field-id, data-subcategories-url, data-breadcrumb-url');
+        return;
+    }
+
+    var categoryHidden = document.getElementById(hiddenFieldId);
+    if (!categoryHidden) {
+        console.error('category_dropdowns: hidden field with id "' + hiddenFieldId + '" not found. Abort.');
+        return;
+    }
+    categoryHidden.style.display = 'none'; // Hide the original WTForms dropdown
+
+    function buildSubcategoriesUrl(parentId) {
+        return subcategoriesUrlTpl.replace('{parent_id}', parentId);
+    }
+    function buildBreadcrumbUrl(categoryId) {
+        return breadcrumbUrlTpl.replace('{category_id}', categoryId);
+    }
 
     // Helper to create a dropdown
     function createDropdown(level, parentId, selectedId, callback) {
@@ -15,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
         option.value = '';
         option.textContent = 'Select...';
         dropdown.appendChild(option);
-        fetch('/subcategories_for_parent/' + parentId)
+        fetch(buildSubcategoriesUrl(parentId))
             .then(response => response.json())
             .then(data => {
                 data.forEach(function(cat) {
@@ -26,6 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 if (selectedId) dropdown.value = selectedId;
                 if (typeof callback === 'function') callback(dropdown, data);
+            })
+            .catch(function(err){
+                console.error('category_dropdowns: error fetching subcategories for parent ' + parentId, err);
             });
         return dropdown;
     }
@@ -62,13 +94,16 @@ document.addEventListener('DOMContentLoaded', function() {
         removePlaceholder(target);
         setHiddenCategory(selectedId);
         if (selectedId) {
-            fetch('/subcategories_for_parent/' + selectedId)
+            fetch(buildSubcategoriesUrl(selectedId))
                 .then(response => response.json())
                 .then(data => {
                     if (data.length > 0) {
                         var newDropdown = createDropdown(level + 1, selectedId);
                         categoryContainer.appendChild(newDropdown);
                     }
+                })
+                .catch(function(err){
+                    console.error('category_dropdowns: error fetching subcategories for parent ' + selectedId, err);
                 });
         }
     });
@@ -78,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var initialId = categoryHidden ? categoryHidden.value : null;
     if (initialId) {
         // If editing: build the breadcrumb path, then check for children and add next-level dropdown if needed
-        fetch('/category_breadcrumb/' + initialId)
+        fetch(buildBreadcrumbUrl(initialId))
             .then(response => response.json())
             .then(function(path) {
                 categoryContainer.innerHTML = '';
@@ -87,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 function addDropdown(idx) {
                     if (idx > lastIdx) {
                         // After last breadcrumb, check for children and add dropdown if needed
-                        fetch('/subcategories_for_parent/' + parentId)
+                        fetch(buildSubcategoriesUrl(parentId))
                             .then(response => response.json())
                             .then(function(data) {
                                 if (data.length > 0) {
@@ -107,6 +142,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
                 addDropdown(0);
+            })
+            .catch(function(err){
+                console.error('category_dropdowns: error fetching breadcrumb for ' + initialId, err);
             });
     } else {
         // If creating new: show only the root dropdown
