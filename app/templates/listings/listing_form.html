@@ -40,7 +40,10 @@
         <div class="mb-3">
             <div id="category-dropdowns-label">{{ form.category.label(class="form-label") }}</div>
             {{ form.category(class="form-select", id="category", style="display:none;") }}
-            <div id="category-dropdowns"></div>
+            <div id="category-dropdowns"
+                 data-hidden-field-id="category"
+                 data-subcategories-url="{{ url_for('listings.subcategories_for_parent', parent_id=0) | replace('0','{parent_id}') }}"
+                 data-breadcrumb-url="{{ url_for('utils.category_breadcrumb', category_id=0) | replace('0','{category_id}') }}"></div>
             {% for error in form.category.errors %}
                 <div class="text-danger">{{ error }}</div>
             {% endfor %}
