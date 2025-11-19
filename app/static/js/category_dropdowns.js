@@ -15,6 +15,17 @@ document.addEventListener('DOMContentLoaded', function() {
     var hiddenFieldId = categoryContainer.dataset.hiddenFieldId;
     var subcategoriesUrlTpl = categoryContainer.dataset.subcategoriesUrl;
     var breadcrumbUrlTpl = categoryContainer.dataset.breadcrumbUrl;
+    var excludeIds = [];
+
+    // optional: list of category ids (JSON) that must not be selectable (e.g. the category being edited + descendants)
+    if (categoryContainer.dataset.excludeIds) {
+        try {
+            excludeIds = JSON.parse(categoryContainer.dataset.excludeIds);
+        } catch (e) {
+            console.error('category_dropdowns: invalid JSON in data-exclude-ids', e);
+            excludeIds = [];
+        }
+    }
 
     if (!hiddenFieldId || !subcategoriesUrlTpl || !breadcrumbUrlTpl) {
         console.error('category_dropdowns: missing required data-* attributes on #category-dropdowns. Required: data-hidden-field-id, data-subcategories-url, data-breadcrumb-url');
@@ -48,6 +59,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 data.forEach(function(cat) {
+                    // skip excluded ids (prevent selecting the category being edited or its descendants)
+                    if (excludeIds && excludeIds.indexOf(cat.id) !== -1) return;
                     var opt = document.createElement('option');
                     opt.value = cat.id;
                     opt.textContent = cat.name;
