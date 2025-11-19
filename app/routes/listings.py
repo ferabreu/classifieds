@@ -94,17 +94,8 @@ def listing_detail(listing_id):
 @listings_bp.route("/subcategories_for_parent/<int:parent_id>")
 @login_required
 def subcategories_for_parent(parent_id):
-    if parent_id == 0:
-        subcategories = (
-            Category.query.filter(Category.parent_id.is_(None))
-            .order_by(Category.name)
-            .all()
-        )
-    else:
-        subcategories = (
-            Category.query.filter_by(parent_id=parent_id).order_by(Category.name).all()
-        )
-    data = [{"id": subcat.id, "name": subcat.name} for subcat in subcategories]
+    subcategories = Category.get_children(parent_id)
+    data = [{"id": s.id, "name": s.name} for s in subcategories]
     return jsonify(data)
 
 
