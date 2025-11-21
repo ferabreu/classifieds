@@ -194,6 +194,7 @@ def new_category():
         (str(cat.id), cat.get_full_path())
         for cat in Category.query.order_by(Category.name).all()
     ]  # type: ignore
+    exclude_ids = []  # no category to exclude when creating new
     if form.validate_on_submit():
         name = form.name.data
         assert isinstance(name, str)
@@ -208,6 +209,7 @@ def new_category():
         form=form,
         action="Create",
         page_title="Create category",
+        exclude_ids=exclude_ids,
     )
 
 
