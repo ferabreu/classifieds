@@ -5,22 +5,27 @@
 //   - data-breadcrumb-url: URL template with "{category_id}" placeholder
 document.addEventListener('DOMContentLoaded', function() {
     // Container for dynamic dropdowns
-    var categoryContainer = document.getElementById('category-dropdowns');
+    const categoryContainer = document.getElementById('category-dropdowns');
     if (!categoryContainer) {
         console.error('category_dropdowns: container with id "category-dropdowns" not found. Abort.');
         return;
     }
 
     // Read required configuration from data-attributes
-    var hiddenFieldId = categoryContainer.dataset.hiddenFieldId;
-    var subcategoriesUrlTpl = categoryContainer.dataset.subcategoriesUrl;
-    var breadcrumbUrlTpl = categoryContainer.dataset.breadcrumbUrl;
-    var excludeIds = [];
+    const hiddenFieldId = categoryContainer.dataset.hiddenFieldId;
+    const subcategoriesUrlTpl = categoryContainer.dataset.subcategoriesUrl;
+    const breadcrumbUrlTpl = categoryContainer.dataset.breadcrumbUrl;
 
-    // optional: list of category ids (JSON) that must not be selectable (e.g. the category being edited + descendants)
+    // Normalize excludeIds to strings for robust comparison
+    let excludeIds = [];
     if (categoryContainer.dataset.excludeIds) {
         try {
-            excludeIds = JSON.parse(categoryContainer.dataset.excludeIds);
+            const parsed = JSON.parse(categoryContainer.dataset.excludeIds);
+            if (Array.isArray(parsed)) {
+                excludeIds = parsed.map(function(id){ return String(id); });
+            } else {
+                excludeIds = [];
+            }
         } catch (e) {
             console.error('category_dropdowns: invalid JSON in data-exclude-ids', e);
             excludeIds = [];
@@ -32,66 +37,140 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    var categoryHidden = document.getElementById(hiddenFieldId);
+    const categoryHidden = document.getElementById(hiddenFieldId);
     if (!categoryHidden) {
         console.error('category_dropdowns: hidden field with id "' + hiddenFieldId + '" not found. Abort.');
         return;
     }
     categoryHidden.style.display = 'none'; // Hide the original WTForms dropdown
 
+    // Determine whether this is a "new" form (no initial category selected).
+    // Placeholders ("Select...") are useful for new forms but redundant for edit forms
+    // where dropdowns will be rendered pre-populated from the breadcrumb.
+    const showPlaceholders = !categoryHidden.value;
+
     function buildSubcategoriesUrl(parentId) {
-        return subcategoriesUrlTpl.replace('{parent_id}', parentId);
+        // ensure ids are encoded in case templates contain characters
+        return subcategoriesUrlTpl.replace('{parent_id}', encodeURIComponent(parentId));
     }
     function buildBreadcrumbUrl(categoryId) {
-        return breadcrumbUrlTpl.replace('{category_id}', categoryId);
+        return breadcrumbUrlTpl.replace('{category_id}', encodeURIComponent(categoryId));
+    }
+
+    // Simple in-memory cache: parentId -> { promise, ts }
+    const subcategoriesCache = new Map(); // key -> { promise, ts }
+    const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes TTL; adjust if needed
+    // Controllers per cache key so we can cancel in-flight requests on refresh
+    const subcategoriesControllers = new Map();
+    // Request token per level to avoid stale appends: level -> token number
+    const latestRequestToken = {};
+
+    // Helper to fetch subcategories (with caching)
+    function fetchSubcategories(parentId) {
+        const key = String(parentId);
+        const now = Date.now();
+        const existing = subcategoriesCache.get(key);
+        if (existing && (now - existing.ts) < CACHE_TTL_MS) {
+            // still fresh
+            return existing.promise;
+        }
+        // If there is an in-flight controller for this key, abort it — we are starting a fresh fetch
+        const prevController = subcategoriesControllers.get(key);
+        if (prevController) {
+            try { prevController.abort(); } catch (e) { /* ignore */ }
+            subcategoriesControllers.delete(key);
+        }
+
+        const controller = new AbortController();
+        subcategoriesControllers.set(key, controller);
+
+        const p = fetch(buildSubcategoriesUrl(parentId), { signal: controller.signal })
+            .then(function(response){
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ' when fetching subcategories for parent ' + parentId);
+                }
+                return response.json();
+            })
+            .then(function(data){
+                if (!Array.isArray(data)) return [];
+                return data;
+            })
+            .catch(function(err){
+                if (err && err.name === 'AbortError') {
+                    // aborted intentionally — return empty so callers treat as no-data
+                    return [];
+                }
+                console.error('category_dropdowns: error fetching subcategories for parent ' + parentId, err);
+                return [];
+            })
+            .finally(function(){
+                // cleanup controller for this key if it matches
+                const c = subcategoriesControllers.get(key);
+                if (c === controller) subcategoriesControllers.delete(key);
+            });
+
+        subcategoriesCache.set(key, { promise: p, ts: now });
+        return p;
     }
 
     // Helper to create a dropdown
-    // Returns a Promise that resolves to a dropdown element if there are items, or null if none.
-    function createDropdown(level, parentId, selectedId, callback) {
-        return fetch(buildSubcategoriesUrl(parentId))
-            .then(response => response.json())
-            .then(data => {
-                if (!data || data.length === 0) {
-                    // No items at all -> do not render a dropdown
-                    return null;
-                }
-                // Apply excludeIds filter first; if all items are excluded, don't render
-                var items = data.filter(function(cat) {
-                    return !(excludeIds && excludeIds.indexOf(cat.id) !== -1);
-                });
-                if (!items || items.length === 0) {
-                    // After filtering there's nothing selectable -> do not render
-                    return null;
-                }
-                var dropdown = document.createElement('select');
-                dropdown.className = 'form-select mb-2';
-                dropdown.setAttribute('data-level', level);
-                var option = document.createElement('option');
-                option.value = '';
-                option.textContent = 'Select...';
-                dropdown.appendChild(option);
-                items.forEach(function(cat) {
-                    var opt = document.createElement('option');
-                    opt.value = cat.id;
-                    opt.textContent = cat.name;
-                    dropdown.appendChild(opt);
-                });
-                if (selectedId) dropdown.value = selectedId;
-                if (typeof callback === 'function') callback(dropdown, items);
-                return dropdown;
-            })
-            .catch(function(err){
-                console.error('category_dropdowns: error fetching subcategories for parent ' + parentId, err);
+    // Returns a Promise that resolves to a dropdown element if there are selectable items, or null if none.
+    function createDropdown(level, parentId, selectedId) {
+        // Track token for this level
+        latestRequestToken[level] = (latestRequestToken[level] || 0) + 1;
+        const token = latestRequestToken[level];
+
+        return fetchSubcategories(parentId).then(function(data){
+            // Only proceed if this request is still the latest for the level
+            if (latestRequestToken[level] !== token) {
+                // Stale; drop result
                 return null;
+            }
+
+            if (!data || data.length === 0) {
+                // No items at all -> do not render a dropdown
+                return null;
+            }
+            // Apply excludeIds filter first; normalize cat.id to string for comparison
+            const items = data.filter(function(cat){
+                return excludeIds.indexOf(String(cat.id)) === -1;
             });
+            if (!items || items.length === 0) {
+                // After filtering there's nothing selectable -> do not render
+                return null;
+            }
+            const dropdown = document.createElement('select');
+            dropdown.className = 'form-select mb-2';
+            dropdown.setAttribute('data-level', String(level));
+            // Accessibility: link to the label container if present
+            if (document.getElementById('category-dropdowns-label')) {
+                dropdown.setAttribute('aria-labelledby', 'category-dropdowns-label');
+            }
+            if (showPlaceholders) {
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'Select...';
+                dropdown.appendChild(placeholder);
+            }
+            items.forEach(function(cat) {
+                const opt = document.createElement('option');
+                opt.value = String(cat.id);
+                opt.textContent = cat.name;
+                dropdown.appendChild(opt);
+            });
+            if (selectedId) {
+                // selectedId may be number or string; normalize to string
+                dropdown.value = String(selectedId);
+            }
+            return dropdown;
+        });
     }
 
     // Remove all dropdowns below a certain level
     function removeDropdownsBelow(level) {
-        var selects = Array.from(categoryContainer.querySelectorAll('select'));
+        const selects = Array.from(categoryContainer.querySelectorAll('select'));
         selects.forEach(function(sel) {
-            var selLevel = parseInt(sel.getAttribute('data-level'));
+            const selLevel = parseInt(sel.getAttribute('data-level'), 10);
             if (selLevel > level) {
                 sel.remove();
             }
@@ -100,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Remove the placeholder from a dropdown after selection
     function removePlaceholder(dropdown) {
-        var placeholder = dropdown.querySelector('option[value=""]');
+        const placeholder = dropdown.querySelector('option[value=""]');
         if (placeholder) placeholder.remove();
     }
 
@@ -111,15 +190,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add event listener for change on the container (event delegation)
     categoryContainer.addEventListener('change', function(event) {
-        var target = event.target;
+        const target = event.target;
         if (target.tagName.toLowerCase() !== 'select') return;
-        var level = parseInt(target.getAttribute('data-level'));
-        var selectedId = target.value;
+        const level = parseInt(target.getAttribute('data-level'), 10);
+        const selectedId = target.value;
         removeDropdownsBelow(level);
         removePlaceholder(target);
         setHiddenCategory(selectedId);
         if (selectedId) {
-            // Let createDropdown handle fetch + exclusion filtering and append only if it returns a dropdown
+            // createDropdown handles fetch, filtering and token-checking.
             createDropdown(level + 1, selectedId).then(function(newDropdown) {
                 if (newDropdown) categoryContainer.appendChild(newDropdown);
             });
@@ -128,15 +207,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize dropdowns for new or edit forms
     categoryContainer.innerHTML = '';
-    var initialId = categoryHidden ? categoryHidden.value : null;
+    const initialId = categoryHidden ? categoryHidden.value : null;
     if (initialId) {
         // If editing: build the breadcrumb path, then check for children and add next-level dropdown if needed
         fetch(buildBreadcrumbUrl(initialId))
-            .then(response => response.json())
+            .then(function(response){
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ' when fetching breadcrumb for ' + initialId);
+                }
+                return response.json();
+            })
             .then(function(path) {
                 categoryContainer.innerHTML = '';
-                var parentId = 0;
-                var lastIdx = path.length - 1;
+                let parentId = 0;
+                const lastIdx = path.length - 1;
                 function addDropdown(idx) {
                     if (idx > lastIdx) {
                         // After last breadcrumb, check for children and add dropdown if needed
@@ -145,9 +229,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                         return;
                     }
-                    var cat = path[idx];
-                    createDropdown(idx, parentId, cat.id, function(dropdown, data) {
-                        categoryContainer.appendChild(dropdown);
+                    const cat = path[idx];
+                    // For breadcrumb entries we create dropdowns if there are siblings/children.
+                    createDropdown(idx, parentId, cat.id).then(function(dropdown) {
+                        if (dropdown) {
+                            categoryContainer.appendChild(dropdown);
+                        }
+                        // Regardless of whether a dropdown was created (e.g. last-level has no siblings),
+                        // advance parentId and continue building the breadcrumb.
                         parentId = cat.id;
                         addDropdown(idx + 1);
                     });
