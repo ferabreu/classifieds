@@ -47,32 +47,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Helper to create a dropdown
+    // Returns a Promise that resolves to a dropdown element if there are items, or null if none.
     function createDropdown(level, parentId, selectedId, callback) {
-        var dropdown = document.createElement('select');
-        dropdown.className = 'form-select mb-2';
-        dropdown.setAttribute('data-level', level);
-        var option = document.createElement('option');
-        option.value = '';
-        option.textContent = 'Select...';
-        dropdown.appendChild(option);
-        fetch(buildSubcategoriesUrl(parentId))
+        return fetch(buildSubcategoriesUrl(parentId))
             .then(response => response.json())
             .then(data => {
-                data.forEach(function(cat) {
-                    // skip excluded ids (prevent selecting the category being edited or its descendants)
-                    if (excludeIds && excludeIds.indexOf(cat.id) !== -1) return;
+                if (!data || data.length === 0) {
+                    // No items at all -> do not render a dropdown
+                    return null;
+                }
+                // Apply excludeIds filter first; if all items are excluded, don't render
+                var items = data.filter(function(cat) {
+                    return !(excludeIds && excludeIds.indexOf(cat.id) !== -1);
+                });
+                if (!items || items.length === 0) {
+                    // After filtering there's nothing selectable -> do not render
+                    return null;
+                }
+                var dropdown = document.createElement('select');
+                dropdown.className = 'form-select mb-2';
+                dropdown.setAttribute('data-level', level);
+                var option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Select...';
+                dropdown.appendChild(option);
+                items.forEach(function(cat) {
                     var opt = document.createElement('option');
                     opt.value = cat.id;
                     opt.textContent = cat.name;
                     dropdown.appendChild(opt);
                 });
                 if (selectedId) dropdown.value = selectedId;
-                if (typeof callback === 'function') callback(dropdown, data);
+                if (typeof callback === 'function') callback(dropdown, items);
+                return dropdown;
             })
             .catch(function(err){
                 console.error('category_dropdowns: error fetching subcategories for parent ' + parentId, err);
+                return null;
             });
-        return dropdown;
     }
 
     // Remove all dropdowns below a certain level
@@ -107,17 +119,10 @@ document.addEventListener('DOMContentLoaded', function() {
         removePlaceholder(target);
         setHiddenCategory(selectedId);
         if (selectedId) {
-            fetch(buildSubcategoriesUrl(selectedId))
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        var newDropdown = createDropdown(level + 1, selectedId);
-                        categoryContainer.appendChild(newDropdown);
-                    }
-                })
-                .catch(function(err){
-                    console.error('category_dropdowns: error fetching subcategories for parent ' + selectedId, err);
-                });
+            // Let createDropdown handle fetch + exclusion filtering and append only if it returns a dropdown
+            createDropdown(level + 1, selectedId).then(function(newDropdown) {
+                if (newDropdown) categoryContainer.appendChild(newDropdown);
+            });
         }
     });
 
@@ -135,16 +140,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 function addDropdown(idx) {
                     if (idx > lastIdx) {
                         // After last breadcrumb, check for children and add dropdown if needed
-                        fetch(buildSubcategoriesUrl(parentId))
-                            .then(response => response.json())
-                            .then(function(data) {
-                                if (data.length > 0) {
-                                    // Add a new dropdown for the next level, no selection
-                                    var newDropdown = createDropdown(idx, parentId, null, function(dropdown, data) {
-                                        categoryContainer.appendChild(dropdown);
-                                    });
-                                }
-                            });
+                        createDropdown(idx, parentId, null).then(function(dropdown) {
+                            if (dropdown) categoryContainer.appendChild(dropdown);
+                        });
                         return;
                     }
                     var cat = path[idx];
@@ -161,6 +159,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     } else {
         // If creating new: show only the root dropdown
-        categoryContainer.appendChild(createDropdown(0, 0, null));
+        createDropdown(0, 0, null).then(function(dropdown) {
+            if (dropdown) categoryContainer.appendChild(dropdown);
+        });
     }
 });
