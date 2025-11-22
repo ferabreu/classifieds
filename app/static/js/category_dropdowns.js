@@ -146,20 +146,23 @@ document.addEventListener('DOMContentLoaded', function() {
             if (document.getElementById('category-dropdowns-label')) {
                 dropdown.setAttribute('aria-labelledby', 'category-dropdowns-label');
             }
-            if (showPlaceholders) {
-                const placeholder = document.createElement('option');
-                placeholder.value = '';
-                placeholder.textContent = 'Select...';
-                dropdown.appendChild(placeholder);
-            }
-            items.forEach(function(cat) {
-                const opt = document.createElement('option');
-                opt.value = String(cat.id);
-                opt.textContent = cat.name;
-                dropdown.appendChild(opt);
-            });
-            if (selectedId) {
-                // selectedId may be number or string; normalize to string
+            // Show placeholder either when the whole form is a "new" form (showPlaceholders)
+            // or when this specific dropdown has no pre-selected value (selectedId falsy).
+            if (showPlaceholders || !selectedId) {
+                 const placeholder = document.createElement('option');
+                 placeholder.value = '';
+                 placeholder.textContent = 'Select...';
+                 dropdown.appendChild(placeholder);
+             }
+             items.forEach(function(cat) {
+                 const opt = document.createElement('option');
+                 opt.value = String(cat.id);
+                 opt.textContent = cat.name;
+                 dropdown.appendChild(opt);
+             });
+            // Only set selected value when a non-null, non-empty selectedId is provided.
+            // This handles ids like 0 correctly and avoids setting when selectedId is '' or null.
+            if (selectedId != null && String(selectedId) !== '') {
                 dropdown.value = String(selectedId);
             }
             return dropdown;
