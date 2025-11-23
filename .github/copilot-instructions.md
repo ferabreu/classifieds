@@ -75,7 +75,21 @@ Final notes
 
 Below are focused items every automated editor should follow before committing changes.
 
-### 1) Quality gates / quick checks
+### 1) Naming symbols
+
+Avoid using single-character names for variables, functions, classes, or other symbols. Descriptive names (e.g. user_email, listing_price, create_thumbnail) make the code easier to read and maintain—this is especially helpful because most of the project will be edited by Copilot and reviewed by a non-expert.
+
+Allowed exceptions:
+- Very-localized scopes such as simple loop indices (i, j, k) or short comprehensions where the intent is obvious.
+- Trivial throwaway variables (e.g., `_` for unused values).
+
+Preferred style:
+- Use clear, concise names that describe purpose.
+- Use snake_case for variables/functions and PascalCase for classes.
+
+Rationale: placed here so the rule is visible during quick edits and before the quality/QA checklist, increasing the chance auto-edits follow it.
+
+### 2) Quality gates / quick checks
 - Run a syntax/import smoke test to catch immediate errors:
 
 ```bash
@@ -85,7 +99,7 @@ python -c "import importlib; importlib.import_module('app')"  # ensure app impor
 
 - If `flake8` is available, run it; otherwise ensure no new syntax errors are introduced.
 
-### 2) Required / optional env vars (reference)
+### 3) Required / optional env vars (reference)
 - REQUIRED for reasonable local work: `SECRET_KEY` (dev ok), `DEV_DATABASE_URL` or `DATABASE_URL` (sqlite fallback used), `FLASK_ENV` (development/testing/production).
 - OPTIONAL: `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_DEFAULT_SENDER` (password reset emails), `LDAP_SERVER`, `LDAP_DOMAIN` (LDAP login).
 - Example minimal `.env` snippet:
@@ -98,7 +112,7 @@ LDAP_SERVER=
 LDAP_DOMAIN=
 ```
 
-### 3) Code-edit safety checklist (filesystem & DB edits)
+### 4) Code-edit safety checklist (filesystem & DB edits)
 - Contract for listing/image flows:
   - Inputs: uploaded files saved to `current_app.config['TEMP_DIR']` and DB records referencing final filenames.
   - Success: DB commit + files moved from TEMP_DIR -> UPLOAD_DIR and THUMBNAIL_DIR; ListingImage.filename and .thumbnail_filename set.
@@ -108,19 +122,19 @@ LDAP_DOMAIN=
   - Thumbnail creation failure -> abort upload and clean temp files.
   - Deleting images/listings: if original file missing, handler should skip and not crash.
 
-### 4) Migrations & model changes
+### 5) Migrations & model changes
 - Project contains Alembic under `migrations/` and uses Flask-Migrate. If you change `models.py`:
   - Run locally: `flask db migrate -m "msg"` then `flask db upgrade` to generate/apply migration.
   - If you can't run migrations in CI, update `migrations/` and document changes in PR.
 - For quick local work the `flask init` helper calls `db.create_all()` — rely on it only for dev/testing, not production.
 
-### 5) Manual QA checklist (no automated tests present)
+### 6) Manual QA checklist (no automated tests present)
 - Create a new listing with 1+ images and confirm thumbnails are generated in `static/uploads/thumbnails`.
 - Edit a listing and delete an image; ensure file is removed and DB updated.
 - Admin: delete a listing with images; files should be moved to temp then removed on commit.
 - Auth: test local registration/login and LDAP login (if LDAP vars set).
 
-### 6) More copy-paste examples
+### 7) More copy-paste examples
 - Temp->commit->move (pattern):
 
 ```py
@@ -138,14 +152,13 @@ from .routes.myfeature import my_bp
 app.register_blueprint(my_bp, url_prefix='/myfeature')
 ```
 
-### 7) "Do not" rules & risky places
+### 8) "Do not" rules & risky places
 - DO NOT write uploaded files directly to `UPLOAD_DIR` before DB commit.
 - DO NOT remove or demote the last admin (see `admin.edit_user` / `admin.delete_user`).
 - DO NOT assume `MAIL_SERVER` is configured — use the flash fallback in `auth.forgot_password`.
 - Be cautious when changing `ListingImage.thumbnail_filename` behavior — thumbnails are always `.jpg`.
 
-### 8) PR / commit guidance for automated editors
+### 9) PR / commit guidance for automated editors
 - Use focused commits with a one-line summary and a short description of why the change was made.
 - If changing `models.py`, include migration files or a note explaining why migrations are deferred.
 - When touching uploads/thumbnails logic, include a short QA checklist in the PR description referencing the manual QA steps above.
-
