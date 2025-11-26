@@ -224,7 +224,9 @@ def edit_category(category_id):
     # Populate parent_id choices (exclude self + descendants) so the hidden select has valid options
     all_cats = Category.query.order_by(Category.name).all()
     form.parent_id.choices = [("0", "- None -")] + [
-        (str(cat.id), cat.get_full_path()) for cat in all_cats if cat.id not in exclude_ids
+        (str(cat.id), cat.get_full_path())
+        for cat in all_cats
+        if cat.id not in exclude_ids
     ]  # type: ignore
 
     if request.method == "GET":
@@ -238,9 +240,7 @@ def edit_category(category_id):
         )
         # Prevent setting self or descendant as parent
         if category.parent_id is not None and category.parent_id in exclude_ids:
-            flash(
-                "Cannot set category itself or its descendant as parent.", "danger"
-            )
+            flash("Cannot set category itself or its descendant as parent.", "danger")
             return render_template(
                 "admin/admin_category_form.html",
                 form=form,
@@ -268,8 +268,26 @@ def delete_category(category_id):
     Allows admins to delete a category.
     Also deletes all descendant subcategories (cascade).
     """
-    c = Category.query.get_or_404(category_id)
-    db.session.delete(c)
+    category = Category.query.get_or_404(category_id)
+
+    # Build set of category ids to inspect: target + all descendants
+    descendant_ids = set(category.get_descendant_ids() or [])
+    ids_to_check = {category.id} | descendant_ids
+
+    # Check for any listings in the category or any descendant category
+    existing_listings = (
+        Listing.query.with_entities(Listing.id)
+        .filter(Listing.category_id.in_(ids_to_check))
+        .first()
+    )
+    if existing_listings:
+        flash(
+            "Cannot delete category: it or one of its subcategories contains listings.",
+            "danger",
+        )
+        return redirect(url_for("admin.categories"))
+
+    db.session.delete(category)
     db.session.commit()
     flash("Category deleted.", "success")
     return redirect(url_for("admin.categories"))
