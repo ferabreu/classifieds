@@ -1,0 +1,35 @@
+# Upgrade pip and install from requirements
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# Check outdated packages
+pip list --outdated
+
+# Upgrade all packages listed to their newest releases
+pip install --upgrade -r requirements.txt
+
+# Upgrade a single package
+pip install --upgrade requests
+
+Short answer: treat these tools as “dev dependencies” and manage them separately from runtime requirements. Two common, safe approaches:
+
+Use pre-commit to pin/run formatters/linters on commit (recommended).
+Or keep a requirements-dev.txt (or use pipx) and install/update tools in your dev environment/CI.
+Setup examples and commands
+
+Create a small requirements-dev.txt (store pinned versions)
+Install in a venv and keep updated
+Use pre-commit to run and pin hooks (preferred)
+Add a .pre-commit-config.yaml to pin exact hook revisions and enable running on commits / CI.
+Install and use pre-commit:
+
+Alternatives
+
+pipx: install tools globally per-tool (pipx install ruff black) so you don't pollute project venv.
+pip-tools: manage pins via requirements.in -> pip-compile -> requirements.txt for repeatable installs.
+CI
+
+In CI, either install requirements-dev.txt or install pre-commit and run pre-commit run --all-files (or run tools directly) so checks match local dev.
+Recommendation
+
+Keep pyproject.toml for tool configuration (black/isort/ruff settings) and use pre-commit + requirements-dev.txt to pin and update tool versions reproducibly. Use pre-commit autoupdate or update requirements-dev.txt and re-install to manage upgrades.
