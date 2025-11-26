@@ -6,13 +6,14 @@
     - Expands all ancestors of the active category.
 
     Parameters:
-    - categories: List of Category objects to render at this level.
+    - categories: List of Category objects to render at this level OR the full flat list of categories.
     - parent_prefix: String for unique collapse IDs (used for nested collapses).
     - active_category_id: The ID of the currently selected category (for highlight).
     - expanded_ids: List of IDs to keep expanded (ancestors of the active category).
 #}
 {% macro render_category_tree(categories, parent_prefix="", active_category_id=None, expanded_ids=[]) %}
-    {%- for category in categories %}
+    {# internal recursive node renderer - accepts a single category and the full-category list #}
+    {% macro _render_node(category, all_categories, parent_prefix="", active_category_id=None, expanded_ids=[], level=0) %}
         {%- set collapse_id = "catcollapse" ~ parent_prefix ~ category.id %}
         <li class="nav-item mb-1">
             <div class="d-flex align-items-center">
@@ -20,30 +21,52 @@
                    href="{{ url_for('listings.category_listings', category_id=category.id) }}">
                     {{ category.name }}
                 </a>
-                {% if category.children %}
-                    <button class="btn btn-sm ms-1 p-0"
+                {%- if (category.children is defined and category.children) or (all_categories|selectattr('parent', 'equalto', category)|list) %}
+                    {# determine whether this node should be shown expanded #}
+                    {% set is_expanded = category.id in expanded_ids %}
+                    <button class="btn btn-sm ms-1 p-0{% if not is_expanded %} collapsed{% endif %}"
                             type="button"
                             data-bs-toggle="collapse"
                             data-bs-target="#{{ collapse_id }}"
-                            aria-expanded="{{ 'true' if category.id in expanded_ids else 'false' }}"
+                            aria-expanded="{{ 'true' if is_expanded else 'false' }}"
                             aria-controls="{{ collapse_id }}"
                             tabindex="-1"
                             aria-label="Toggle subcategories"
                             style="box-shadow:none;">
-                        <i class="bi bi-chevron-down"></i>
+                        <i class="bi bi-chevron-down{% if is_expanded %} rotate-180{% endif %}"></i>
                     </button>
                 {% endif %}
             </div>
-            {% if category.children %}
+
+            {# resolve children either from a children attribute or from the flat list #}
+            {% if (category.children is defined and category.children) %}
+                {% set children = category.children|sort(attribute='name') %}
+            {% else %}
+                {% set children = all_categories|selectattr('parent', 'equalto', category)|sort(attribute='name') %}
+            {% endif %}
+
+            {% if children %}
                 <div class="collapse ms-3{% if category.id in expanded_ids %} show{% endif %}" id="{{ collapse_id }}">
                     <ul class="nav flex-column">
-                        {{ render_category_tree(category.children,
-                        parent_prefix=collapse_id ~ "_",
-                        active_category_id=active_category_id,
-                        expanded_ids=expanded_ids) }}
+                        {% for child in children %}
+                            {{ _render_node(child, all_categories, parent_prefix=collapse_id ~ "_", active_category_id=active_category_id, expanded_ids=expanded_ids, level=level+1) }}
+                        {% endfor %}
                     </ul>
                 </div>
             {% endif %}
         </li>
-    {%- endfor %}
+    {% endmacro %}
+
+    {# entry point: detect if categories is a flat list (items have parent attr) -> render roots,
+       otherwise treat categories as already a list of nodes for this level #}
+    {% if categories and (categories[0].parent is defined) %}
+        {% set roots = categories|selectattr('parent', 'none')|sort(attribute='name') %}
+        {% for root in roots %}
+            {{ _render_node(root, categories, parent_prefix=parent_prefix, active_category_id=active_category_id, expanded_ids=expanded_ids, level=0) }}
+        {% endfor %}
+    {% else %}
+        {% for category in categories|sort(attribute='name') %}
+            {{ _render_node(category, categories, parent_prefix=parent_prefix, active_category_id=active_category_id, expanded_ids=expanded_ids, level=0) }}
+        {% endfor %}
+    {% endif %}
 {% endmacro %}

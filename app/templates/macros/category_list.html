@@ -1,0 +1,11 @@
+{% macro render_rows(cat, categories, level=0) %}
+    <tr>
+        <td style="padding-left: {{ (level * 1.5)|float }}rem;">
+            <a href="{{ url_for('admin.edit_category', category_id=cat.id) }}">{{ cat.name }}</a>
+        </td>
+        <td>{% if cat.parent %}{{ cat.parent.name }}{% else %}- None -{% endif %}</td>
+    </tr>
+    {% for child in categories|selectattr('parent', 'equalto', cat)|sort(attribute='name') %}
+        {{ render_rows(child, categories, level + 1) }}
+    {% endfor %}
+{% endmacro %}
