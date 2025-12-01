@@ -30,6 +30,10 @@ This application allows users to post, browse, and manage classified ads for goo
 
 ---
 
+## Code style
+This project maintains a short, canonical style guide: docs/CODE_STYLE.md — please read it before contributing.
+The repository also includes machine-oriented guidance for automated editors in .github/copilot-instructions.md.
+
 ## Project Structure
 
 ```text

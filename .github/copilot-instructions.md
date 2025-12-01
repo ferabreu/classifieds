@@ -3,7 +3,8 @@
 
 ## Code style & standards
 
-Follow these lightweight, project-specific conventions on every edit to keep the codebase consistent and reviewable.
+Follow these conventions on every edit to keep the codebase consistent and reviewable.
+For the canonical, detailed style guide, see also `docs/CODE_STYLE.md`.
 
 - Python formatting and tooling
   - Follow PEP 8. Use 4 spaces for indentation.
