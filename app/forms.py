@@ -20,6 +20,8 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 
+from .models import Category
+
 
 class RegistrationForm(FlaskForm):
     """
@@ -134,6 +136,24 @@ class CategoryForm(FlaskForm):
         "Parent Category", coerce=str, validators=[Optional()], choices=[]
     )
     submit = SubmitField("Save")
+
+    def validate_parent_id(self, field):
+        """
+        Prevent selecting self or a descendant as parent (protects against client tampering).
+        Assumes the form sets `self._obj` to the Category instance when editing (common pattern).
+        """
+        parent_id = field.data
+        if not parent_id:
+            return
+        current = getattr(self, "_obj", None)
+        if current is None:
+            # creating a new category; nothing else to check
+            return
+        if parent_id == current.id:
+            raise ValidationError("Category cannot be its own parent.")
+        parent = Category.query.get(parent_id)
+        if parent and parent.is_ancestor_of(current):
+            raise ValidationError("Selected parent is a descendant of this category.")
 
 
 class UserEditForm(FlaskForm):

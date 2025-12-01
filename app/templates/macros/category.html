@@ -1,0 +1,12 @@
+{# Macro to render a category with its ancestor chain, protects against self-referencing loops #}
+{% macro render_category(cat, _depth=0) -%}
+    {%- if not cat %}
+        -
+    {%- elif _depth > 20 %}
+        {{ cat.name }}
+    {%- elif cat.parent %}
+        {{ render_category(cat.parent, _depth + 1) }} / {{ cat.name }}
+    {%- else %}
+        {{ cat.name }}
+    {%- endif %}
+{%- endmacro %}

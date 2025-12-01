@@ -12,6 +12,8 @@ from typing import Optional
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import event
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -19,7 +21,6 @@ db = SQLAlchemy()
 
 
 class Category(db.Model):
-
     """
     Category model for hierarchical organization of listings.
 
@@ -48,10 +49,17 @@ class Category(db.Model):
     def breadcrumb(self):
         """
         Returns a list of categories from root to self for breadcrumb navigation.
+
+        Protects against cycles by tracking visited category ids and stopping if a loop is detected.
         """
         node = self
         nodes = []
+        visited = set()
         while node:
+            if node.id in visited:
+                # cycle detected; stop traversal to avoid infinite loop
+                break
+            visited.add(node.id)
             # insert at front to build root -> ... -> self order
             nodes.insert(0, node)
             node = node.parent
@@ -78,13 +86,39 @@ class Category(db.Model):
         """
         Return a list of IDs for this category and all its descendants.
 
-        Used for recursive category filtering.
+        Protect against cycles using a visited set.
         """
-        ids = [self.id]
-        for child in self.children:  # type: ignore # created dynamically by SQLAlchemy
-            ids += child.get_descendant_ids()
-        return ids
-    
+
+        def _collect(node, visited):
+            if node.id in visited:
+                return []
+            visited.add(node.id)
+            ids = [node.id]
+            for child in node.children:  # type: ignore
+                ids.extend(_collect(child, visited))
+            return ids
+
+        return _collect(self, set())
+
+    def is_ancestor_of(self, other: "Category") -> bool:
+        """
+        Return True if this category is an ancestor of `other`.
+        Safe against cycles.
+        """
+        if other is None:
+            return False
+        # walk up from other checking if we hit self (use visited set to avoid loops)
+        node = other
+        visited = set()
+        while node:
+            if node.id in visited:
+                break
+            if node.id == self.id:
+                return True
+            visited.add(node.id)
+            node = node.parent
+        return False
+
     @classmethod
     def get_children(cls, parent_id: Optional[int]):
         """
@@ -94,6 +128,45 @@ class Category(db.Model):
         if parent_id == 0 or parent_id is None:
             return cls.query.filter(cls.parent_id.is_(None)).order_by(cls.name).all()
         return cls.query.filter_by(parent_id=parent_id).order_by(cls.name).all()
+
+    def would_create_cycle(
+        self, new_parent_id: Optional[int], session: Session
+    ) -> bool:
+        """
+        Return True if setting parent_id=new_parent_id would create a cycle.
+
+        Uses the given SQLAlchemy session to traverse parent links safely.
+        Works for both persisted and new Category instances (self.id may be None).
+        """
+        if not new_parent_id:
+            return False
+        # Quick self-check (handles persisted objects)
+        if self.id is not None and new_parent_id == self.id:
+            return True
+
+        visited = set()
+        current_parent_id = new_parent_id
+        depth = 0
+        max_depth = 500  # extremely high guard to avoid pathological loops
+
+        while current_parent_id:
+            if current_parent_id in visited:
+                # encountered a loop while walking the chain => cycle
+                return True
+            visited.add(current_parent_id)
+            # If we hit the current category id, setting this parent would create a cycle
+            if self.id is not None and current_parent_id == self.id:
+                return True
+            # fetch parent row
+            parent = session.get(Category, current_parent_id)
+            if parent is None:
+                break
+            current_parent_id = parent.parent_id
+            depth += 1
+            if depth > max_depth:
+                # defensive: treat excessive depth as a cycle to be safe
+                return True
+        return False
 
 
 class User(UserMixin, db.Model):
@@ -201,3 +274,21 @@ class ListingImage(db.Model):
         self.filename = filename
         self.listing_id = listing_id
         self.thumbnail_filename = thumbnail_filename
+
+
+@event.listens_for(Session, "before_flush")
+def _prevent_category_cycle(session, flush_context, instances):
+    """
+    Abort flush if a Category's parent would create a cycle.
+    Uses Category.would_create_cycle(session=...) for a DB-backed check.
+    """
+    for obj in list(session.new) + list(session.dirty):
+        if isinstance(obj, Category):
+            # Use the effective parent_id value intended to be persisted.
+            # For new/dirty objects SQLAlchemy will have obj.parent_id set appropriately.
+            parent_id = getattr(obj, "parent_id", None)
+            if not parent_id:
+                continue
+            # Use helper that walks the chain via this session (avoids multiple queries outside session)
+            if obj.would_create_cycle(parent_id, session):
+                raise ValueError("Cannot set parent: would create a category cycle.")
