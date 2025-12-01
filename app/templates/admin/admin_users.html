@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% from "macros/pagination.html" import render_pagination %}
 
 {% block content %}
+    {% import "macros/pagination.html" as pagination_macros %}
+
     <a href="{{ url_for('admin.dashboard') }}">&larr; Admin Dashboard</a>
     <table class="table mt-3">
         <thead>
@@ -59,6 +60,6 @@
         </tbody>
     </table>
 
-    {{ render_pagination(pagination, 'admin.users', sort=sort, direction=direction) }}
+    {{ pagination_macros.render_pagination(pagination, 'admin.users', sort=sort, direction=direction) }}
 
 {% endblock %}

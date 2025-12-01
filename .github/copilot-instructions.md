@@ -1,7 +1,71 @@
 <!-- Copilot instructions for the `classifieds` Flask app -->
 # Quick orientation for automated coding assistants
 
-Keep this short and actionable — follow these project-specific patterns and commands when making changes.
+## Code style & standards
+
+Follow these lightweight, project-specific conventions on every edit to keep the codebase consistent and reviewable.
+
+- Python formatting and tooling
+  - Follow PEP 8. Use 4 spaces for indentation.
+  - Prefer Black for automatic formatting (line length 88) and isort for import ordering.
+  - Run a basic import/test smoke check after edits:
+    - python -m pyflakes . || true
+    - python -c "import importlib; importlib.import_module('app')"
+  - Use descriptive names (snake_case for functions/variables, PascalCase for classes). Avoid single-letter names except for short loops.
+  - Prefer single quotes for Python strings where not conflicting with content; let Black / team tooling normalize quotes automatically.
+  - Add type hints for public functions where helpful.
+
+- Imports & modules
+  - Avoid wildcard imports. Use explicit imports.
+  - Order imports: stdlib, third-party, local (use isort).
+  - Add new helper functions in existing utilities modules (e.g., app/routes/utils.py) when they logically belong there.
+
+- Flask & SQLAlchemy patterns
+  - Follow existing blueprint patterns (bp = Blueprint(...)) and register in create_app().
+  - DB & fileflow: always follow the temp -> commit -> move pattern for uploaded files:
+    1. Save uploads to current_app.config['TEMP_DIR']
+    2. Create thumbnails in TEMP_DIR
+    3. db.session.add(...); db.session.commit()
+    4. If commit OK: move files to UPLOAD_DIR/THUMBNAIL_DIR
+    5. On DB error: delete temp files and rollback
+  - Use current_app.config to read dirs and options. Do not hardcode paths.
+  - Wrap DB commits in try/except and ensure rollback on errors.
+
+- Jinja templates
+  - Keep logic minimal in templates — build and prepare data in view functions.
+  - Use macros for reusable markup; place macro files under templates/macros/.
+  - Import macros at the start of the block where they are used (improves locality) using namespaced imports:
+    - `{% import 'macros/file.html' as file_macros %}`
+    - Call as `{{ file_macros.some_macro(...) }}`
+  - If multiple blocks require the same macro, consider importing once at top-of-file or in a shared partial.
+  - Avoid heavy data transformation in templates. Prefer pre-sorted or pre-structured data (e.g., build nested category trees in the view).
+  - Use explicit escaping; only use `|safe` when the content is guaranteed safe.
+
+- HTML / Jinja quoting and whitespace
+  - Use double quotes for HTML attributes (consistent with common tooling).
+  - Use single quotes inside Jinja expressions when embedding string literals that will be rendered into HTML attributes to minimize escaping conflicts, e.g.:
+    - `<a href="{{ url_for('foo', id=item.id) }}">`
+  - Use 4-space indentation for HTML/Jinja blocks to match Python indentation visually.
+
+- JavaScript / CSS
+  - Prefer placing scripts in `{% block scripts %}` and keep inline scripts minimal.
+  - Use modern JS (let/const) and avoid global variables.
+  - Load external libraries via the project's pattern (CDN or local) consistent with existing templates.
+
+- Tests / QA
+  - There are no automated tests in-repo; run the dev server and exercise critical flows:
+    - Create/edit listings (images + thumbnails)
+    - Delete listings/images and confirm file cleanup
+    - Admin actions (do not remove last admin)
+  - Include a short manual QA checklist in PRs when touching uploads or DB changes.
+
+- Misc
+  - When changing models, provide migration steps (flask db migrate/upgrade) or document why migrations are deferred.
+  - Keep commits focused and include a brief rationale.
+  - If unsure, keep changes small and ask for a quick review.
+
+
+## Project-specific patterns and commands when making changes.
 
 - Project type: Flask (Python 3.10+), single WSGI app in `wsgi.py`. App factory: `app.create_app()` in `app/__init__.py`.
 - DB: SQLAlchemy (Flask-SQLAlchemy). Migrations present (Alembic) under `migrations/` but app uses `db.create_all()` in the CLI `flask init` helper for quick local setup.
@@ -70,6 +134,7 @@ Final notes
 
 - Keep changes small and prefer code examples present in `app/routes/*` as a pattern source.
 - If unsure about file paths, reference `app/__init__.py` where UPLOAD_DIR/TEMP_DIR/THUMBNAIL_DIR are resolved to absolute paths at runtime.
+
 
 ## Quick additions for safe edits
 

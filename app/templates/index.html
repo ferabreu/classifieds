@@ -1,14 +1,11 @@
 {% extends "base.html" %}
 
-{% from "macros/pagination.html" import render_pagination %}
-
-
-{% import 'macros/breadcrumb.html' as macros %}
 {% block content %}
-
+    {% import 'macros/pagination.html' as pagination_macros %}
+    {% import 'macros/breadcrumb.html' as breadcrumb_macros %}
 
     {% if selected_category %}
-        {{ macros.breadcrumb(selected_category) }}
+        {{ breadcrumb_macros.breadcrumb(selected_category) }}
         <h2 class="mt-3 mb-3">{{ selected_category.name }}</h2>
     {% endif %}
 
@@ -59,6 +56,6 @@
         </div>
     {% endif %}
 
-    {{ render_pagination(pagination, 'listings.index', sort=sort, direction=direction) }}
+    {{ pagination_macros.render_pagination(pagination, 'listings.index', sort=sort, direction=direction) }}
 
 {% endblock %}
