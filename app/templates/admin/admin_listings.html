@@ -1,7 +1,8 @@
 {% extends "base.html" %}
-{% from "macros/pagination.html" import render_pagination %}
 
 {% block content %}
+    {% import "macros/pagination.html" as pagination_macros %}
+
     <a href="{{ url_for('admin.dashboard') }}">&larr; Admin Dashboard</a>
     <form method="post" action="{{ url_for('admin.delete_selected_listings') }}">
         <table class="table">
@@ -84,7 +85,8 @@
             <button type="submit" class="btn btn-danger">Delete Selected</button>
         </div>
     </form>
-    {{ render_pagination(pagination, 'admin.listings', sort=sort, direction=direction) }}
+
+    {{ pagination_macros.render_pagination(pagination, 'admin.listings', sort=sort, direction=direction) }}
 
 {% endblock %}
 
