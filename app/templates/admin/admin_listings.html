@@ -2,6 +2,7 @@
 
 {% block content %}
     {% import "macros/pagination.html" as pagination_macros %}
+    {% import "macros/category.html" as category_macros %}
 
     <a href="{{ url_for('admin.dashboard') }}">&larr; Admin Dashboard</a>
     <form method="post" action="{{ url_for('admin.delete_selected_listings') }}">
@@ -21,14 +22,6 @@
                         <a href="{{ url_for('admin.listings', sort='price', direction='asc' if sort != 'price' or direction == 'desc' else 'desc') }}">
                             Price
                             {% if sort == 'price' %}
-                                {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                            {% endif %}
-                        </a>
-                    </th>
-                    <th>
-                        <a href="{{ url_for('admin.listings', sort='type', direction='asc' if sort != 'type' or direction == 'desc' else 'desc') }}">
-                            Type
-                            {% if sort == 'type' %}
                                 {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
                             {% endif %}
                         </a>
@@ -69,11 +62,28 @@
                         <td>
                             <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}">{{ listing.title }}</a>
                         </td>
-                        <td>{{ listing.price }}</td>
-                        <td>{{ listing.type.name }}</td>
-                        <td>{{ listing.category.name }}</td>
-                        <td>{{ listing.owner.email }}</td>
-                        <td>{{ listing.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if listing.price is not none %}
+                                {{ "%.2f"|format(listing.price) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ category_macros.render_category(listing.category) }}</td>
+                        <td>
+                            {% if listing.owner %}
+                                {{ listing.owner.email }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if listing.created_at %}
+                                {{ listing.created_at.strftime('%Y-%m-%d') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>
                             <a href="{{ url_for('listings.edit_listing', listing_id=listing.id) }}" class="btn btn-warning btn-sm">Edit</a>
                         </td>
