@@ -3,13 +3,15 @@ import random
 import re
 import shutil
 import time
+from datetime import datetime
 
 import click
 import numpy as np
 import requests
+from dotenv import load_dotenv
 from faker import Faker
 from flask import current_app
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 from app import db
 from app.cli.maintenance import backfill_thumbnails
@@ -44,14 +46,6 @@ SUBCATEGORY_KEYWORDS = {
     "Clothing": ["clothing", "shirt", "pants", "dress", "jacket", "fashion"],
     "Shoes": ["shoes", "sneakers", "boots", "sandals", "footwear", "heels"],
 }
-
-# Optional: load from .env if present
-try:
-    from dotenv import load_dotenv
-
-    load_dotenv()
-except ImportError:
-    pass
 
 fake = Faker()
 
@@ -88,8 +82,6 @@ def generate_random_jpg(path, width=400, height=300, text=None):
     arr = np.random.randint(0, 256, (height, width, 3), dtype=np.uint8)
     img = Image.fromarray(arr, "RGB")
     if text:
-        from PIL import ImageDraw, ImageFont
-
         draw = ImageDraw.Draw(img)
         font_size = 32
         try:
@@ -103,9 +95,6 @@ def generate_random_jpg(path, width=400, height=300, text=None):
 def get_image_cache_filename(query):
     """Returns a filename for caching Unsplash images based on query string."""
     # Sanitize query to create a safe filename
-    import re
-    from datetime import datetime
-
     safe_query = re.sub(r"[^a-zA-Z0-9_\-]", "_", query.strip().replace(" ", "_"))
     # Limit filename length for safety
     safe_query = safe_query[:40]
@@ -228,6 +217,13 @@ def demo_data(replace):
     Seed demo categories, users, listings, and images with realistic data using Unsplash or random images (cached).
     By default, adds more data each run. Use --replace to remove all and start fresh.
     """
+    # Load .env at command runtime (safe, minimal side effect)
+    try:
+        load_dotenv()
+    except Exception:
+        # If load_dotenv fails for any reason, continue without aborting the CLI
+        pass
+
     thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
 
     if replace:
@@ -305,8 +301,6 @@ def demo_data(replace):
             demo_listings.append(listing)
     # Run backfill_thumbnails at the end
     try:
-        from app.cli.maintenance import backfill_thumbnails
-
         backfill_thumbnails()
     except Exception as e:
         print(f"Error running backfill_thumbnails: {e}")
@@ -314,8 +308,6 @@ def demo_data(replace):
 
     # After creation, update fixed-title listings to append current date and time
     if not USE_RANDOM_TITLES:
-        from datetime import datetime
-
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         for listing in demo_listings:
             # Only update if the title exactly matches an original fixed title (no datetime yet)

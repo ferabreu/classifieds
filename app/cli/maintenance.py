@@ -1,8 +1,11 @@
 import os
 import uuid
+
 import click
 from flask import current_app
+
 from app.models import ListingImage, db
+
 
 @click.command("backfill-thumbnails")
 def backfill_thumbnails():
@@ -10,7 +13,7 @@ def backfill_thumbnails():
     from app.routes.utils import create_thumbnail
 
     images_without_thumbnails = ListingImage.query.filter(
-        ListingImage.thumbnail_filename.is_(None)
+        ListingImage.thumbnail_filename.is_(None)  # type: ignore
     ).all()
 
     if not images_without_thumbnails:
@@ -51,7 +54,7 @@ def backfill_thumbnails():
 
     try:
         db.session.commit()
-        print(f"\nThumbnail generation completed:")
+        print("\nThumbnail generation completed:")
         print(f"Successfully processed: {success_count}")
         print(f"Errors: {error_count}")
     except Exception as e:
