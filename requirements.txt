@@ -14,3 +14,4 @@ WTForms
 Faker
 numpy
 requests
+dotenv

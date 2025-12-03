@@ -26,7 +26,7 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import current_user, login_required
+from flask_login import login_required
 from sqlalchemy.orm import joinedload
 
 from ..forms import CategoryForm, UserEditForm
@@ -160,7 +160,6 @@ def categories():
     Shows hierarchy: parent and children.
     """
     categories = Category.query.order_by(Category.name).all()
-    from app.forms import CategoryForm
 
     forms = {}
     for c in categories:
@@ -214,6 +213,7 @@ def new_category():
 
 
 @admin_bp.route("/categories/edit/<int:category_id>", methods=["GET", "POST"])
+@login_required
 @admin_required
 def edit_category(category_id):
     category = Category.query.get_or_404(category_id)

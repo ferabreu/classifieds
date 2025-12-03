@@ -6,6 +6,9 @@ Keep edits small and follow these rules when modifying code.
 ## Python
 - Follow PEP 8. Use 4 spaces for indentation.
 - Use Black for formatting (line length 88) and isort for import ordering.
+- Place imports at the top of the file, unless there is a specific reason to delay (e.g., avoid circular imports).
+- Avoid wildcard imports. Use explicit imports.
+- Order imports: stdlib, third-party, local (use isort).
 - Prefer single quotes in Python source; let Black normalize quotes.
 - Use descriptive names (snake_case for functions/variables, PascalCase for classes).
 - Add type hints for public functions where useful.

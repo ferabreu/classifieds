@@ -33,7 +33,3 @@
 
 \* Refer to Mr. Copilot's security review.
 \* Refer to Mr. Copilot's internationalization guide
-
-
-
-Quando edita categoria, o último dropdown está meia boca.

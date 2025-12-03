@@ -17,6 +17,7 @@ For the canonical, detailed style guide, see also `docs/CODE_STYLE.md`.
   - Add type hints for public functions where helpful.
 
 - Imports & modules
+  - Imports should be placed at the top of the file, unless there is a specific reason to delay (e.g., avoid circular imports).
   - Avoid wildcard imports. Use explicit imports.
   - Order imports: stdlib, third-party, local (use isort).
   - Add new helper functions in existing utilities modules (e.g., app/routes/utils.py) when they logically belong there.
