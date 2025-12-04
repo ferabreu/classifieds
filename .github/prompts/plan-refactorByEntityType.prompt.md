@@ -8,6 +8,26 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
 
 2. **Add `url_name` column to `Category` model** for URL-safe category names (migration required). Generate from display name: "Real Estate" → "real-estate". Ensure uniqueness within same parent. Create helper `resolve_category_path("vehicles/motorcycles")` to traverse hierarchy and return `Category` object. Reserve route names that can't be category names: `admin`, `auth`, `profile`, `listing`, `new`, `edit`, `delete`, `static`, `utils`.
 
+   - Database Migration and Helpers:
+
+     1. **Add `url_name` column to Category model:**
+        - Migration: Add `url_name = db.Column(db.String(128), unique=False, nullable=False, index=True)`
+        - Uniqueness constraint: Unique within same parent (siblings can't share url_name)
+        - Generate from `name`: "Real Estate" → "real-estate", "Motorcycles" → "motorcycles"
+        - Backfill existing categories via migration data script or CLI command
+        - Validation: Check against reserved route names on create/edit
+
+     2. **Helper function `resolve_category_path(path_string)`:**
+        - Parse: `"vehicles/motorcycles"` → `["vehicles", "motorcycles"]`
+        - Walk: Start at root, match first segment, then traverse children
+        - Return: `Category` object or `None` if path invalid
+        - Use in route: `category = resolve_category_path(category_path) or abort(404)`
+
+     3. **Generate `url_name` from display name:**
+        - Lowercase, replace spaces/special chars with hyphens
+        - Strip leading/trailing hyphens
+        - Example: `"Real Estate & Rentals"` → `"real-estate-rentals"`
+
 3. **Create `app/routes/categories.py`** with:
    - Admin routes at `/admin/categories/*`: list, create, edit, delete (from `admin.py`)
    - AJAX endpoints: `/api/subcategories/<parent_id>`, `/api/category_breadcrumb/<category_id>`
@@ -40,33 +60,13 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
 
 6. **Create `app/routes/admin_dashboard.py`** with dashboard route (`GET /admin/dashboard`) showing stats (user count, category count, listing count). Register `admin_dashboard_bp` with `/admin` prefix. Use `@admin_required` decorator. Render existing `admin/admin_dashboard.html` template.
 
-### Database Migration and Helpers
-
-**Add `url_name` column to Category model:**
-- Migration: Add `url_name = db.Column(db.String(128), unique=False, nullable=False, index=True)`
-- Uniqueness constraint: Unique within same parent (siblings can't share url_name)
-- Generate from `name`: "Real Estate" → "real-estate", "Motorcycles" → "motorcycles"
-- Backfill existing categories via migration data script or CLI command
-- Validation: Check against reserved route names on create/edit
-
-**Helper function `resolve_category_path(path_string)`:**
-- Parse: `"vehicles/motorcycles"` → `["vehicles", "motorcycles"]`
-- Walk: Start at root, match first segment, then traverse children
-- Return: `Category` object or `None` if path invalid
-- Use in route: `category = resolve_category_path(category_path) or abort(404)`
-
-**Generate `url_name` from display name:**
-- Lowercase, replace spaces/special chars with hyphens
-- Strip leading/trailing hyphens
-- Example: `"Real Estate & Rentals"` → `"real-estate-rentals"`
-
-8. **Update all template `url_for()` references** (~20+ locations):
+7. **Update all template `url_for()` references** (~20+ locations):
    - Change `admin.*` to entity-based: `categories.admin_*`, `listings.admin_*`, `users.admin_*`, `admin_dashboard.dashboard`
    - Update category browsing from `url_for('listings.category_listings', category_id=id)` to build category path and use direct href (or helper to build path from category object)
    - Update profile links from `url_for('users.user_profile')` to `url_for('users.profile')`
    - Files: `base.html`, `admin_categories.html`, `admin_listings.html`, `admin_users.html`, `admin_dashboard.html`, `listing_detail.html`, `listing_form.html`, `user_profile.html`, `user_edit.html`
 
-9. **Remove `app/routes/admin.py` and `app/routes/utils.py`** (move `create_thumbnail` to `app/utils/images.py`). Update blueprint registration in `app/__init__.py`:
+8. **Remove `app/routes/admin.py` and `app/routes/utils.py`** (move `create_thumbnail` to `app/utils/images.py`). Update blueprint registration in `app/__init__.py`:
    - Remove: `admin_bp`, `utils_bp`
    - Add: `categories_bp`, `admin_dashboard_bp`
    - Registration order matters: register specific routes BEFORE catch-all category route
@@ -170,7 +170,7 @@ This approach provides clean public URLs and clear admin separation:
 5. `errors_bp` (no prefix)
 6. `listings_bp` (no prefix, handles `/`, `/listing/*`, `/admin/listings/*`, and catch-all `/<path:category_path>` LAST)
 
-
+### Testing Checklist
 
 After implementation:
 - [ ] All admin category management works (create, edit, delete, list)

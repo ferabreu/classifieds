@@ -26,12 +26,11 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import login_required
 from sqlalchemy.orm import joinedload
 
 from ..forms import CategoryForm, UserEditForm
 from ..models import Category, Listing, User, db
-from .utils import admin_required
+from .decorators import admin_required
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -39,7 +38,6 @@ admin_bp = Blueprint("admin", __name__)
 
 
 @admin_bp.route("/dashboard")
-@login_required
 @admin_required
 def dashboard():
     """Renders the admin dashboard with statistics on users, categories, listings."""
@@ -59,7 +57,6 @@ def dashboard():
 
 
 @admin_bp.route("/users")
-@login_required
 @admin_required
 def users():
     """Lists all users in the system, with sorting and pagination."""
@@ -90,7 +87,6 @@ def users():
 
 
 @admin_bp.route("/users/profile/<int:user_id>")
-@login_required
 @admin_required
 def user_profile(user_id):
     """Displays a user's profile page for admin review."""
@@ -101,7 +97,6 @@ def user_profile(user_id):
 
 
 @admin_bp.route("/users/edit/<int:user_id>", methods=["GET", "POST"])
-@login_required
 @admin_required
 def edit_user(user_id):
     """
@@ -133,7 +128,6 @@ def edit_user(user_id):
 
 
 @admin_bp.route("/users/delete/<int:user_id>", methods=["POST"])
-@login_required
 @admin_required
 def delete_user(user_id):
     """Allows admins to delete a user, except for the last admin user."""
@@ -152,7 +146,6 @@ def delete_user(user_id):
 
 
 @admin_bp.route("/categories")
-@login_required
 @admin_required
 def categories():
     """
@@ -180,7 +173,6 @@ def categories():
 
 
 @admin_bp.route("/categories/new", methods=["GET", "POST"])
-@login_required
 @admin_required
 def new_category():
     """
@@ -213,7 +205,6 @@ def new_category():
 
 
 @admin_bp.route("/categories/edit/<int:category_id>", methods=["GET", "POST"])
-@login_required
 @admin_required
 def edit_category(category_id):
     category = Category.query.get_or_404(category_id)
@@ -261,7 +252,6 @@ def edit_category(category_id):
 
 
 @admin_bp.route("/categories/delete/<int:category_id>", methods=["POST"])
-@login_required
 @admin_required
 def delete_category(category_id):
     """
@@ -297,7 +287,6 @@ def delete_category(category_id):
 
 
 @admin_bp.route("/listings")
-@login_required
 @admin_required
 def listings():
     """Lists all listings (ordered by least recent) for admin management."""
@@ -329,7 +318,6 @@ def listings():
 
 
 @admin_bp.route("/listings/delete/<int:listing_id>", methods=["POST"])
-@login_required
 @admin_required
 def delete_listing(listing_id):
     """
@@ -374,7 +362,6 @@ def delete_listing(listing_id):
 
 
 @admin_bp.route("/listings/delete_selected", methods=["POST"])
-@login_required
 @admin_required
 def delete_selected_listings():
     """
