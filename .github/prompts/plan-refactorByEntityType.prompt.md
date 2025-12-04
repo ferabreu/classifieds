@@ -12,6 +12,9 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
 
      1. **Add `url_name` column to Category model:**
         - Migration: Add `url_name = db.Column(db.String(128), unique=False, nullable=False, index=True)`
+        - **IMPORTANT**: Database is SQLite3 (production database). SQLite does NOT support `ALTER COLUMN` operations.
+        - Use `server_default='temp'` when adding NOT NULL columns, then backfill data
+        - Avoid `op.alter_column()` with nullable changes - it will fail on SQLite
         - Uniqueness constraint: Unique within same parent (siblings can't share url_name)
         - Generate from `name`: "Real Estate" → "real-estate", "Motorcycles" → "motorcycles"
         - Backfill existing categories via migration data script or CLI command
@@ -30,6 +33,7 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
 
 3. **Create `app/routes/categories.py`** with:
    - Admin routes at `/admin/categories/*`: list, create, edit, delete (from `admin.py`)
+     - Update the edit route so that it updates `url_name` when the category name is altered.
    - AJAX endpoints: `/api/subcategories/<parent_id>`, `/api/category_breadcrumb/<category_id>`
    - Register `categories_bp` with `/admin/categories` prefix for admin routes, or without prefix if AJAX endpoints need root-level access
    - Ensure admin routes use `@admin_required` decorator
@@ -226,3 +230,4 @@ After implementation:
   - Backfill `url_name` for all existing categories
   - Validate uniqueness within siblings and against reserved names
   - Document migration steps and add a CLI script for backfilling if needed
+  - **IMPORTANT**: Use SQLite-compatible migration patterns (no `ALTER COLUMN`, use `server_default` for NOT NULL columns)

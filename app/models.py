@@ -25,25 +25,33 @@ class Category(db.Model):
     Category model for hierarchical organization of listings.
 
     Supports parent-child relationships for multi-level categories.
+    The url_name field stores URL-safe category names for clean hierarchical paths.
     """
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), nullable=False)
+    url_name = db.Column(db.String(128), nullable=False, index=True)
     # Recursive fields for multi-level categories
     parent_id = db.Column(db.Integer, db.ForeignKey("category.id"), nullable=True)
     parent_id: InstrumentedAttribute[Optional[int]]
     parent = db.relationship("Category", remote_side=[id], backref="children")
     listings = db.relationship("Listing", backref="category", lazy=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
-    __table_args__ = (db.UniqueConstraint("name", "parent_id", name="_cat_parent_uc"),)
+    __table_args__ = (
+        db.UniqueConstraint("name", "parent_id", name="_cat_parent_uc"),
+        db.UniqueConstraint("url_name", "parent_id", name="_cat_url_name_parent_uc"),
+    )
 
     def __init__(
         self,
         name: str,
         parent_id: Optional[int] = None,
+        url_name: Optional[str] = None,
     ):
         self.name = name
         self.parent_id = parent_id
+        # Auto-generate url_name if not provided
+        self.url_name = url_name or generate_url_name(name)
 
     @property
     def breadcrumb(self):
@@ -119,6 +127,12 @@ class Category(db.Model):
             node = node.parent
         return False
 
+    def is_url_name_reserved(self) -> bool:
+        """
+        Return True if this category's url_name is a reserved route name.
+        """
+        return self.url_name.lower() in RESERVED_CATEGORY_NAMES
+
     @classmethod
     def get_children(cls, parent_id: Optional[int]):
         """
@@ -167,6 +181,52 @@ class Category(db.Model):
                 # defensive: treat excessive depth as a cycle to be safe
                 return True
         return False
+
+    @classmethod
+    def from_path(cls, path_string: str) -> Optional["Category"]:
+        """
+        Resolve a hierarchical category path to a Category object.
+
+        Traverses the category hierarchy starting from root, matching each path
+        segment against the url_name of categories at each level.
+
+        Args:
+            path_string: A slash-separated path like "vehicles/motorcycles"
+
+        Returns:
+            The Category object at the end of the path, or None if path is invalid
+
+        Example:
+            Category.from_path("vehicles/motorcycles") → Category(id=5, name="Motorcycles")
+        """
+        if not path_string or path_string == "/":
+            return None
+
+        # Parse the path into segments
+        segments = [s for s in path_string.split("/") if s]
+        if not segments:
+            return None
+
+        # Start with root categories (parent_id is None)
+        current_categories = cls.query.filter_by(parent_id=None).all()
+        current_category: Optional[Category] = None
+
+        for segment in segments:
+            # Find a category at this level matching the url_name
+            current_category = None
+            for cat in current_categories:
+                if cat.url_name == segment:
+                    current_category = cat
+                    break
+
+            if current_category is None:
+                # Path segment not found
+                return None
+
+            # Move to children for next iteration
+            current_categories = current_category.children  # type: ignore
+
+        return current_category
 
 
 class User(UserMixin, db.Model):
@@ -292,3 +352,46 @@ def _prevent_category_cycle(session, flush_context, instances):
             # Use helper that walks the chain via this session (avoids multiple queries outside session)
             if obj.would_create_cycle(parent_id, session):
                 raise ValueError("Cannot set parent: would create a category cycle.")
+
+
+# Reserved route names that cannot be used as category url_name
+RESERVED_CATEGORY_NAMES = {
+    "admin",
+    "auth",
+    "profile",
+    "listing",
+    "api",
+    "static",
+    "new",
+    "edit",
+    "delete",
+    "utils",
+    "categories",
+    "users",
+    "listings",
+    "dashboard",
+}
+
+
+def generate_url_name(name: str) -> str:
+    """
+    Generate a URL-safe name from a display name.
+
+    Converts to lowercase, replaces spaces and special characters with hyphens,
+    and strips leading/trailing hyphens.
+
+    Example:
+        "Real Estate & Rentals" → "real-estate-rentals"
+        "Motorcycles" → "motorcycles"
+    """
+    import re
+
+    # Convert to lowercase
+    url_name = name.lower()
+    # Replace spaces and special characters with hyphens
+    url_name = re.sub(r"[^\w-]", "-", url_name)
+    # Replace multiple consecutive hyphens with a single hyphen
+    url_name = re.sub(r"-+", "-", url_name)
+    # Strip leading and trailing hyphens
+    url_name = url_name.strip("-")
+    return url_name
