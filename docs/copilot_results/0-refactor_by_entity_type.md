@@ -442,5 +442,5 @@ Routes that need this will now call:
 ✅ App imports successfully
 ✅ Method is callable and functional
 
-#### (...) more errors came up trying to migrate the database, but it finally worked. (2025-12-04)
+#### (...) more errors came up trying to migrate the database, but it finally worked. Instructions regarding SQLite limitations were added to the plan and to `copilot-instructions.md` (2025-12-04).
 
