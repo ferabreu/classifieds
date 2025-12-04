@@ -70,7 +70,12 @@ For the canonical, detailed style guide, see also `docs/CODE_STYLE.md`.
 ## Project-specific patterns and commands when making changes.
 
 - Project type: Flask (Python 3.10+), single WSGI app in `wsgi.py`. App factory: `app.create_app()` in `app/__init__.py`.
-- DB: SQLAlchemy (Flask-SQLAlchemy). Migrations present (Alembic) under `migrations/` but app uses `db.create_all()` in the CLI `flask init` helper for quick local setup.
+- DB: SQLAlchemy (Flask-SQLAlchemy) with **SQLite3 as the production database**. Migrations present (Alembic) under `migrations/` but app uses `db.create_all()` in the CLI `flask init` helper for quick local setup.
+- **IMPORTANT: SQLite is used in production**, not just development. When writing migrations:
+  - SQLite does NOT support `ALTER COLUMN` operations (changing nullable, type, etc.)
+  - Use `server_default` when adding NOT NULL columns, then backfill data
+  - Avoid `op.alter_column()` - it will fail on SQLite
+  - For complex schema changes, use the "recreate table" pattern (create new, copy data, drop old, rename)
 - Storage: uploaded images in `app/static/uploads/`; thumbnails in `app/static/uploads/thumbnails/`; a TEMP_DIR (`static/temp`) is used for ACID-like file operations. See `app/config.py` and `app/__init__.py` for path resolution.
 
 When editing application logic, prefer these patterns used throughout the codebase:
@@ -194,6 +199,140 @@ LDAP_DOMAIN=
   - Run locally: `flask db migrate -m "msg"` then `flask db upgrade` to generate/apply migration.
   - If you can't run migrations in CI, update `migrations/` and document changes in PR.
 - For quick local work the `flask init` helper calls `db.create_all()` — rely on it only for dev/testing, not production.
+- **SQLite limitations and migration patterns:**
+  - SQLite does NOT support `ALTER COLUMN` to change nullable, type, default, etc.
+  - **Use Alembic batch mode for all constraint/schema operations on SQLite:**
+    ```python
+    with op.batch_alter_table('table_name', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('new_col', sa.String(128), nullable=False, server_default='temp'))
+        batch_op.create_unique_constraint('constraint_name', ['col1', 'col2'])
+    ```
+  - When adding NOT NULL columns: use `server_default='temp'`, backfill data in SQL, constraint operations inside batch mode
+  - Never use `op.alter_column()` with `nullable=`, `type_=`, or other modifications outside batch mode - it will fail
+  - For complex changes: batch mode handles the "recreate table" strategy automatically (create temp table, copy data, drop old, rename)
+
+### 5b) SQLite Batch Mode Examples (copy-paste patterns)
+
+**Example 1: Adding a NOT NULL column with unique constraint**
+```python
+def upgrade():
+    with op.batch_alter_table('category', schema=None) as batch_op:
+        batch_op.add_column(
+            sa.Column('url_name', sa.String(128), nullable=False, server_default='temp', index=True)
+        )
+        batch_op.create_unique_constraint(
+            'uk_category_url_name_parent',
+            ['url_name', 'parent_id']
+        )
+    
+    # After batch operations, backfill data
+    conn = op.get_bind()
+    conn.execute(sa.text("""
+        UPDATE category 
+        SET url_name = LOWER(REPLACE(REPLACE(TRIM(name), ' ', '_'), '-', '_'))
+        WHERE url_name = 'temp'
+    """))
+    conn.commit()
+
+def downgrade():
+    with op.batch_alter_table('category', schema=None) as batch_op:
+        batch_op.drop_constraint('uk_category_url_name_parent', type_='unique')
+        batch_op.drop_column('url_name')
+```
+
+**Example 2: Modifying column constraints (add NOT NULL)**
+```python
+def upgrade():
+    with op.batch_alter_table('listing', schema=None) as batch_op:
+        batch_op.alter_column('status', nullable=False, server_default='active')
+    
+    # Update existing NULLs
+    conn = op.get_bind()
+    conn.execute(sa.text("UPDATE listing SET status = 'active' WHERE status IS NULL"))
+    conn.commit()
+
+def downgrade():
+    with op.batch_alter_table('listing', schema=None) as batch_op:
+        batch_op.alter_column('status', nullable=True, server_default=None)
+```
+
+**Example 3: Adding multiple constraints in one migration**
+```python
+def upgrade():
+    with op.batch_alter_table('user', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('verified_email', sa.Boolean(), nullable=False, server_default=False))
+        batch_op.create_index('ix_user_email_verified', ['email', 'verified_email'])
+        batch_op.create_check_constraint('ck_user_email_notnull', 'email IS NOT NULL')
+    conn = op.get_bind()
+    conn.commit()
+
+def downgrade():
+    with op.batch_alter_table('user', schema=None) as batch_op:
+        batch_op.drop_constraint('ck_user_email_notnull', type_='check')
+        batch_op.drop_index('ix_user_email_verified')
+        batch_op.drop_column('verified_email')
+```
+
+**Key rules:**
+- ALL schema modifications (add column, drop column, add/drop constraints, alter_column) MUST go inside `with op.batch_alter_table():`
+- `server_default` is required for NOT NULL columns being added; backfill the data AFTER batch operations
+- Downgrade must also use batch mode for consistency
+- For simple type-safe operations (e.g., adding nullable column), batch mode still works fine
+
+### 5c) SQLite Migration Anti-Patterns (what NOT to do)
+
+❌ **NEVER:** Use `op.alter_column()` outside of batch mode:
+```python
+# WRONG - This will fail on SQLite!
+op.alter_column('user', 'email', nullable=False)
+```
+✅ **INSTEAD:** Use batch mode:
+```python
+# CORRECT
+with op.batch_alter_table('user', schema=None) as batch_op:
+    batch_op.alter_column('email', nullable=False, server_default='unknown')
+```
+
+❌ **NEVER:** Add a NOT NULL constraint without `server_default`:
+```python
+# WRONG - Alembic will fail when backfilling
+batch_op.add_column(sa.Column('status', sa.String(50), nullable=False))
+```
+✅ **INSTEAD:** Include `server_default`, then backfill data:
+```python
+# CORRECT
+batch_op.add_column(sa.Column('status', sa.String(50), nullable=False, server_default='active'))
+# Then after batch context, update existing rows
+conn = op.get_bind()
+conn.execute(sa.text("UPDATE user SET status = 'active' WHERE status = 'active'"))
+```
+
+❌ **NEVER:** Use direct `op.drop_constraint()` or `op.create_constraint()` outside batch mode:
+```python
+# WRONG - Will fail on SQLite
+op.drop_constraint('fk_listing_user_id', type_='foreignkey')
+```
+✅ **INSTEAD:** Use batch mode for constraint operations:
+```python
+# CORRECT
+with op.batch_alter_table('listing', schema=None) as batch_op:
+    batch_op.drop_constraint('fk_listing_user_id', type_='foreignkey')
+```
+
+❌ **NEVER:** Assume you can avoid batch mode for "simple" changes:
+```python
+# WRONG - Even adding an index might need batch mode for consistency
+op.create_index('ix_new_index', 'table_name', ['column'])
+```
+✅ **CORRECT:** Use batch mode when adding columns or modifying existing constraints:
+```python
+# If adding a column or modifying schema, use batch mode consistently
+with op.batch_alter_table('table_name', schema=None) as batch_op:
+    batch_op.add_column(...)
+    batch_op.create_index('ix_new_index', ['column'])
+```
+
+**Summary:** On SQLite, when in doubt, use `op.batch_alter_table()`. It's the safe default for all schema changes.
 
 ### 6) Manual QA checklist (no automated tests present)
 - Create a new listing with 1+ images and confirm thumbnails are generated in `static/uploads/thumbnails`.
