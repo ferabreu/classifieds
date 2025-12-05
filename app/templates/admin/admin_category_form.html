@@ -17,8 +17,8 @@
             {{ form.parent_id(class="form-select", id="parent_id", style="display:none;") }}
             <div id="category-dropdowns"
                  data-hidden-field-id="parent_id"
-                 data-subcategories-url="{{ url_for('listings.subcategories_for_parent', parent_id=0) | replace('0','{parent_id}') }}"
-                 data-breadcrumb-url="{{ url_for('utils.category_breadcrumb', category_id=0) | replace('0','{category_id}') }}"
+                  data-subcategories-url="{{ url_for('categories.api_children', parent_id=0) | replace('0','{parent_id}') }}"
+                  data-breadcrumb-url="{{ url_for('categories.api_breadcrumb', category_id=0) | replace('0','{category_id}') }}"
                  data-exclude-ids="{{ exclude_ids | tojson }}">
             </div>
             {% for error in form.parent_id.errors %}
@@ -27,7 +27,7 @@
         </div>
 
         <button type="submit" class="btn btn-primary">{{ action }}</button>
-        <a href="{{ url_for('admin.categories') }}" class="btn btn-secondary">Cancel</a>
+        <a href="{{ url_for('categories.admin_list') }}" class="btn btn-secondary">Cancel</a>
     </form>
 {% endblock %}
 

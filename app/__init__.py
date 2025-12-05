@@ -62,13 +62,17 @@ def create_app(config_class=None):
 
     from .routes.admin import admin_bp
     from .routes.auth import auth_bp
+    from .routes.categories import categories_bp
     from .routes.errors import errors_bp
     from .routes.listings import listings_bp
     from .routes.users import users_bp
     from .routes.utils import utils_bp
 
+    # Register blueprints in specific order to avoid route conflicts
+    # Categories blueprint must be registered to handle both admin routes and API endpoints
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp, url_prefix="/auth")
+    app.register_blueprint(categories_bp)  # No prefix - handles /admin/categories/* and /api/categories/*
     app.register_blueprint(errors_bp)
     app.register_blueprint(listings_bp, url_prefix="/")
     app.register_blueprint(users_bp, url_prefix="/users")
