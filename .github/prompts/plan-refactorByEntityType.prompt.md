@@ -94,13 +94,11 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
 
 3. **AJAX endpoint consistency**: Move AJAX endpoints to `/api/*` namespace within `categories.py`: `/api/subcategories/<parent_id>` and `/api/category_breadcrumb/<category_id>`. Update frontend JavaScript in `category_dropdowns.js` to use new endpoints.
 
-### Questions for Clarification
+4. **URL structure preference**: Keep `/admin` prefix for admin routes (e.g., `/admin/categories`, `/admin/listings`, `/admin/users`) to maintain clear separation. Use clean URLs for public routes: `/vehicles/motorcycles` (hierarchical category paths), `/profile` (self-service), `/listing/<id>` (listing detail).
 
-1. **URL structure preference**: Keep `/admin` prefix for admin routes (e.g., `/admin/categories`, `/admin/listings`, `/admin/users`) to maintain clear separation. Use clean URLs for public routes: `/vehicles/motorcycles` (hierarchical category paths), `/profile` (self-service), `/listing/<id>` (listing detail).
+5. **Admin dashboard**: the admin dashboard (`/admin/dashboard`) stay as-is in a separate file. It's a break from the entity-based structure, but, because it doesn't fit neatly into categories, listings, or users, it may be best kept separate.
 
-2. **Admin dashboard**: the admin dashboard (`/admin/dashboard`) stay as-is in a separate file. It's a break from the entity-based structure, but, because it doesn't fit neatly into categories, listings, or users, it may be best kept separate.
-
-3. **Breaking changes tolerance**: it's okay changing all admin URLs.
+6. **Breaking changes tolerance**: it's okay changing all admin URLs.
 
 ### Current Route Inventory
 
@@ -138,7 +136,7 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
 
 ### Authorization Patterns to refactor
 
-1. **Admin routes**: use `@login_required` decorator, and make sure `@login_required` imply `@admin_required`
+1. **Admin routes**: use `@login_required` decorator, and make sure `@admin_required` imply `@login_required`.
 
 ### Special Logic to Preserve
 
@@ -241,3 +239,4 @@ After implementation:
   - Validate uniqueness within siblings and against reserved names
   - Document migration steps and add a CLI script for backfilling if needed
   - **IMPORTANT**: Use SQLite-compatible migration patterns (no `ALTER COLUMN`, use `server_default` for NOT NULL columns)
+- If **opening a new terminal to run commands for checking/testing, first load the venv** (`source /home/ferabreu/Code/classifieds/venv/bin/activate`), so that all the required dependencies and utilities are available. Prefer to run commands on an already opened terminal with the venv loaded.
