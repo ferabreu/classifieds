@@ -4,6 +4,7 @@ import uuid
 
 from flask import (
     Blueprint,
+    abort,
     current_app,
     flash,
     jsonify,
@@ -13,10 +14,12 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
+from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from ..forms import ListingForm
-from ..models import Category, Listing, ListingImage, db
+from ..models import Category, Listing, ListingImage, User, db
+from .decorators import admin_required
 from .utils import create_thumbnail
 
 listings_bp = Blueprint("listings", __name__)
@@ -76,6 +79,42 @@ def category_listings(category_id):
     )
 
 
+@listings_bp.route("/<path:category_path>")
+def category_filtered_listings(category_path):
+    category = Category.from_path(category_path)
+    if not category:
+        abort(404)
+
+    page = request.args.get("page", 1, type=int)
+    per_page = 24
+
+    descendant_ids = category.get_descendant_ids()
+    listings_query = Listing.query.filter(Listing.category_id.in_(descendant_ids))
+    pagination = listings_query.order_by(Listing.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    listings = pagination.items
+
+    # --- Sidebar context additions ---
+    # 1. Get all root categories with their children (for sidebar)
+    categories = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
+    # 2. Compute ancestor IDs for expansion using breadcrumb property
+    ancestor_ids = [cat.id for cat in category.breadcrumb[:-1]]
+    expanded_ids = ancestor_ids  # List of IDs to auto-expand
+
+    return render_template(
+        "index.html",
+        listings=listings,
+        pagination=pagination,
+        selected_category=category,
+        category_path=category.get_full_path(),
+        categories=categories,
+        active_category_id=category.id,
+        expanded_ids=expanded_ids,
+        page_title=category.name,
+    )
+
+
 @listings_bp.route("/listing/<int:listing_id>")
 def listing_detail(listing_id):
     listing = Listing.query.get_or_404(listing_id)
@@ -91,12 +130,12 @@ def listing_detail(listing_id):
     )
 
 
-@listings_bp.route("/subcategories_for_parent/<int:parent_id>")
-@login_required
-def subcategories_for_parent(parent_id):
-    subcategories = Category.get_children(parent_id)
-    data = [{"id": s.id, "name": s.name} for s in subcategories]
-    return jsonify(data)
+@listings_bp.route("/admin/listings/view/<int:listing_id>")
+@admin_required
+def admin_listing_detail(listing_id):
+    return listing_detail(listing_id)
+
+
 
 
 @listings_bp.route("/new", methods=["GET", "POST"])
@@ -326,9 +365,7 @@ def create_listing():
     )
 
 
-@listings_bp.route("/edit/<int:listing_id>", methods=["GET", "POST"])
-@login_required
-def edit_listing(listing_id):
+def _edit_listing_impl(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     page_title = "Edit listing"
     category = listing.category
@@ -642,6 +679,8 @@ def edit_listing(listing_id):
                                 "warning",
                             )
                 flash("Listing updated successfully!", "success")
+                if request.path.startswith("/admin") and current_user.is_admin:
+                    return redirect(url_for("listings.admin_listings"))
                 return redirect(
                     url_for("listings.listing_detail", listing_id=listing.id)
                 )
@@ -662,9 +701,19 @@ def edit_listing(listing_id):
     )
 
 
-@listings_bp.route("/delete/<int:listing_id>", methods=["POST"])
+@listings_bp.route("/edit/<int:listing_id>", methods=["GET", "POST"])
 @login_required
-def delete_listing(listing_id):
+def edit_listing(listing_id):
+    return _edit_listing_impl(listing_id)
+
+
+@listings_bp.route("/admin/listings/edit/<int:listing_id>", methods=["GET", "POST"])
+@admin_required
+def admin_edit_listing(listing_id):
+    return _edit_listing_impl(listing_id)
+
+
+def _delete_listing_impl(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     category = listing.category
     category_path = category.get_full_path() if category else None
@@ -777,4 +826,116 @@ def delete_listing(listing_id):
             pass
 
     flash(f"Listing deleted successfully! (Category: {category_path})", "success")
+    if request.path.startswith("/admin") and current_user.is_admin:
+        return redirect(url_for("listings.admin_listings"))
     return redirect(url_for("listings.index"))
+
+
+@listings_bp.route("/delete/<int:listing_id>", methods=["POST"])
+@login_required
+def delete_listing(listing_id):
+    return _delete_listing_impl(listing_id)
+
+
+@listings_bp.route("/admin/listings/delete/<int:listing_id>", methods=["POST"])
+@admin_required
+def admin_delete_listing(listing_id):
+    return _delete_listing_impl(listing_id)
+
+
+# -------------------- ADMIN ROUTES --------------------
+
+
+@listings_bp.route("/admin/listings")
+@admin_required
+def admin_listings():
+    """Lists all listings (ordered by least recent) for admin management."""
+    page = request.args.get("page", 1, type=int)
+    sort = request.args.get("sort", "created_at")
+    direction = request.args.get("direction", "desc")
+
+    sort_column_map = {
+        "title": Listing.title,
+        "price": Listing.price,
+        "category": Listing.category_id,
+        "user": Listing.user_id,
+        "created_at": Listing.created_at,
+    }
+    sort_column = sort_column_map.get(sort, Listing.created_at)
+    sort_order = sort_column.asc() if direction == "asc" else sort_column.desc()
+
+    pagination = Listing.query.order_by(sort_order).paginate(page=page, per_page=20)
+    listings = pagination.items
+
+    return render_template(
+        "admin/admin_listings.html",
+        listings=listings,
+        pagination=pagination,
+        sort=sort,
+        direction=direction,
+        page_title="Manage listings",
+    )
+
+
+@listings_bp.route("/admin/listings/delete_selected", methods=["POST"])
+@admin_required
+def delete_selected_listings():
+    """
+    Deletes multiple selected listings and all their associated image files using a 'temp' strategy.
+    """
+    selected_ids = request.form.getlist("selected_listings")
+    if not selected_ids:
+        flash("No listings selected for deletion.", "warning")
+        return redirect(url_for("listings.admin_listings"))
+
+    listings = (
+        Listing.query.options(joinedload(Listing.images))  # type: ignore
+        .filter(Listing.id.in_(selected_ids))
+        .all()
+    )
+    original_paths = []
+    temp_paths = []
+    all_image_filenames = set()
+
+    for listing in listings:
+        for image in listing.images:
+            all_image_filenames.add(image.filename)
+            orig = os.path.join(current_app.config["UPLOAD_DIR"], image.filename)
+            temped = os.path.join(current_app.config["TEMP_DIR"], image.filename)
+            try:
+                shutil.move(orig, temped)
+                original_paths.append(orig)
+                temp_paths.append(temped)
+            except FileNotFoundError:
+                pass
+
+    try:
+        for listing in listings:
+            db.session.delete(listing)
+        db.session.commit()
+    except Exception:
+        for orig, temped in zip(original_paths, temp_paths):
+            try:
+                shutil.move(temped, orig)
+            except Exception:
+                pass
+        db.session.rollback()
+        flash("Database error. Listings were not deleted. Files restored.", "danger")
+        return redirect(url_for("listings.admin_listings"))
+
+    for temped in temp_paths:
+        try:
+            os.remove(temped)
+        except Exception:
+            pass
+
+    for filename in all_image_filenames:
+        path = os.path.join(current_app.config["UPLOAD_DIR"], filename)
+        try:
+            if os.path.exists(path):
+                os.remove(path)
+        except Exception:
+            pass
+
+    flash(f"Deleted {len(listings)} listing(s).", "success")
+    return redirect(url_for("listings.admin_listings"))

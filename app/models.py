@@ -83,6 +83,16 @@ class Category(db.Model):
         # reuse breadcrumb to avoid duplicate traversal logic
         return " > ".join([cat.name for cat in self.breadcrumb])
 
+    @property
+    def url_path(self):
+        """
+        Return the URL-safe hierarchical path for this category.
+
+        Example:
+            electronics/computers/laptops
+        """
+        return "/".join([cat.url_name for cat in self.breadcrumb])
+
     # Small serializer used by routes and APIs
     def to_dict(self):
         """

@@ -10,11 +10,11 @@
             <li class="breadcrumb-item"><a href="{{ url_for('listings.index') }}">Home</a></li>
             {% for cat in category.breadcrumb[:-1] %}
                 <li class="breadcrumb-item">
-                    <a href="{{ url_for('listings.category_listings', category_id=cat.id) }}">{{ cat.name }}</a>
+                    <a href="{{ url_for('listings.category_filtered_listings', category_path=cat.url_path) }}">{{ cat.name }}</a>
                 </li>
             {% endfor %}
             <li class="breadcrumb-item active" aria-current="page">
-                <a href="{{ url_for('listings.category_listings', category_id=category.breadcrumb[-1].id) }}">{{ category.breadcrumb[-1].name }}</a>
+                <a href="{{ url_for('listings.category_filtered_listings', category_path=category.breadcrumb[-1].url_path) }}">{{ category.breadcrumb[-1].name }}</a>
             </li>
         </ol>
     </nav>
