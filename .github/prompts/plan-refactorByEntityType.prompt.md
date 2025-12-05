@@ -42,10 +42,10 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
 
 4. **Reorganize `app/routes/listings.py`**:
    - Move admin listing routes from `admin.py` (list all, bulk delete) into existing `listings.py`.
-   - For admin edit, use `edit_listing()` directly:
+   - For admin edit, use existing `edit_listing()` in `listings.py` directly:
      - route it from both URLs: `/admin/listings/edit/<id>` and `/listing/edit/<id>`, using permission checks to differentiate.
      - show edit button to admins on listing detail/list pages.
-   - For admin delete, use `delete_listing()` directly:
+   - For admin delete, use existing `delete_listing()` in `listings.py` directly:
      - route it from both URLs: `/admin/listings/delete/<id>` and `/listing/delete/<id>`, using permission checks to differentiate.
      - show delete button to admins on listing detail/list pages.
    - Keep and enhance public routes:
