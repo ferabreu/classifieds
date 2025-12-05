@@ -40,10 +40,18 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
    - Preserve category cycle prevention and cascade deletion logic
    - No public listing browsing routes (those stay in `listings.py`) 
 
-4. **Reorganize `app/routes/listings.py`** by moving admin listing routes from `admin.py` (list all, delete, bulk delete) into existing `listings.py`. Add admin edit route at `/admin/listings/edit/<int:listing_id>` and show edit button to admins on listing detail/list pages. Keep and enhance public routes:
-   - `GET /` → homepage/index (all listings)
-   - `GET /listing/<int:listing_id>` → listing detail
-   - `GET /<path:category_path>` → **category-filtered listing browsing** (e.g., `/vehicles/motorcycles`) - uses `resolve_category_path()` helper to get category, then filters listings by category + descendants
+4. **Reorganize `app/routes/listings.py`**:
+   - Move admin listing routes from `admin.py` (list all, bulk delete) into existing `listings.py`.
+   - For admin edit, use `edit_listing()` directly:
+     - route it from both URLs: `/admin/listings/edit/<id>` and `/listing/edit/<id>`, using permission checks to differentiate.
+     - show edit button to admins on listing detail/list pages.
+   - For admin delete, use `delete_listing()` directly:
+     - route it from both URLs: `/admin/listings/delete/<id>` and `/listing/delete/<id>`, using permission checks to differentiate.
+     - show delete button to admins on listing detail/list pages.
+   - Keep and enhance public routes:
+     - `GET /` → homepage/index (all listings)
+     - `GET /listing/<int:listing_id>` → listing detail
+     - `GET /<path:category_path>` → **category-filtered listing browsing** (e.g., `/vehicles/motorcycles`) - uses `resolve_category_path()` helper to get category, then filters listings by category + descendants
    - User routes: `/listing/new`, `/listing/edit/<int:listing_id>`, `/listing/delete/<int:listing_id>`
    - Admin routes: `/admin/listings`, `/admin/listings/edit/<id>`, `/admin/listings/delete/<id>`, `/admin/listings/delete_selected`
    - Register `listings_bp` without URL prefix (catch-all `/<path:category_path>` must be root-level)
@@ -51,6 +59,7 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
    - Ensure user routes use `@login_required` and owner-or-admin check
    - Maintain temp-commit-move file pattern for all image operations
    - Centralize listing query/pagination/sorting logic for reuse across index and category views
+   - Remove remaining admin listing routes from `admin.py`.
 
 5. **Reorganize `app/routes/users.py`** with all user-related routes:
    - Self-service at `/profile` (no ID, uses `current_user`): view and edit
@@ -61,6 +70,7 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
    - Ensure admin routes use `@admin_required` decorator
    - Ensure self-service routes use `@login_required` decorator
    - User details on listing pages: expose `listing.owner` relationship (already in model)
+   - remove remaining admin user routes from `admin.py`.
 
 6. **Create `app/routes/admin_dashboard.py`** with dashboard route (`GET /admin/dashboard`) showing stats (user count, category count, listing count). Register `admin_dashboard_bp` with `/admin` prefix. Use `@admin_required` decorator. Render existing `admin/admin_dashboard.html` template.
 
