@@ -37,9 +37,20 @@
 
     </div>
 
-    {% if current_user.is_authenticated and current_user.id == listing.user_id %}
-        <a href="{{ url_for('listings.edit_listing', listing_id=listing.id) }}" class="btn btn-warning">Edit</a>
-        <form action="{{ url_for('listings.delete_listing', listing_id=listing.id) }}" method="post">
+    {% if current_user.is_authenticated and (current_user.id == listing.user_id or current_user.is_admin) %}
+        {% set edit_endpoint = 'listings.edit_listing' %}
+        {% set delete_endpoint = 'listings.delete_listing' %}
+        
+        {% if request.path.startswith('/admin') %}
+            {% set edit_endpoint = 'listings.admin_edit_listing' %}
+            {% set delete_endpoint = 'listings.admin_delete_listing' %}
+        {% elif current_user.id != listing.user_id and current_user.is_admin %}
+            {% set edit_endpoint = 'listings.admin_edit_listing' %}
+            {% set delete_endpoint = 'listings.admin_delete_listing' %}
+        {% endif %}
+
+        <a href="{{ url_for(edit_endpoint, listing_id=listing.id) }}" class="btn btn-warning">Edit</a>
+        <form action="{{ url_for(delete_endpoint, listing_id=listing.id) }}" method="post" style="display:inline;">
             <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
         </form>
     {% endif %}

@@ -18,7 +18,7 @@
         <li class="nav-item mb-1">
             <div class="d-flex align-items-center">
                 <a class="nav-link px-0 flex-grow-1 text-dark{% if category.id == active_category_id %} active{% endif %}"
-                   href="{{ url_for('listings.category_listings', category_id=category.id) }}">
+                   href="{{ url_for('listings.category_filtered_listings', category_path=category.url_path) }}">
                     {{ category.name }}
                 </a>
                 {%- if (category.children is defined and category.children) or (all_categories|selectattr('parent', 'equalto', category)|list) %}

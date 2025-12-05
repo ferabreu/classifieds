@@ -78,10 +78,10 @@
                                         <a class="dropdown-item" href="{{ url_for('admin.users') }}">Manage Users</a>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item" href="{{ url_for('admin.categories') }}">Manage Categories</a>
+                                        <a class="dropdown-item" href="{{ url_for('categories.admin_list') }}">Manage Categories</a>
                                     </li>
                                     <li>
-                                        <a class="dropdown-item" href="{{ url_for('admin.listings') }}">Manage Listings</a>
+                                        <a class="dropdown-item" href="{{ url_for('listings.admin_listings') }}">Manage Listings</a>
                                     </li>
                                 </ul>
                             </li>
@@ -150,13 +150,13 @@
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a class="nav-link px-0" href="{{ url_for('admin.categories') }}">
+                                        <a class="nav-link px-0" href="{{ url_for('categories.admin_list') }}">
                                             <i class="bi bi-tags me-2"></i>
                                             Manage Categories
                                         </a>
                                     </li>
                                     <li class="nav-item">
-                                        <a class="nav-link px-0" href="{{ url_for('admin.listings') }}">
+                                        <a class="nav-link px-0" href="{{ url_for('listings.admin_listings') }}">
                                             <i class="bi bi-card-list me-2"></i>
                                             Manage Listings
                                         </a>
