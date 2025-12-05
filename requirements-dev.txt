@@ -1,0 +1,2 @@
+# development / CI tools
+pyflakes>=2.5.0,<4

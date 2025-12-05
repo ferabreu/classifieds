@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Placeholders ("Select...") are useful for new forms but redundant for edit forms
     // where dropdowns will be rendered pre-populated from the breadcrumb.
     const showPlaceholders = !categoryHidden.value;
+        const isEditing = Boolean(categoryHidden.value);
 
     function buildSubcategoriesUrl(parentId) {
         // ensure ids are encoded in case templates contain characters
@@ -142,6 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const dropdown = document.createElement('select');
             dropdown.className = 'form-select mb-2';
             dropdown.setAttribute('data-level', String(level));
+            dropdown.setAttribute('data-parent-id', String(parentId));
             // Accessibility: link to the label container if present
             if (document.getElementById('category-dropdowns-label')) {
                 dropdown.setAttribute('aria-labelledby', 'category-dropdowns-label');
@@ -154,6 +156,23 @@ document.addEventListener('DOMContentLoaded', function() {
                  placeholder.textContent = 'Select...';
                  dropdown.appendChild(placeholder);
              }
+            // Allow moving a category to the top level by offering an explicit root option
+            // on the first dropdown (level 0, parentId 0).
+            if (level === 0 && (parentId === 0 || parentId === '0')) {
+                const rootOpt = document.createElement('option');
+                rootOpt.value = '0';
+                rootOpt.textContent = 'Top level';
+                dropdown.appendChild(rootOpt);
+            }
+                // When editing, allow selecting the current level (the parent represented by this dropdown)
+                // to move a category to an intermediate ancestor without rebuilding from the top.
+                // Only show when parentId is non-root to avoid duplicating the Top level option.
+                if (isEditing && parentId && String(parentId) !== '0') {
+                    const currentOpt = document.createElement('option');
+                    currentOpt.value = String(parentId);
+                    currentOpt.textContent = 'Current level';
+                    dropdown.appendChild(currentOpt);
+                }
              items.forEach(function(cat) {
                  const opt = document.createElement('option');
                  opt.value = String(cat.id);
@@ -197,14 +216,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (target.tagName.toLowerCase() !== 'select') return;
         const level = parseInt(target.getAttribute('data-level'), 10);
         const selectedId = target.value;
+            const parentIdForDropdown = target.getAttribute('data-parent-id');
         removeDropdownsBelow(level);
         removePlaceholder(target);
         setHiddenCategory(selectedId);
-        if (selectedId) {
+            // If the user picks "Current level", we keep the selection at this level and do not expand further.
+            if (parentIdForDropdown && selectedId === parentIdForDropdown) {
+                return;
+            }
+        if (selectedId && selectedId !== '0') {
             // createDropdown handles fetch, filtering and token-checking.
             createDropdown(level + 1, selectedId).then(function(newDropdown) {
                 if (newDropdown) categoryContainer.appendChild(newDropdown);
             });
+        } else if (selectedId === '0') {
+            // Explicitly choosing root clears deeper dropdowns and sets parent to None
+            removeDropdownsBelow(level);
+            setHiddenCategory('0');
         }
     });
 
@@ -227,7 +255,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 function addDropdown(idx) {
                     if (idx > lastIdx) {
                         // After last breadcrumb, check for children and add dropdown if needed
-                        createDropdown(idx, parentId, null).then(function(dropdown) {
+                        const selectedForRoot = (initialId === '0' && idx === 0) ? '0' : null;
+                        createDropdown(idx, parentId, selectedForRoot).then(function(dropdown) {
                             if (dropdown) categoryContainer.appendChild(dropdown);
                         });
                         return;
