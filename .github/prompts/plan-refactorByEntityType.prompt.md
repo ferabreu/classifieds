@@ -241,4 +241,6 @@ After implementation:
   - Validate uniqueness within siblings and against reserved names
   - Document migration steps and add a CLI script for backfilling if needed
   - **IMPORTANT**: Use SQLite-compatible migration patterns (no `ALTER COLUMN`, use `server_default` for NOT NULL columns)
-- If **opening a new terminal to run commands for checking/testing, first load the venv** (`source /home/ferabreu/Code/classifieds/venv/bin/activate`), so that all the required dependencies and utilities are available. Prefer to run commands on an already opened terminal with the venv loaded.
+- **Using the terminal to run commands:**
+  - Activate the virtual environment (`source venv/bin/activate`) first.
+  - Prefer to run commands on an already opened terminal with the venv loaded.
