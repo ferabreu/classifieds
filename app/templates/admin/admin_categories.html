@@ -11,12 +11,13 @@
             <tr>
                 <th>Name</th>
                 <th>Parent</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             {# Render root categories (no parent), sorted by name #}
             {% for root in categories|selectattr('parent', 'none')|sort(attribute='name') %}
-                {{ category_list.render_rows(root, categories) }}
+                {{ category_list.render_category_rows(root, categories) }}
             {% endfor %}
         </tbody>
     </table>

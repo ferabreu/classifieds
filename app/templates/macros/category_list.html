@@ -1,11 +1,17 @@
-{% macro render_rows(cat, categories, level=0) %}
+{% macro render_category_rows(category, categories, level=0) %}
     <tr>
-        <td style="padding-left: {{ (level * 1.5)|float }}rem;">
-            <a href="{{ url_for('categories.admin_edit', category_id=cat.id) }}">{{ cat.name }}</a>
+        <td>
+            <span style="display: inline-block; width: {{ (level|int) * 16 }}px;"></span>
+            <a href="{{ url_for('listings.category_filtered_listings', category_path=category.url_path) }}">{{ category.name }}</a>
         </td>
-        <td>{% if cat.parent %}{{ cat.parent.name }}{% else %}- None -{% endif %}</td>
+        <td>
+            {{ category.parent.name if category.parent else '-' }}
+        </td>
+        <td>
+            <a class="btn btn-warning btn-sm" href="{{ url_for('categories.admin_edit', category_id=category.id) }}">Edit</a>
+        </td>
     </tr>
-    {% for child in categories|selectattr('parent', 'equalto', cat)|sort(attribute='name') %}
-        {{ render_rows(child, categories, level + 1) }}
+    {% for child in categories if child.parent_id == category.id %}
+        {{ render_category_rows(child, categories, level + 1) }}
     {% endfor %}
 {% endmacro %}
