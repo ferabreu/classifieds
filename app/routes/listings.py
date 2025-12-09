@@ -40,7 +40,7 @@ def index():
         "index.html",
         listings=listings,
         pagination=pagination,
-        page_title="All listings",
+        page_title="",
     )
 
 
@@ -134,8 +134,6 @@ def listing_detail(listing_id):
 @admin_required
 def admin_listing_detail(listing_id):
     return listing_detail(listing_id)
-
-
 
 
 @listings_bp.route("/new", methods=["GET", "POST"])

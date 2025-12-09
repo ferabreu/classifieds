@@ -4,6 +4,7 @@
     {% import "macros/pagination.html" as pagination_macros %}
     {% import "macros/category.html" as category_macros %}
 
+    <h2 class="mt-3 mb-3">Listing Management</h2>
     <a href="{{ url_for('admin.dashboard') }}">&larr; Admin Dashboard</a>
     <form method="post" action="{{ url_for('listings.delete_selected_listings') }}">
         <table class="table">
