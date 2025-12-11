@@ -74,7 +74,7 @@ def create_app(config_class=None):
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(categories_bp)  # No prefix - handles /admin/categories/* and /api/categories/*
     app.register_blueprint(errors_bp)
-    app.register_blueprint(users_bp, url_prefix="/users")
+    app.register_blueprint(users_bp)  # No prefix - handles /profile, /profile/edit, and /admin/users/*
     app.register_blueprint(utils_bp, url_prefix="/utils")
     app.register_blueprint(listings_bp, url_prefix="/")
 

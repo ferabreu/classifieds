@@ -10,9 +10,9 @@
 
     {% if current_user.is_authenticated and (current_user.id == user.id or current_user.is_admin) %}
         <a href="{{
-                 url_for('admin.edit_user', user_id=user.id)
-                 if current_user.is_admin
-                 else url_for('users.edit_user_profile')
+                 url_for('users.admin_edit', user_id=user.id)
+                 if current_user.is_admin and current_user.id != user.id
+                 else url_for('users.edit_profile')
                  }}" class="btn btn-primary">Edit Profile</a>
     {% endif %}
 
