@@ -14,22 +14,12 @@ It ensures only admin users (with is_admin=True) can access these endpoints, and
 Category admin now supports hierarchical categories (parent-child).
 """
 
-import os
-import shutil
-
 from flask import (
     Blueprint,
-    current_app,
-    flash,
-    redirect,
     render_template,
-    request,
-    url_for,
 )
-from sqlalchemy.orm import joinedload
 
-from ..forms import CategoryForm, UserEditForm
-from ..models import Category, Listing, User, db
+from ..models import Category, Listing, User
 from .decorators import admin_required
 
 admin_bp = Blueprint("admin", __name__)

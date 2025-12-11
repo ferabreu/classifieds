@@ -1,13 +1,12 @@
 import os
-import uuid
 
-from flask import Flask, g
+from flask import Flask
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
 
-from .config import Config, DevelopmentConfig, ProductionConfig, TestingConfig
-from .models import Category, ListingImage, User, db
+from .config import DevelopmentConfig, ProductionConfig, TestingConfig
+from .models import Category, User, db
 
 login_manager = LoginManager()
 mail = Mail()
@@ -40,7 +39,7 @@ def create_app(config_class=None):
     )
 
     db.init_app(app)
-    migrate = Migrate(app, db)
+    Migrate(app, db)
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"  # type: ignore
     mail.init_app(app)

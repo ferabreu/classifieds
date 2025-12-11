@@ -13,7 +13,6 @@ This module contains shared decorators and utility functions for use by multiple
 Currently, it provides the admin_required decorator for restricting access to admin users.
 """
 
-import os
 from functools import wraps
 
 from flask import Blueprint, current_app, flash, jsonify, redirect, url_for
