@@ -7,7 +7,6 @@ from flask import (
     abort,
     current_app,
     flash,
-    jsonify,
     redirect,
     render_template,
     request,
@@ -18,7 +17,7 @@ from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from ..forms import ListingForm
-from ..models import Category, Listing, ListingImage, User, db
+from ..models import Category, Listing, ListingImage, db
 from .decorators import admin_required
 from .utils import create_thumbnail
 
