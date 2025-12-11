@@ -39,7 +39,7 @@
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                     <li>
-                                        <a class="dropdown-item" href="{{ url_for('users.user_profile') }}">My Profile</a>
+                                        <a class="dropdown-item" href="{{ url_for('users.profile') }}">My Profile</a>
                                     </li>
                                     <li>
                                         <a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a>
@@ -75,13 +75,16 @@
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
                                     <li>
-                                        <a class="dropdown-item" href="{{ url_for('admin.users') }}">Manage Users</a>
+                                        <a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">Dashboard</a>
                                     </li>
                                     <li>
                                         <a class="dropdown-item" href="{{ url_for('categories.admin_list') }}">Manage Categories</a>
                                     </li>
                                     <li>
                                         <a class="dropdown-item" href="{{ url_for('listings.admin_listings') }}">Manage Listings</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('users.admin_list') }}">Manage Users</a>
                                     </li>
                                 </ul>
                             </li>
@@ -97,7 +100,7 @@
                 <!-- User info or sign in -->
                 <h5 class="offcanvas-title" id="categorySidebarLabel">
                     {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('users.user_profile') }}" class="nav-link d-flex align-items-center px-0">
+                        <a href="{{ url_for('users.profile') }}" class="nav-link d-flex align-items-center px-0">
                             <i class="bi bi-person-circle me-2"></i>
                             {{ current_user.email }}
                         </a>
@@ -144,9 +147,9 @@
                             <div class="collapse" id="adminSidebarMenu">
                                 <ul class="nav flex-column ms-3">
                                     <li class="nav-item">
-                                        <a class="nav-link px-0" href="{{ url_for('admin.users') }}">
-                                            <i class="bi bi-people me-2"></i>
-                                            Manage Users
+                                        <a class="nav-link px-0" href="{{ url_for('admin.dashboard') }}">
+                                            <i class="bi bi-speedometer2 me-2"></i>
+                                            Dashboard
                                         </a>
                                     </li>
                                     <li class="nav-item">
@@ -159,6 +162,12 @@
                                         <a class="nav-link px-0" href="{{ url_for('listings.admin_listings') }}">
                                             <i class="bi bi-card-list me-2"></i>
                                             Manage Listings
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link px-0" href="{{ url_for('users.admin_list') }}">
+                                            <i class="bi bi-people me-2"></i>
+                                            Manage Users
                                         </a>
                                     </li>
                                 </ul>

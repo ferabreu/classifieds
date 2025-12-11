@@ -2,7 +2,7 @@
 
 {% block content %}
     <ul>
-        <li><a href="{{ url_for('admin.users') }}">Manage Users ({{ user_count }})</a></li>
+        <li><a href="{{ url_for('users.admin_list') }}">Manage Users ({{ user_count }})</a></li>
         <li><a href="{{ url_for('categories.admin_list') }}">Manage Categories ({{ category_count }})</a></li>
         <li><a href="{{ url_for('listings.admin_listings') }}">Manage Listings ({{ listing_count }})</a></li>
     </ul>

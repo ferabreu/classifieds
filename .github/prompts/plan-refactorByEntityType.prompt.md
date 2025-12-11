@@ -40,7 +40,7 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
    - Preserve category cycle prevention and cascade deletion logic
    - No public listing browsing routes (those stay in `listings.py`) 
 
-4. **Reorganize `app/routes/listings.py`**:
+4. **(DONE)** **Reorganize `app/routes/listings.py`**:
    - Move admin listing routes from `admin.py` (list all, bulk delete) into existing `listings.py`.
    - For admin edit, use existing `edit_listing()` in `listings.py` directly:
      - route it from both URLs: `/listing/edit/<id>` for users, `/admin/listings/edit/<id>` for admins, using permission checks to differentiate.
@@ -61,9 +61,9 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
    - Centralize listing query/pagination/sorting logic for reuse across index and category views
    - Remove remaining admin listing routes from `admin.py`.
 
-5. **Reorganize `app/routes/users.py`** with all user-related routes:
+5. **(DONE)** **Reorganize `app/routes/users.py`** with all user-related routes:
    - Self-service at `/profile` (no ID, uses `current_user`): view and edit
-   - Admin routes at `/admin/users/*`: list, view profile, edit, delete (from `admin.py`)
+   - Admin routes at `/admin/users/*`: list, view profile, edit, delete (moved from `admin.py`, refactor code as needed)
    - Admin routes: `/admin/users`, `/admin/users/profile/<int:user_id>`, `/admin/users/edit/<int:user_id>`, `/admin/users/delete/<int:user_id>`
    - Register `users_bp` without URL prefix (to handle both `/profile` and `/admin/users/*`)
    - Preserve last admin safeguards (prevent demoting/deleting last admin)
@@ -71,22 +71,24 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
    - Ensure self-service routes use `@login_required` decorator
    - User details on listing pages: expose `listing.owner` relationship (already in model)
    - remove remaining admin user routes from `admin.py`.
+   - Update "users" templates as needed to reflect new route structure (anticipate Step 7):
+     - update profile links in templates from `url_for('users.user_profile', id=...)` to `url_for('users.profile')` since no ID is needed for self-service
+     - Update profile edit links similarly.
+     - Other template updates as needed.
+   - Remove the user admin routes from `admin.py`.
 
-6. **Create `app/routes/admin_dashboard.py`** with dashboard route (`GET /admin/dashboard`) showing stats (user count, category count, listing count). Register `admin_dashboard_bp` with `/admin` prefix. Use `@admin_required` decorator. Render existing `admin/admin_dashboard.html` template.
-
-7. **Update all template `url_for()` references** (~20+ locations):
+6. **Update all template `url_for()` references** (~20+ locations):
    - **(DONE)** Change `admin.*` to entity-based: `categories.admin_*`, `listings.admin_*`, `users.admin_*`, `admin_dashboard.dashboard`
    - **(DONE)** Update category browsing from `url_for('listings.category_listings', category_id=id)` to build category path and use direct href (or helper to build path from category object)
-   - Update profile links from `url_for('users.user_profile')` to `url_for('users.profile')`
-   - **(PARTIAL)** Files: `base.html`, `admin_categories.html`, `admin_listings.html`, `admin_users.html`, `admin_dashboard.html`, `listing_detail.html`, `listing_form.html`, `user_profile.html`, `user_edit.html`
-     - Updated: `admin_categories.html`, `admin_listings.html`, `admin_dashboard.html`, `listing_detail.html`, `listing_form.html`, `macros/breadcrumb.html`, `macros/category_list.html`, `macros/sidebar_category_tree.html`
+   - **(DONE)** Update profile links from `url_for('users.user_profile')` to `url_for('users.profile')`
+   - **(PARTIAL)** Files: `base.html`, `admin_categories.html`, `admin_listings.html`, `admin_users.html`, `listing_detail.html`, `listing_form.html`, `user_profile.html`, `user_edit.html`
+     - Updated: `admin_categories.html`, `admin_listings.html`, `listing_detail.html`, `listing_form.html`, `macros/breadcrumb.html`, `macros/category_list.html`, `macros/sidebar_category_tree.html`
      - Pending: `base.html`, `admin_users.html`, `user_profile.html`, `user_edit.html` (waiting for Step 5)
 
-8. **Remove `app/routes/admin.py` and `app/routes/utils.py`** (move `create_thumbnail` to `app/utils/images.py`). Update blueprint registration in `app/__init__.py`:
-   - Remove: `admin_bp`, `utils_bp`
-   - Add: `categories_bp`, `admin_dashboard_bp`
+7. **Remove `app/routes/utils.py`** (move `create_thumbnail` to `app/utils/images.py`). Update blueprint registration in `app/__init__.py`:
+   - Remove: `utils_bp`
    - Registration order matters: register specific routes BEFORE catch-all category route
-   - Order: `auth_bp`, `admin_dashboard_bp`, `users_bp`, `listings_bp`, `errors_bp`, then `categories_bp` (catch-all last)
+   - Order: `auth_bp`, `admin_bp`, `users_bp`, `listings_bp`, `errors_bp`, then `categories_bp` (catch-all last)
 
 ### Further Considerations
 
