@@ -266,3 +266,20 @@ After implementation:
   - Validate uniqueness within siblings and against reserved names
   - Document migration steps and add a CLI script for backfilling if needed
 
+Smoke check:
+python -m pyflakes app wsgi.py
+python -c "import importlib; importlib.import_module('app')"
+
+# verify python and venv
+which python
+echo "$VIRTUAL_ENV"
+
+# check pre-commit
+which pre-commit || python -m pre_commit --version
+
+# if missing, install in venv and install hooks
+pip install pre-commit
+python -m pre_commit install --install-hooks
+
+# run hooks locally on all files to debug
+pre-commit run --all-files
