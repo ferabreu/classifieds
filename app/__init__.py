@@ -59,13 +59,13 @@ def create_app(config_class=None):
     def inject_title_separator():
         return dict(title_separator=" | ")
 
-    from .routes.admin import admin_bp
     from .routes.auth import auth_bp
-    from .routes.categories import categories_bp
-    from .routes.errors import errors_bp
-    from .routes.listings import listings_bp
+    from .routes.admin import admin_bp
     from .routes.users import users_bp
+    from .routes.listings import listings_bp
+    from .routes.errors import errors_bp
     from .routes.utils import utils_bp
+    from .routes.categories import categories_bp
 
     # Register blueprints in specific order to avoid route conflicts
     # Categories blueprint must be registered to handle both admin routes and API endpoints

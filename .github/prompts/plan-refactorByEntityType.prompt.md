@@ -83,8 +83,7 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
    - **(DONE)** Update profile links from `url_for('users.user_profile')` to `url_for('users.profile')`
    - **(DONE)** Files: `base.html`, `admin_categories.html`, `admin_listings.html`, `admin_users.html`, `listing_detail.html`, `listing_form.html`, `user_profile.html`, `user_edit.html`, `macros/breadcrumb.html`, `macros/category_list.html`, `macros/sidebar_category_tree.html`
 
-7. **Remove `app/routes/utils.py`** (move `create_thumbnail` to `app/utils/images.py`). Update blueprint registration in `app/__init__.py`:
-   - Remove: `utils_bp`
+7. Update blueprint registration in `app/__init__.py`:
    - Registration order matters: register specific routes BEFORE catch-all category route
    - Order: `auth_bp`, `admin_bp`, `users_bp`, `listings_bp`, `errors_bp`, then `categories_bp` (catch-all last)
 
