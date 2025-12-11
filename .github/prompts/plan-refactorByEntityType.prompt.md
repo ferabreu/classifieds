@@ -81,9 +81,7 @@ Reorganize Flask routes from user-type separation (`admin.py` vs regular routes)
    - **(DONE)** Change `admin.*` to entity-based: `categories.admin_*`, `listings.admin_*`, `users.admin_*`, `admin_dashboard.dashboard`
    - **(DONE)** Update category browsing from `url_for('listings.category_listings', category_id=id)` to build category path and use direct href (or helper to build path from category object)
    - **(DONE)** Update profile links from `url_for('users.user_profile')` to `url_for('users.profile')`
-   - **(PARTIAL)** Files: `base.html`, `admin_categories.html`, `admin_listings.html`, `admin_users.html`, `listing_detail.html`, `listing_form.html`, `user_profile.html`, `user_edit.html`
-     - Updated: `admin_categories.html`, `admin_listings.html`, `listing_detail.html`, `listing_form.html`, `macros/breadcrumb.html`, `macros/category_list.html`, `macros/sidebar_category_tree.html`
-     - Pending: `base.html`, `admin_users.html`, `user_profile.html`, `user_edit.html` (waiting for Step 5)
+   - **(DONE)** Files: `base.html`, `admin_categories.html`, `admin_listings.html`, `admin_users.html`, `listing_detail.html`, `listing_form.html`, `user_profile.html`, `user_edit.html`, `macros/breadcrumb.html`, `macros/category_list.html`, `macros/sidebar_category_tree.html`
 
 7. **Remove `app/routes/utils.py`** (move `create_thumbnail` to `app/utils/images.py`). Update blueprint registration in `app/__init__.py`:
    - Remove: `utils_bp`
