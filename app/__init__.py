@@ -59,21 +59,26 @@ def create_app(config_class=None):
     def inject_title_separator():
         return dict(title_separator=" | ")
 
-    from .routes.auth import auth_bp
     from .routes.admin import admin_bp
-    from .routes.users import users_bp
-    from .routes.listings import listings_bp
-    from .routes.errors import errors_bp
-    from .routes.utils import utils_bp
+    from .routes.auth import auth_bp
     from .routes.categories import categories_bp
+    from .routes.errors import errors_bp
+    from .routes.listings import listings_bp
+    from .routes.users import users_bp
+    from .routes.utils import utils_bp
 
-    # Register blueprints in specific order to avoid route conflicts
-    # Categories blueprint must be registered to handle both admin routes and API endpoints
+    # Blueprint registration order matters: more specific first, catch-all last.
+    # listings_bp has /<path:category_path>path:category_path;
+    #  keep it after admin/auth/categories/users/utils/error blueprints.
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(auth_bp, url_prefix="/auth")
-    app.register_blueprint(categories_bp)  # No prefix - handles /admin/categories/* and /api/categories/*
+    app.register_blueprint(
+        categories_bp
+    )  # No prefix - handles /admin/categories/* and /api/categories/*
     app.register_blueprint(errors_bp)
-    app.register_blueprint(users_bp)  # No prefix - handles /profile, /profile/edit, and /admin/users/*
+    app.register_blueprint(
+        users_bp
+    )  # No prefix - handles /profile, /profile/edit, and /admin/users/*
     app.register_blueprint(utils_bp, url_prefix="/utils")
     app.register_blueprint(listings_bp, url_prefix="/")
 
@@ -138,13 +143,17 @@ def create_app(config_class=None):
 
         db.session.commit()
         print("Database initialized with default admin user.")
-        print("No default categories created. Please create categories via the admin dashboard as needed.")
+        print(
+            "No default categories created. Please create categories via the admin dashboard as needed."
+        )
 
     # Import CLI commands from separate modules based on environment
     if os.environ.get("FLASK_ENV") == "development":
         from app.cli.maintenance import backfill_thumbnails
+
         app.cli.add_command(backfill_thumbnails)
         from app.cli.demo import demo_data
+
         app.cli.add_command(demo_data)
 
     return app
