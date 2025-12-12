@@ -18,35 +18,10 @@ from functools import wraps
 from flask import Blueprint, current_app, flash, jsonify, redirect, url_for
 from flask_login import current_user, login_required
 from PIL import Image
+
 from ..models import Category
 
-
 utils_bp = Blueprint("utils", __name__)
-
-
-def admin_required(func):
-    """
-    Decorator to ensure the current user is an admin.
-
-    - If the user is not authenticated or is not an admin,
-      flashes an error message and redirects to the public listings index page.
-    - Otherwise, allows access to the decorated view.
-
-    Usage:
-        @login_required
-        @admin_required
-        def admin_view():
-            ...
-    """
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_admin:
-            flash("Admin access required.", "danger")
-            return redirect(url_for("listings.index"))
-        return func(*args, **kwargs)
-
-    return wrapper
 
 
 def create_thumbnail(image_path, thumbnail_path):
@@ -90,13 +65,3 @@ def create_thumbnail(image_path, thumbnail_path):
     except Exception as e:
         print(f"Error creating thumbnail: {e}")
         return False
-
-
-# Endpoint to return the breadcrumb path for a category (for pre-selecting dropdowns)
-@utils_bp.route("/category_breadcrumb/<int:category_id>")
-@login_required
-def category_breadcrumb(category_id):
-    if category_id == 0:
-        return jsonify([])  # No breadcrumb for root
-    category = Category.query.get_or_404(category_id)
-    return jsonify([c.to_dict() for c in category.breadcrumb])
