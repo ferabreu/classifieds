@@ -58,7 +58,7 @@ However, **6 findings** require attention before full deployment.
 
 ### 🔴 CRITICAL FINDINGS
 
-#### Finding #1: Category `url_name` Not Updated on Edit
+#### Finding #1: Category `url_name` Not Updated on Edit **(DONE)**
 **Location:** `app/routes/categories.py`, lines 90-140  
 **Severity:** 🔴 CRITICAL  
 **Issue:** When editing a category name, the `url_name` is not regenerated. The docstring says "Updates url_name when the category name is altered," but the code only updates `name` and `parent_id`.
@@ -87,7 +87,7 @@ if form.validate_on_submit():
 
 ---
 
-#### Finding #2: Reserved Route Names Validation Not Implemented
+#### Finding #2: Reserved Route Names Validation Not Implemented **(DONE)**
 **Location:** `app/routes/categories.py`, lines 60-89  
 **Severity:** 🔴 CRITICAL  
 **Issue:** The plan specifies that reserved route names (`admin`, `auth`, `profile`, `listing`, `api`, `static`, `new`, `edit`, `delete`, `utils`, `categories`, `users`, `listings`, `dashboard`) should be enforced. The model has `is_url_name_reserved()` method, but it's **never called** in the routes.
@@ -119,7 +119,7 @@ if form.validate_on_submit():
 
 ---
 
-#### Finding #3: CategoryForm Missing Reserved Name Validation
+#### Finding #3: CategoryForm Missing Reserved Name Validation **(DONE)**
 **Location:** `app/forms.py`, lines 128-156  
 **Severity:** 🔴 CRITICAL  
 **Issue:** The `CategoryForm` should validate against reserved names, but currently it only validates parent_id. This should be validated in the form to prevent malicious input.
@@ -161,7 +161,7 @@ class CategoryForm(FlaskForm):
 
 ### 🟡 MINOR FINDINGS
 
-#### Finding #5: No Validation of Reserved Names During Category Creation
+#### Finding #5: No Validation of Reserved Names During Category Creation **(DONE)**
 **Location:** `app/routes/categories.py`, line 73  
 **Severity:** 🟡 MINOR  
 **Issue:** When creating a new category, the reserved name check is not performed. While the model method exists (`is_url_name_reserved()`), it's never called.
