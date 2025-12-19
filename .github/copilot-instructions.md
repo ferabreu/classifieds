@@ -1,6 +1,14 @@
 <!-- Copilot instructions for the `classifieds` Flask app -->
 # Quick orientation for automated coding assistants
 
+## About the developer
+
+- The developer has a good grasp of the logic that good software requires, but is not an experienced developer.
+- He relies on AI assistance for most code writing and refactoring, and will review and test all changes.
+- Do not assume the developer asks rhetorical questions or understands advanced concepts without explanation. Assume the developer's questions are sincere.
+- Always consider established best practices, code readability, and maintainability when suggesting changes.
+- Avoid "reinventing the wheel" — prefer established libraries and patterns.
+
 ## Code style & standards
 
 Follow these conventions on every edit to keep the codebase consistent and reviewable.

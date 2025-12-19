@@ -21,12 +21,44 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 from flask_login import login_required
 
 from ..forms import CategoryForm
-from ..models import Category, Listing, db
+from ..models import (
+    Category,
+    Listing,
+    db,
+    generate_url_name,
+    RESERVED_CATEGORY_NAMES,
+)
 from .decorators import admin_required
 
 categories_bp = Blueprint("categories", __name__)
 
 # -------------------- ADMIN ROUTES --------------------
+
+
+def _validate_category_inputs(name: str, parent_id: int | None, current_id: int | None = None):
+    """
+    Common validation used by category create and edit flows.
+
+    Returns a tuple (url_name, error_message). If validation passes, error_message is None
+    and url_name is the normalized string. If validation fails, url_name is None and
+    error_message contains a user-facing message.
+    """
+    url_name = generate_url_name(name)
+
+    # Empty after normalization
+    if not url_name:
+        return None, "Category name resolves to an empty URL segment; choose a different name."
+
+    # Reserved route names
+    if url_name.lower() in RESERVED_CATEGORY_NAMES:
+        return None, f"'{name}' conflicts with system routes and cannot be used."
+
+    # Sibling uniqueness (ignore self if editing)
+    existing = Category.query.filter_by(url_name=url_name, parent_id=parent_id).first()
+    if existing and (current_id is None or existing.id != current_id):
+        return None, "A category with a similar URL name already exists at this level."
+
+    return url_name, None
 
 
 @categories_bp.route("/admin/categories")
@@ -74,7 +106,19 @@ def admin_new():
         name = form.name.data
         assert isinstance(name, str)
         parent_id = int(form.parent_id.data) if form.parent_id.data != "0" else None
-        c = Category(name=name, parent_id=parent_id)
+
+        url_name, error = _validate_category_inputs(name, parent_id)
+        if error:
+            flash(error, "danger")
+            return render_template(
+                "admin/admin_category_form.html",
+                form=form,
+                action="Create",
+                page_title="Create category",
+                exclude_ids=exclude_ids,
+            )
+
+        c = Category(name=name, parent_id=parent_id, url_name=url_name)
         db.session.add(c)
         db.session.commit()
         flash("Category created.", "success")
@@ -114,10 +158,27 @@ def admin_edit(category_id):
         form.parent_id.data = str(category.parent_id) if category.parent_id else "0"
 
     if form.validate_on_submit():
-        category.name = form.name.data
-        category.parent_id = (
+        name = form.name.data
+        assert isinstance(name, str)
+        parent_candidate = (
             int(form.parent_id.data) if form.parent_id.data != "0" else None
         )
+
+        url_name, error = _validate_category_inputs(name, parent_candidate, current_id=category.id)
+        if error:
+            flash(error, "danger")
+            return render_template(
+                "admin/admin_category_form.html",
+                form=form,
+                action="Edit",
+                category_obj=category,
+                page_title="Edit category",
+            )
+
+        # Apply changes after validations
+        category.name = name
+        category.url_name = url_name
+        category.parent_id = parent_candidate
         # Prevent setting self or descendant as parent
         if category.parent_id is not None and category.parent_id in exclude_ids:
             flash("Cannot set category itself or its descendant as parent.", "danger")

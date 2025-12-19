@@ -385,23 +385,15 @@ RESERVED_CATEGORY_NAMES = {
 
 def generate_url_name(name: str) -> str:
     """
-    Generate a URL-safe name from a display name.
+    Generate an ASCII-only, URL-safe slug from a display name using python-slugify.
 
-    Converts to lowercase, replaces spaces and special characters with hyphens,
-    and strips leading/trailing hyphens.
-
-    Example:
-        "Real Estate & Rentals" → "real-estate-rentals"
-        "Motorcycles" → "motorcycles"
+    Behavior:
+    - Lowercases
+    - Transliterates Unicode to ASCII (e.g., "ação" -> "acao")
+    - Replaces separators with hyphens
+    - Strips leading/trailing separators
+    - Returns an empty string if the input contains no slug-worthy characters
     """
-    import re
+    from slugify import slugify
 
-    # Convert to lowercase
-    url_name = name.lower()
-    # Replace spaces and special characters with hyphens
-    url_name = re.sub(r"[^\w-]", "-", url_name)
-    # Replace multiple consecutive hyphens with a single hyphen
-    url_name = re.sub(r"-+", "-", url_name)
-    # Strip leading and trailing hyphens
-    url_name = url_name.strip("-")
-    return url_name
+    return slugify(name or "", separator="-")
