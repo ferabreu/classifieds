@@ -20,7 +20,7 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 
-from .models import Category
+from .models import Category, generate_url_name, RESERVED_CATEGORY_NAMES
 
 
 class RegistrationForm(FlaskForm):
@@ -136,6 +136,24 @@ class CategoryForm(FlaskForm):
         "Parent Category", coerce=str, validators=[Optional()], choices=[]
     )
     submit = SubmitField("Save")
+
+    def validate_name(self, field):
+        """
+        Validate that the normalized URL name is non-empty and not reserved.
+
+        This runs before any route-level DB checks and provides immediate,
+        field-specific feedback to the user.
+        """
+        raw = field.data or ""
+        url_name = generate_url_name(raw)
+        if not url_name:
+            raise ValidationError(
+                "Category name resolves to an empty URL segment; choose a different name."
+            )
+        if url_name.lower() in RESERVED_CATEGORY_NAMES:
+            raise ValidationError(
+                "This name conflicts with system routes; choose a different name."
+            )
 
     def validate_parent_id(self, field):
         """
