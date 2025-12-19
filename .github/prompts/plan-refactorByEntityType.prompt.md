@@ -186,32 +186,32 @@ This approach provides clean public URLs and clear admin separation:
 ### Testing Checklist
 
 After implementation:
-- [ ] All admin category management works (create, edit, delete, list)
-- [ ] Public category browsing works (shows listings filtered by category)
-- [ ] All admin listing management works
-- [ ] Public listing browsing works
-- [ ] User creation, editing (admin) works
-- [ ] User self-service profile editing works
-- [ ] Last admin protection still works
-- [ ] Temp-commit-move pattern still works for images
-- [ ] Category cycle prevention still works
-- [ ] All navbar links work
-- [ ] All template buttons/links work
-- [ ] AJAX endpoints work (subcategories, breadcrumb)
-- [ ] Error pages still render correctly
-- [ ] No import errors
-- [ ] No blueprint conflicts
-- [ ] `@admin_required` implies `@login_required`
-- [ ] Hierarchical category URLs work (`/vehicles`, `/vehicles/motorcycles`)
-- [ ] Can navigate up by trimming URL path segments
-- [ ] Reserved route names don't conflict with categories
-- [ ] Profile URLs work without IDs (`/profile`, `/profile/edit`)
-- [ ] Category `url_name` migration applied and backfilled
-- [ ] AJAX endpoints at `/api/*` work correctly
-- [ ] All `/api/*` endpoints return correct JSON and are not accessible as HTML pages
-- [ ] Reserved route names are enforced and do not conflict with categories
-- [ ] Category children endpoint works for all levels
-- [ ] Breadcrumb endpoint returns correct hierarchy
+- [x] All admin category management works (create, edit, delete, list)
+- [x] Public category browsing works (shows listings filtered by category)
+- [x] All admin listing management works
+- [x] Public listing browsing works
+- [x] User creation, editing (admin) works
+- [x] User self-service profile editing works
+- [x] Last admin protection still works
+- [x] Temp-commit-move pattern still works for images
+- [x] Category cycle prevention still works
+- [x] All navbar links work
+- [x] All template buttons/links work
+- [x] AJAX endpoints work (subcategories, breadcrumb)
+- [x] Error pages still render correctly
+- [x] No import errors
+- [x] No blueprint conflicts
+- [x] `@admin_required` implies `@login_required`
+- [x] Hierarchical category URLs work (`/vehicles`, `/vehicles/motorcycles`)
+- [x] Can navigate up by trimming URL path segments
+- [x] Reserved route names don't conflict with categories
+- [x] Profile URLs work without IDs (`/profile`, `/profile/edit`)
+- [x] Category `url_name` migration applied and backfilled
+- [x] AJAX endpoints at `/api/*` work correctly
+- [x] All `/api/*` endpoints return correct JSON and are not accessible as HTML pages
+- [x] Reserved route names are enforced and do not conflict with categories (form + route validation, tested with client)
+- [x] Category children endpoint works for all levels
+- [x] Breadcrumb endpoint returns correct hierarchy
 
 ### Risk Mitigation
 
