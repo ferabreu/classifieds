@@ -213,29 +213,26 @@ class Category(db.Model):
             return None
 
         # Parse the path into segments
-        segments = [s for s in path_string.split("/") if s]
+        segments = [segment for segment in path_string.split("/") if segment]
         if not segments:
             return None
 
-        # Start with root categories (parent_id is None)
-        current_categories = cls.query.filter_by(parent_id=None).all()
-        current_category: Optional[Category] = None
+        # Load all categories once and build an in-memory lookup keyed by (parent_id, url_name)
+        all_categories = cls.query.all()
+        lookup: dict[tuple[Optional[int], str], "Category"] = {
+            (category.parent_id, category.url_name): category
+            for category in all_categories
+        }
+
+        current_category: Optional["Category"] = None
+        parent_id: Optional[int] = None
 
         for segment in segments:
-            # Find a category at this level matching the url_name
-            current_category = None
-            for cat in current_categories:
-                if cat.url_name == segment:
-                    current_category = cat
-                    break
-
+            current_category = lookup.get((parent_id, segment))
             if current_category is None:
                 # Path segment not found
                 return None
-
-            # Move to children for next iteration
-            current_categories = current_category.children  # type: ignore
-
+            parent_id = current_category.id
         return current_category
 
 
