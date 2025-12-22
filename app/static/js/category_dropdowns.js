@@ -164,21 +164,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 rootOpt.textContent = 'Top level';
                 dropdown.appendChild(rootOpt);
             }
-                // When editing, allow selecting the current level (the parent represented by this dropdown)
-                // to move a category to an intermediate ancestor without rebuilding from the top.
-                // Only show when parentId is non-root to avoid duplicating the Top level option.
-                if (isEditing && parentId && String(parentId) !== '0') {
-                    const currentOpt = document.createElement('option');
-                    currentOpt.value = String(parentId);
-                    currentOpt.textContent = 'Current level';
-                    dropdown.appendChild(currentOpt);
-                }
-             items.forEach(function(cat) {
-                 const opt = document.createElement('option');
-                 opt.value = String(cat.id);
-                 opt.textContent = cat.name;
-                 dropdown.appendChild(opt);
-             });
+            // When editing, allow selecting the current level (the parent represented by this dropdown)
+            // to move a category to an intermediate ancestor without rebuilding from the top.
+            // Only show when parentId is non-root to avoid duplicating the Top level option.
+            if (isEditing && parentId && String(parentId) !== '0') {
+                const currentOpt = document.createElement('option');
+                currentOpt.value = String(parentId);
+                currentOpt.textContent = 'Current level';
+                dropdown.appendChild(currentOpt);
+            }
+            items.forEach(function(cat) {
+                const opt = document.createElement('option');
+                opt.value = String(cat.id);
+                opt.textContent = cat.name;
+                dropdown.appendChild(opt);
+            });
             // Only set selected value when a non-null, non-empty selectedId is provided.
             // This handles ids like 0 correctly and avoids setting when selectedId is '' or null.
             if (selectedId != null && String(selectedId) !== '') {

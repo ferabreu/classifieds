@@ -904,6 +904,8 @@ def delete_selected_listings():
                 original_paths.append(orig)
                 temp_paths.append(temped)
             except FileNotFoundError:
+                # File may already be missing (e.g., previously deleted manually).
+                # This is not an error condition; continue to next image.
                 pass
 
     try:
@@ -915,6 +917,9 @@ def delete_selected_listings():
             try:
                 shutil.move(temped, orig)
             except Exception:
+                # Rollback: attempt to restore from temp. If restoration fails, the file
+                # remains in temp (orphaned) but we continue rollback to restore other files.
+                # Consider cleanup of temp files in a maintenance task.
                 pass
         db.session.rollback()
         flash("Database error. Listings were not deleted. Files restored.", "danger")
@@ -924,6 +929,8 @@ def delete_selected_listings():
         try:
             os.remove(temped)
         except Exception:
+            # Cleanup: if temp file removal fails (e.g., permission issue, file locked),
+            # log silently. Consider periodic cleanup of orphaned temp files.
             pass
 
     for filename in all_image_filenames:
@@ -932,6 +939,8 @@ def delete_selected_listings():
             if os.path.exists(path):
                 os.remove(path)
         except Exception:
+            # Cleanup: if upload file removal fails (e.g., permission issue, file locked),
+            # log silently. Consider periodic cleanup of orphaned upload files.
             pass
 
     flash(f"Deleted {len(listings)} listing(s).", "success")

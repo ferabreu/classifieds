@@ -801,12 +801,12 @@ test_reserved_names.py
 
 Created test_reserved_names.py
 
-/home/fmees/dev/classifieds/.venv/bin/python scripts/test_reserved_names.py
+/home/fmees/dev/classifieds/venv/bin/python scripts/test_reserved_names.py
 Analyzing module path issue
 
 I'm dealing with a module path issue likely due to not setting PYTHONPATH to the workspace or not executing from the root. Even though I'm running from a specific directory, the Python environment doesn’t seem to include the working directory path. Normally, Python adds the current directory to sys.path, but it isn't happening here. Since it’s complaining about the 'app' module, I'll check that the necessary files and paths are correctly set, or change my command to fix it.
 
-PYTHONPATH="$PWD" /home/fmees/dev/classifieds/.venv/bin/python scripts/test_reserved_names.py
+PYTHONPATH="$PWD" /home/fmees/dev/classifieds/venv/bin/python scripts/test_reserved_names.py
 Updating Todo Steps
 
 I'm looking at the output, which shows that I have reserved flash True and no category or empty created, but I did create one valid entry. That’s good! Now, I need to mark my todo steps accordingly since I've completed steps 1-5. I definitely want to update the manage_todo_list statuses to reflect this progress. It's all about keeping things organized and making sure I stay on track!

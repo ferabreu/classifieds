@@ -17,8 +17,9 @@ For the canonical, detailed style guide, see also `docs/CODE_STYLE.md`.
 - Python formatting and tooling
   - Follow PEP 8. Use 4 spaces for indentation.
   - Prefer Black for automatic formatting (line length 88) and isort for import ordering.
-  - Run a basic import/test smoke check after edits:
-    - python -m pyflakes . || true
+  - Run a basic import/test smoke check after edits (scope to app code so venv/vendor files are ignored):
+    - source venv/bin/activate
+    - python -m pyflakes app migrations scripts wsgi.py || true  # limit lint to project code
     - python -c "import importlib; importlib.import_module('app')"
   - Use descriptive names (snake_case for functions/variables, PascalCase for classes). Avoid single-letter names except for short loops.
   - Prefer single quotes for Python strings where not conflicting with content; let Black / team tooling normalize quotes automatically.
@@ -173,7 +174,8 @@ Rationale: placed here so the rule is visible during quick edits and before the 
 - Run a syntax/import smoke test to catch immediate errors:
 
 ```bash
-python -m pyflakes . || true   # optional lint, may not be installed
+source venv/bin/activate
+python -m pyflakes app migrations scripts wsgi.py || true  # optional lint scoped to project code
 python -c "import importlib; importlib.import_module('app')"  # ensure app imports
 ```
 
