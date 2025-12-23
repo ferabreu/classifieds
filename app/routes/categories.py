@@ -111,7 +111,7 @@ def admin_new():
         if error:
             flash(error, "danger")
             return render_template(
-                "admin/admin_category_form.html",
+                "categories/category_form.html",
                 form=form,
                 action="Create",
                 page_title="Create category",
@@ -124,7 +124,7 @@ def admin_new():
         flash("Category created.", "success")
         return redirect(url_for("categories.admin_list"))
     return render_template(
-        "admin/admin_category_form.html",
+        "categories/category_form.html",
         form=form,
         action="Create",
         page_title="Create category",
@@ -168,7 +168,7 @@ def admin_edit(category_id):
         if error:
             flash(error, "danger")
             return render_template(
-                "admin/admin_category_form.html",
+                "categories/category_form.html",
                 form=form,
                 action="Edit",
                 category_obj=category,
@@ -183,7 +183,7 @@ def admin_edit(category_id):
         if category.parent_id is not None and category.parent_id in exclude_ids:
             flash("Cannot set category itself or its descendant as parent.", "danger")
             return render_template(
-                "admin/admin_category_form.html",
+                "categories/category_form.html",
                 form=form,
                 action="Edit",
                 category_obj=category,
@@ -193,7 +193,7 @@ def admin_edit(category_id):
         flash("Category updated.", "success")
         return redirect(url_for("categories.admin_list"))
     return render_template(
-        "admin/admin_category_form.html",
+        "categories/category_form.html",
         form=form,
         action="Save",
         exclude_ids=exclude_ids,
