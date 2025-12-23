@@ -54,7 +54,7 @@ def edit_profile():
         flash("Profile updated.", "success")
         return redirect(url_for("users.profile"))
     return render_template(
-        "users/user_edit.html",
+        "users/user_form.html",
         form=form,
         user=user,
         admin_panel=False,
@@ -127,7 +127,7 @@ def admin_edit(user_id):
         flash("User updated.", "success")
         return redirect(url_for("users.admin_list"))
     return render_template(
-        "users/user_edit.html",
+        "users/user_form.html",
         form=form,
         user=user,
         admin_panel=True,
