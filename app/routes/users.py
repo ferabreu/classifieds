@@ -148,3 +148,46 @@ def admin_delete(user_id):
     db.session.commit()
     flash("User deleted.", "success")
     return redirect(url_for("users.admin_list"))
+
+
+@users_bp.route("/admin/users/delete_selected", methods=["POST"])
+@admin_required
+def delete_selected_users():
+    """
+    Deletes multiple selected users.
+    Prevents deletion if it would result in no admin users remaining.
+    """
+    selected_ids = request.form.getlist("selected_users")
+    if not selected_ids:
+        flash("No users selected for deletion.", "warning")
+        return redirect(url_for("users.admin_list"))
+
+    # Convert to integers
+    selected_ids = [int(user_id) for user_id in selected_ids]
+
+    # Check if all admin users are being deleted
+    admin_count = User.query.filter_by(is_admin=True).count()
+    admin_in_selection = User.query.filter(
+        User.id.in_(selected_ids), User.is_admin.is_(True)
+    ).count()
+
+    if admin_in_selection == admin_count:
+        flash(
+            "Cannot delete all administrators. At least one admin must remain.",
+            "danger",
+        )
+        return redirect(url_for("users.admin_list"))
+
+    users_to_delete = User.query.filter(User.id.in_(selected_ids)).all()
+
+    try:
+        for user in users_to_delete:
+            db.session.delete(user)
+        db.session.commit()
+        flash(f"Deleted {len(users_to_delete)} user(s).", "success")
+    except Exception:
+        db.session.rollback()
+        flash("Database error. Users were not deleted.", "danger")
+        return redirect(url_for("users.admin_list"))
+
+    return redirect(url_for("users.admin_list"))

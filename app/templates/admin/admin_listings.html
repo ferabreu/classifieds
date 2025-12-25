@@ -102,20 +102,5 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        $(function() {
-  // When header checkbox is toggled, set all row checkboxes
-            $('#select-all').on('change', function() {
-                $('.row-checkbox').prop('checked', this.checked);
-            });
-
-  // When any row checkbox is changed, sync the header checkbox
-            $(document).on('change', '.row-checkbox', function() {
-                let total = $('.row-checkbox').length;
-                let checked = $('.row-checkbox:checked').length;
-                $('#select-all').prop('checked', total > 0 && checked === total);
-            });
-        });
-    </script>
+    <script src="{{ url_for('static', filename='js/checkbox_select_all.js') }}"></script>
 {% endblock %}
