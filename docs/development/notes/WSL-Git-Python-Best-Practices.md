@@ -49,8 +49,8 @@ If you've never used VSCode before, don't worry! Here are step-by-step instructi
 
 1. In the VSCode terminal (which should be WSL/bash), create a virtual environment:
     ```sh
-    python3 -m venv venv
-    source venv/bin/activate
+    python3 -m venv .venv
+    source .venv/bin/activate
     ```
 2. Re-run "Python: Select Interpreter" and pick the new virtualenv.
 

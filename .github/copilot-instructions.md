@@ -137,10 +137,10 @@ Final notes
 Below are focused items every automated editor should follow before committing changes.
 
 ### 1) Quality gates / quick checks
-- Run a syntax/import smoke test to catch immediate errors after edits (scope to app code so venv/vendor files are ignored):
+- Run a syntax/import smoke test to catch immediate errors after edits (scope to app code so .venv/vendor files are ignored):
 
 ```bash
-source venv/bin/activate
+source .venv/bin/activate
 python -m pyflakes app migrations scripts wsgi.py || true  # optional lint scoped to project code
 python -c "import importlib; importlib.import_module('app')"  # ensure app imports
 ```

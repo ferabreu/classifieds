@@ -58,13 +58,13 @@ The Flask module is not installed in the default Python environment. Let me chec
 Now let me run the import test with the virtual environment Python:
 
 ```sh
-/home/ferabreu/Code/classifieds/venv/bin/python -c "import importlib; importlib.import_module('app')"
+/home/ferabreu/Code/classifieds/.venv/bin/python -c "import importlib; importlib.import_module('app')"
 ```
 
 Great! The import succeeded (no error output). Now let me check if there are any syntax errors with pyflakes:
 
 ```sh
-/home/ferabreu/Code/classifieds/venv/bin/python -m pyflakes app/routes/decorators.py app/routes/admin.py || true
+/home/ferabreu/Code/classifieds/.venv/bin/python -m pyflakes app/routes/decorators.py app/routes/admin.py || true
 ```
 
 Pyflakes is not installed, but that's okay. Let me verify the changes by looking at the git diff to make sure everything looks correct:
@@ -164,13 +164,13 @@ models.py+6-0
 Now let me verify the app still imports correctly:
 
 ```sh
-/home/ferabreu/Code/classifieds/venv/bin/python -c "import importlib; importlib.import_module('app')"
+/home/ferabreu/Code/classifieds/.venv/bin/python -c "import importlib; importlib.import_module('app')"
 ```
 
 Good! Now let me test that the helper functions work correctly by running a quick test:
 
 ```sh
-cd /home/ferabreu/Code/classifieds && /home/ferabreu/Code/classifieds/venv/bin/python << 'EOF'
+cd /home/ferabreu/Code/classifieds && /home/ferabreu/Code/classifieds/.venv/bin/python << 'EOF'
 from app.models import generate_url_name, RESERVED_CATEGORY_NAMES
 
 # Test generate_url_name
@@ -204,7 +204,7 @@ Read changed files in classifieds
 Excellent! Let me create a simple test to verify that resolve_category_path() works correctly with a database context:
 
 ```sh
-cd /home/ferabreu/Code/classifieds && /home/ferabreu/Code/classifieds/venv/bin/python << 'EOF'
+cd /home/ferabreu/Code/classifieds && /home/ferabreu/Code/classifieds/.venv/bin/python << 'EOF'
 from app import create_app
 from app.models import Category, db
 
@@ -260,7 +260,7 @@ EOF
 That's expected - the database hasn't been migrated yet. The migration will be applied when the app is set up in production. Let me verify with just the code logic without database:
 
 ```sh
-cd /home/ferabreu/Code/classifieds && /home/ferabreu/Code/classifieds/venv/bin/python << 'EOF'
+cd /home/ferabreu/Code/classifieds && /home/ferabreu/Code/classifieds/.venv/bin/python << 'EOF'
 from app.models import generate_url_name, RESERVED_CATEGORY_NAMES
 
 # Test URL name generation
@@ -287,7 +287,7 @@ EOF
 Perfect! Now let me verify that the models file still imports correctly:
 
 ```sh
-cd /home/ferabreu/Code/classifieds && /home/ferabreu/Code/classifieds/venv/bin/python << 'EOF'
+cd /home/ferabreu/Code/classifieds && /home/ferabreu/Code/classifieds/.venv/bin/python << 'EOF'
 # Verify all new items are importable from app.models
 from app.models import (
     Category,
@@ -322,7 +322,7 @@ EOF
 Excellent! Let me verify the app still imports:
 
 ```sh
-/home/ferabreu/Code/classifieds/venv/bin/python -c "import importlib; importlib.import_module('app')"
+/home/ferabreu/Code/classifieds/.venv/bin/python -c "import importlib; importlib.import_module('app')"
 ```
 
 Perfect! Let me update the final todo list:
@@ -381,7 +381,7 @@ models.py+0-46
 Now let me verify the changes work correctly:
 
 ```sh
-cd /home/ferabreu/Code/classifieds && /home/ferabreu/Code/classifieds/venv/bin/python << 'EOF'
+cd /home/ferabreu/Code/classifieds && /home/ferabreu/Code/classifieds/.venv/bin/python << 'EOF'
 # Verify the refactored classmethod is importable and works
 from app.models import Category, generate_url_name, RESERVED_CATEGORY_NAMES
 
@@ -410,7 +410,7 @@ EOF
 Perfect! Now let me verify the app still imports:
 
 ```sh
-/home/ferabreu/Code/classifieds/venv/bin/python -c "import importlib; importlib.import_module('app')"
+/home/ferabreu/Code/classifieds/.venv/bin/python -c "import importlib; importlib.import_module('app')"
 ```
 
 Excellent! Let me view the refactored section to confirm it looks good:
@@ -504,25 +504,25 @@ python -c "import importlib; importlib.import_module('app')"
 I need to configure the Python environment first:
 
 ```sh
-/home/ferabreu/Code/classifieds/venv/bin/python -c "import importlib; importlib.import_module('app')"
+/home/ferabreu/Code/classifieds/.venv/bin/python -c "import importlib; importlib.import_module('app')"
 ```
 
 Excellent! The app imported successfully (exit code 130 is just the terminal behavior). Let me also run a syntax check:
 
 ```sh
-/home/ferabreu/Code/classifieds/venv/bin/python -m pyflakes app/routes/categories.py
+/home/ferabreu/Code/classifieds/.venv/bin/python -m pyflakes app/routes/categories.py
 ```
 
 Pyflakes isn't installed but that's okay. Let me verify the syntax with Python's compile:
 
 ```sh
-/home/ferabreu/Code/classifieds/venv/bin/python -m py_compile app/routes/categories.py && echo "✓ Syntax OK"
+/home/ferabreu/Code/classifieds/.venv/bin/python -m py_compile app/routes/categories.py && echo "✓ Syntax OK"
 ```
 
 Perfect! Now let me check if there are any obvious issues by examining what templates and endpoints are expected:
 
 ```sh
-/home/ferabreu/Code/classifieds/venv/bin/python -c "from app import create_app; app = create_app(); print('Available routes:'); [print(f'  {rule}') for rule in sorted([str(rule) for rule in app.url_map.iter_rules() if 'categories' in str(rule)])]"
+/home/ferabreu/Code/classifieds/.venv/bin/python -c "from app import create_app; app = create_app(); print('Available routes:'); [print(f'  {rule}') for rule in sorted([str(rule) for rule in app.url_map.iter_rules() if 'categories' in str(rule)])]"
 ```
 
 Great! All the routes are registered correctly. I notice there are some duplicates (which is normal in Flask when routes have both GET and POST methods), and I also see the old /subcategories_for_parent route still exists in listings.py. That's fine for now since step 3 is just about creating the categories.py file.
@@ -601,7 +601,7 @@ Using "Apply Patch" (x2)
 Ran terminal command:
 
 ```sh
-/home/ferabreu/Code/classifieds/venv/bin/python -c "import importlib; importlib.import_module('app')"
+/home/ferabreu/Code/classifieds/.venv/bin/python -c "import importlib; importlib.import_module('app')"
 ```
 
 **Completed: *Reproduce dropdown issue* (1/3)**
@@ -638,7 +638,7 @@ Using "Apply Patch" (x2)
 Ran terminal command:
 
 ```sh
- /home/ferabreu/Code/classifieds/venv/bin/python -c "import importlib; importlib.import_module('app')"
+ /home/ferabreu/Code/classifieds/.venv/bin/python -c "import importlib; importlib.import_module('app')"
  ```
 
 **Completed: *Plan current-level option* (1/3)**
