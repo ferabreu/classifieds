@@ -123,22 +123,22 @@ classifieds/
 ```bash
 git clone <your-repo-url> classifieds
 cd classifieds
-python -m venv venv
+python -m venv .venv
 
 # IMPORTANT: Activate the venv BEFORE installing requirements!
-source venv/bin/activate
+source .venv/bin/activate
 
 pip install -r requirements.txt
 
 # RECOMMENDED: Reactivate the venv after installing dependencies
 # (This ensures the correct 'flask' command is used and $PATH is updated.)
 deactivate
-source venv/bin/activate
+source .venv/bin/activate
 
 # (Optional, but recommended) Check that you're using the venv's Python and Flask:
 which python
 which flask
-# Both should point to the venv's bin directory (e.g., .../classifieds/venv/bin/python)
+# Both should point to the venv's bin directory (e.g., .../classifieds/.venv/bin/python)
 ```
 
 ---
@@ -185,7 +185,7 @@ This will generate thumbnails for all existing images that don't have them.
 
 #### Development
 
-In development, you'll probably want to `source venv/bin/activate` first.
+In development, you'll probably want to `source .venv/bin/activate` first.
 
 ```bash
 FLASK_APP=app FLASK_ENV=development flask run --debug
@@ -311,7 +311,7 @@ LDAP_DOMAIN=
 
 ## Troubleshooting
 
-- **ModuleNotFoundError**: Ensure you activate your venv: `source venv/bin/activate`
+- **ModuleNotFoundError**: Ensure you activate your venv: `source .venv/bin/activate`
 - **Database not found**: Run `flask --app app.py init-db`
 - **Gunicorn import errors**: Always run from the project root (where `wsgi.py` is) and use `gunicorn wsgi:app`
 - **Environment variables not loaded:** For Gunicorn or Docker, ensure you export variables or use a `.env` loader compatible with your process manager.
@@ -319,7 +319,7 @@ LDAP_DOMAIN=
 - **After installing requirements, reactivate your venv:** Sometimes after installing requirements, your shell may still use the global Flask. Run:
   ```bash
   deactivate
-  source venv/bin/activate
+  source .venv/bin/activate
   ```
 
 ---

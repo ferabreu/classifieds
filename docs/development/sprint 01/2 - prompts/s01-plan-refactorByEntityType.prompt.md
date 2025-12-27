@@ -240,5 +240,5 @@ After implementation:
   - Document migration steps and add a CLI script for backfilling if needed
   - **IMPORTANT**: Use SQLite-compatible migration patterns (no `ALTER COLUMN`, use `server_default` for NOT NULL columns)
 - **Using the terminal to run commands:**
-  - Activate the virtual environment (`source venv/bin/activate`) first.
+  - Activate the virtual environment (`source .venv/bin/activate`) first.
   - Prefer to run commands on an already opened terminal with the venv loaded.
