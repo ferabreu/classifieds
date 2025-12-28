@@ -710,6 +710,119 @@ def admin_edit_listing(listing_id):
     return _edit_listing_impl(listing_id)
 
 
+# === Helper Functions ===
+
+
+def _delete_listings_impl(listings):
+    """
+    Deletes multiple listings and their associated image files using the 'temp' strategy.
+
+    Args:
+        listings: List of Listing objects to delete
+
+    Returns:
+        Tuple of (success: bool, error_message: str or None, count: int)
+        - success: True if deletion completed without errors
+        - error_message: Error message if deletion failed, None otherwise
+        - count: Number of listings deleted
+    """
+    if not listings:
+        return True, None, 0
+
+    temp_dir = current_app.config["TEMP_DIR"]
+    upload_dir = current_app.config["UPLOAD_DIR"]
+    thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
+
+    original_paths = []
+    temp_paths = []
+    original_thumb_paths = []
+    temp_thumb_paths = []
+
+    # Move all image files to temp directory
+    for listing in listings:
+        for image in listing.images:
+            orig = os.path.join(upload_dir, image.filename)
+            temped = os.path.join(temp_dir, image.filename)
+            orig_thumb = None
+            temped_thumb = None
+
+            if image.thumbnail_filename:
+                orig_thumb = os.path.join(thumbnail_dir, image.thumbnail_filename)
+                temped_thumb = os.path.join(temp_dir, image.thumbnail_filename)
+
+            try:
+                if os.path.exists(orig):
+                    shutil.move(orig, temped)
+                    original_paths.append(orig)
+                    temp_paths.append(temped)
+
+                if (
+                    orig_thumb
+                    and temped_thumb
+                    and os.path.exists(orig_thumb)
+                ):
+                    shutil.move(orig_thumb, temped_thumb)
+                    original_thumb_paths.append(orig_thumb)
+                    temp_thumb_paths.append(temped_thumb)
+            except Exception as e:
+                # Rollback: restore all files that were moved
+                for orig, temped in zip(original_paths, temp_paths):
+                    try:
+                        if os.path.exists(temped):
+                            shutil.move(temped, orig)
+                    except Exception:
+                        pass
+                for orig_thumb, temped_thumb in zip(
+                    original_thumb_paths, temp_thumb_paths
+                ):
+                    try:
+                        if os.path.exists(temped_thumb):
+                            shutil.move(temped_thumb, orig_thumb)
+                    except Exception:
+                        pass
+                return False, f"Error moving image files: {e}", 0
+
+    # Delete listings from database
+    try:
+        for listing in listings:
+            db.session.delete(listing)
+        db.session.commit()
+    except Exception as e:
+        # Rollback: restore all files
+        for orig, temped in zip(original_paths, temp_paths):
+            try:
+                if os.path.exists(temped):
+                    shutil.move(temped, orig)
+            except Exception:
+                pass
+        for orig_thumb, temped_thumb in zip(
+            original_thumb_paths, temp_thumb_paths
+        ):
+            try:
+                if os.path.exists(temped_thumb):
+                    shutil.move(temped_thumb, orig_thumb)
+            except Exception:
+                pass
+        db.session.rollback()
+        return False, f"Database error: {e}", 0
+
+    # Clean up temp files
+    for temped in temp_paths:
+        try:
+            if os.path.exists(temped):
+                os.remove(temped)
+        except Exception:
+            pass
+    for temped_thumb in temp_thumb_paths:
+        try:
+            if os.path.exists(temped_thumb):
+                os.remove(temped_thumb)
+        except Exception:
+            pass
+
+    return True, None, len(listings)
+
+
 def _delete_listing_impl(listing_id):
     listing = Listing.query.get_or_404(listing_id)
     category = listing.category
@@ -878,7 +991,7 @@ def admin_listings():
 @admin_required
 def delete_selected_listings():
     """
-    Deletes multiple selected listings and all their associated image files using a 'temp' strategy.
+    Deletes multiple selected listings and all their associated image files.
     """
     selected_ids = request.form.getlist("selected_listings")
     if not selected_ids:
@@ -890,58 +1003,12 @@ def delete_selected_listings():
         .filter(Listing.id.in_(selected_ids))
         .all()
     )
-    original_paths = []
-    temp_paths = []
-    all_image_filenames = set()
 
-    for listing in listings:
-        for image in listing.images:
-            all_image_filenames.add(image.filename)
-            orig = os.path.join(current_app.config["UPLOAD_DIR"], image.filename)
-            temped = os.path.join(current_app.config["TEMP_DIR"], image.filename)
-            try:
-                shutil.move(orig, temped)
-                original_paths.append(orig)
-                temp_paths.append(temped)
-            except FileNotFoundError:
-                # File may already be missing (e.g., previously deleted manually).
-                # This is not an error condition; continue to next image.
-                pass
+    success, error_message, count = _delete_listings_impl(listings)
 
-    try:
-        for listing in listings:
-            db.session.delete(listing)
-        db.session.commit()
-    except Exception:
-        for orig, temped in zip(original_paths, temp_paths):
-            try:
-                shutil.move(temped, orig)
-            except Exception:
-                # Rollback: attempt to restore from temp. If restoration fails, the file
-                # remains in temp (orphaned) but we continue rollback to restore other files.
-                # Consider cleanup of temp files in a maintenance task.
-                pass
-        db.session.rollback()
-        flash("Database error. Listings were not deleted. Files restored.", "danger")
-        return redirect(url_for("listings.admin_listings"))
+    if success:
+        flash(f"Deleted {count} listing(s).", "success")
+    else:
+        flash(f"Error deleting listings: {error_message}", "danger")
 
-    for temped in temp_paths:
-        try:
-            os.remove(temped)
-        except Exception:
-            # Cleanup: if temp file removal fails (e.g., permission issue, file locked),
-            # log silently. Consider periodic cleanup of orphaned temp files.
-            pass
-
-    for filename in all_image_filenames:
-        path = os.path.join(current_app.config["UPLOAD_DIR"], filename)
-        try:
-            if os.path.exists(path):
-                os.remove(path)
-        except Exception:
-            # Cleanup: if upload file removal fails (e.g., permission issue, file locked),
-            # log silently. Consider periodic cleanup of orphaned upload files.
-            pass
-
-    flash(f"Deleted {len(listings)} listing(s).", "success")
     return redirect(url_for("listings.admin_listings"))

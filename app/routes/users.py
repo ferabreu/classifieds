@@ -16,10 +16,12 @@ Self-service routes at /profile use @login_required only.
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from sqlalchemy.orm import joinedload
 
 from ..forms import UserEditForm
-from ..models import User, db
+from ..models import Listing, User, db
 from .decorators import admin_required
+from .listings import _delete_listings_impl
 
 users_bp = Blueprint("users", __name__)
 
@@ -84,6 +86,11 @@ def admin_list():
 
     pagination = User.query.order_by(sort_order).paginate(page=page, per_page=20)
     users = pagination.items
+
+    # Add listing count to each user for display in template
+    for user in users:
+        user.listing_count = Listing.query.filter_by(user_id=user.id).count()
+
     return render_template(
         "admin/admin_users.html",
         users=users,
@@ -138,56 +145,45 @@ def admin_edit(user_id):
 @users_bp.route("/admin/users/delete/<int:user_id>", methods=["POST"])
 @admin_required
 def admin_delete(user_id):
-    """Allows admins to delete a user, except for the last admin user."""
+    """
+    Allows admins to delete a user, except for the last admin user.
+    Also deletes all listings owned by the user and their associated image files.
+    """
     user = User.query.get_or_404(user_id)
     admins = User.query.filter_by(is_admin=True).count()
     if admins == 1 and user.is_admin:
         flash("Must have at least one admin user in the system.", "danger")
         return redirect(url_for("users.admin_list"))
-    db.session.delete(user)
-    db.session.commit()
-    flash("User deleted.", "success")
-    return redirect(url_for("users.admin_list"))
 
+    # Get all listings owned by the user with their images loaded
+    listings = (
+        Listing.query.filter_by(user_id=user_id)
+        .options(joinedload(Listing.images))  # type: ignore
+        .all()
+    )
 
-@users_bp.route("/admin/users/delete_selected", methods=["POST"])
-@admin_required
-def delete_selected_users():
-    """
-    Deletes multiple selected users.
-    Prevents deletion if it would result in no admin users remaining.
-    """
-    selected_ids = request.form.getlist("selected_users")
-    if not selected_ids:
-        flash("No users selected for deletion.", "warning")
+    # Delete listings using the shared helper function
+    success, error_message, listing_count = _delete_listings_impl(listings)
+
+    if not success:
+        flash(f"Error deleting user's listings: {error_message}", "danger")
         return redirect(url_for("users.admin_list"))
 
-    # Convert to integers
-    selected_ids = [int(user_id) for user_id in selected_ids]
-
-    # Check if all admin users are being deleted
-    admin_count = User.query.filter_by(is_admin=True).count()
-    admin_in_selection = User.query.filter(
-        User.id.in_(selected_ids), User.is_admin.is_(True)
-    ).count()
-
-    if admin_in_selection == admin_count:
-        flash(
-            "Cannot delete all administrators. At least one admin must remain.",
-            "danger",
-        )
-        return redirect(url_for("users.admin_list"))
-
-    users_to_delete = User.query.filter(User.id.in_(selected_ids)).all()
-
+    # Delete user from database
     try:
-        for user in users_to_delete:
-            db.session.delete(user)
+        db.session.delete(user)
         db.session.commit()
-        flash(f"Deleted {len(users_to_delete)} user(s).", "success")
-    except Exception:
+    except Exception as e:
         db.session.rollback()
-        flash("Database error. Users were not deleted.", "danger")
+        flash(f"Database error. User was not deleted. ({e})", "danger")
         return redirect(url_for("users.admin_list"))
 
+    # Provide appropriate feedback
+    if listing_count > 0:
+        flash(
+            f"User deleted. Also deleted {listing_count} listing(s) owned by this user.",
+            "success",
+        )
+    else:
+        flash("User deleted.", "success")
     return redirect(url_for("users.admin_list"))
