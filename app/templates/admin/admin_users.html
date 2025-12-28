@@ -51,11 +51,11 @@
                         <td>
                             <input type="radio" name="selected_user_id" value="{{ user.id }}" data-listing-count="{{ user.listing_count }}">
                         </td>
-                        <td>{{ user.email }}</td>
+                        <td><a href="{{ url_for('users.admin_profile', user_id=user.id) }}">{{ user.email }}</a></td>
                         <td>{{ user.first_name }} {{ user.last_name }}</td>
                         <td>{% if user.is_admin %}Yes{% else %}No{% endif %}</td>
-                        <td>{{ user.listing_count }}</td>
                         <td>{% if user.is_ldap_user %}Yes{% else %}No{% endif %}</td>
+                        <td>{{ user.listing_count }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
