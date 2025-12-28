@@ -1,6 +1,8 @@
 import os
 
 from flask import Flask
+import logging
+from logging.handlers import RotatingFileHandler
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
@@ -37,6 +39,9 @@ def create_app(config_class=None):
     app.config["THUMBNAIL_DIR"] = os.path.join(
         app.root_path, app.config["THUMBNAIL_DIR"]
     )
+
+    # Configure logging early
+    _configure_logging(app)
 
     db.init_app(app)
     Migrate(app, db)
@@ -157,3 +162,53 @@ def create_app(config_class=None):
         app.cli.add_command(demo_data)
 
     return app
+
+
+def _configure_logging(app: Flask) -> None:
+    """Configure application logging.
+
+    - Uses LOG_LEVEL from config
+    - Logs to stdout if LOG_TO_STDOUT is true (default)
+    - Otherwise logs to a rotating file under instance/LOG_FILE
+    """
+    # Avoid duplicate handlers on reloader
+    if app.logger.handlers:
+        return
+
+    level_name = app.config.get("LOG_LEVEL", "INFO")
+    try:
+        level = getattr(logging, level_name, logging.INFO)
+    except Exception:
+        level = logging.INFO
+
+    app.logger.setLevel(level)
+
+    formatter = logging.Formatter(
+        fmt="%(asctime)s %(levelname)s %(name)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    if app.config.get("LOG_TO_STDOUT", True):
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(level)
+        stream_handler.setFormatter(formatter)
+        app.logger.addHandler(stream_handler)
+    else:
+        # Ensure instance/logs directory exists
+        relative_log = app.config.get("LOG_FILE", "logs/classifieds.log")
+        log_path = os.path.join(app.instance_path, relative_log)
+        logs_dir = os.path.dirname(log_path)
+        try:
+            os.makedirs(logs_dir, exist_ok=True)
+        except Exception:
+            # Fallback to stdout if directory creation fails
+            stream_handler = logging.StreamHandler()
+            stream_handler.setLevel(level)
+            stream_handler.setFormatter(formatter)
+            app.logger.addHandler(stream_handler)
+            return
+
+        file_handler = RotatingFileHandler(log_path, maxBytes=1_000_000, backupCount=3)
+        file_handler.setLevel(level)
+        file_handler.setFormatter(formatter)
+        app.logger.addHandler(file_handler)
