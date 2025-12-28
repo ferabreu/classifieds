@@ -1,5 +1,6 @@
-{% macro render_category_rows(category, categories, level=0) %}
+{% macro render_category_rows(category, categories, level=0, include_admin_ui=False) %}
     <tr>
+        {% if include_admin_ui %}<td><input type="radio" name="selected_category_id" value="{{ category.id }}"></td>{% endif %}
         <td>
             <span style="display: inline-block; width: {{ (level|int) * 16 }}px;"></span>
             <a href="{{ url_for('listings.category_filtered_listings', category_path=category.url_path) }}">{{ category.name }}</a>
@@ -7,11 +8,9 @@
         <td>
             {{ category.parent.name if category.parent else '-' }}
         </td>
-        <td>
-            <a class="btn btn-warning btn-sm" href="{{ url_for('categories.admin_edit', category_id=category.id) }}">Edit</a>
-        </td>
+        {% if include_admin_ui %}<td>{{ category.listing_count }}</td>{% endif %}
     </tr>
     {% for child in categories if child.parent_id == category.id %}
-        {{ render_category_rows(child, categories, level + 1) }}
+        {{ render_category_rows(child, categories, level + 1, include_admin_ui=include_admin_ui) }}
     {% endfor %}
 {% endmacro %}
