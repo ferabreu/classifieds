@@ -28,7 +28,7 @@ function handleEdit(editUrlTemplate, radioName) {
     }
 }
 
-function handleDelete(deleteUrlTemplate, radioName) {
+function handleDelete(deleteUrlTemplate, radioName, entityLabel) {
     const selected = document.querySelector(`input[name="${radioName}"]:checked`);
     if (!selected) {
         alert('Please select an item first.');
@@ -39,9 +39,10 @@ function handleDelete(deleteUrlTemplate, radioName) {
     const dataAttribute = selected.getAttribute('data-listing-count');
     const listingCount = dataAttribute ? parseInt(dataAttribute) : 0;
 
-    let message = 'Delete this item?';
+    const baseLabel = entityLabel && typeof entityLabel === 'string' ? entityLabel : 'item';
+    let message = `Delete this ${baseLabel}?`;
     if (listingCount > 0) {
-        message += `\n\nWarning: This user has ${listingCount} listing(s) associated with their account. These listings will also be deleted.`;
+        message += `\n\nWarning: The selected ${baseLabel} has ${listingCount} associated listing(s). These will also be deleted.`;
     }
 
     if (confirm(message)) {
