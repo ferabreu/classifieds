@@ -1,6 +1,6 @@
 {% macro render_category_rows(category, categories, level=0, include_admin_ui=False) %}
     <tr>
-        {% if include_admin_ui %}<td><input type="radio" name="selected_category_id" value="{{ category.id }}"></td>{% endif %}
+        {% if include_admin_ui %}<td><input type="radio" name="selected_category_id" value="{{ category.id }}" data-listing-count="{{ category.listing_count }}"></td>{% endif %}
         <td>
             <span style="display: inline-block; width: {{ (level|int) * 16 }}px;"></span>
             <a href="{{ url_for('listings.category_filtered_listings', category_path=category.url_path) }}">{{ category.name }}</a>

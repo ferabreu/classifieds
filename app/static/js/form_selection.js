@@ -36,8 +36,10 @@ function handleDelete(deleteUrlTemplate, radioName, entityLabel) {
     }
 
     const id = selected.value;
+    // Some entity types (e.g., listings) don't track associated child entities,
+    // so data-listing-count may be absent. Default to 0 for entities without it.
     const dataAttribute = selected.getAttribute('data-listing-count');
-    const listingCount = dataAttribute ? parseInt(dataAttribute) : 0;
+    const listingCount = dataAttribute ? parseInt(dataAttribute, 10) : 0;
 
     const baseLabel = entityLabel && typeof entityLabel === 'string' ? entityLabel : 'item';
     let message = `Delete this ${baseLabel}?`;

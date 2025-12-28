@@ -16,6 +16,7 @@ Self-service routes at /profile use @login_required only.
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from ..forms import UserEditForm
@@ -84,12 +85,45 @@ def admin_list():
     sort_column = sort_column_map.get(sort, User.email)
     sort_order = sort_column.asc() if direction == "asc" else sort_column.desc()
 
-    pagination = User.query.order_by(sort_order).paginate(page=page, per_page=20)
-    users = pagination.items
+    # Fetch users with listing counts in a single query using LEFT JOIN + GROUP BY.
+    # This avoids the N+1 problem: instead of 1 query for users + 20 queries for counts,
+    # we construct a subquery of listing counts grouped by user_id and join it to users.
+    #
+    # NOTE: This uses the legacy .query API for consistency with the existing codebase
+    # (see app/routes/auth.py, app/models.py, etc.). The modern SQLAlchemy 2.0+ approach
+    # would use select() with explicit joins. This can be refactored when the project
+    # upgrades to Flask-SQLAlchemy 3.1+ (which requires SQLAlchemy 2.0+).
+    # See tech debt issue: "Migrate from legacy .query API to modern select() API"
+    listing_count_subquery = (
+        db.session.query(
+            Listing.user_id,
+            func.count(Listing.id).label("listing_count"),
+        )
+        .group_by(Listing.user_id)
+        .subquery()
+    )  # type: ignore
 
-    # Add listing count to each user for display in template
-    for user in users:
-        user.listing_count = Listing.query.filter_by(user_id=user.id).count()
+    # Join users with the subquery and fetch all columns including listing_count
+    pagination = (
+        User.query.outerjoin(
+            listing_count_subquery, User.id == listing_count_subquery.c.user_id
+        )
+        .add_columns(
+            func.coalesce(listing_count_subquery.c.listing_count, 0).label(
+                "listing_count"
+            )
+        )
+        .order_by(sort_order)
+        .paginate(page=page, per_page=20)
+    )  # type: ignore
+
+    # Extract User objects and attach listing_count as an attribute for template
+    users = []
+    for row in pagination.items:
+        user = row[0]  # User object from first column
+        user.listing_count = row[1]  # listing_count from add_columns
+        users.append(user)
+    pagination.items = users
 
     return render_template(
         "admin/admin_users.html",

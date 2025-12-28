@@ -39,6 +39,16 @@ class Config:
     THUMBNAIL_DIR = os.path.join("static", "uploads", "thumbnails")
     THUMBNAIL_SIZE = (224, 224)
 
+    # Logging
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+    LOG_TO_STDOUT = os.environ.get("LOG_TO_STDOUT", "true").lower() in [
+        "1",
+        "true",
+        "yes",
+    ]
+    # If not logging to stdout, write here (under instance path)
+    LOG_FILE = os.environ.get("LOG_FILE", "logs/classifieds.log")
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
