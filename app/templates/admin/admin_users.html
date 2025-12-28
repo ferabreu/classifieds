@@ -62,7 +62,7 @@
         </table>
         <div class="d-flex justify-content-start gap-2 mb-3">
             <button type="button" class="btn btn-warning" onclick="handleEdit('{{ url_for('users.admin_edit', user_id=0) }}'.replace('/0', '/{id}'), 'selected_user_id')">Edit</button>
-            <button type="button" class="btn btn-danger" onclick="handleDelete('{{ url_for('users.admin_delete', user_id=0) }}'.replace('/0', '/{id}'))">Delete</button>
+            <button type="button" class="btn btn-danger" onclick="handleDelete('{{ url_for('users.admin_delete', user_id=0) }}'.replace('/0', '/{id}'), 'selected_user_id', 'user')">Delete</button>
         </div>
     </div>
 

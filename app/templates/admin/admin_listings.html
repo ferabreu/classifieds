@@ -90,7 +90,7 @@
         </table>
         <div class="d-flex justify-content-start gap-2 mb-3">
             <button type="button" class="btn btn-warning" onclick="handleEdit('{{ url_for('listings.admin_edit_listing', listing_id=0) }}'.replace('/0', '/{id}'), 'selected_listing_id')">Edit</button>
-            <button type="button" class="btn btn-danger" onclick="handleDelete('{{ url_for('listings.admin_delete_listing', listing_id=0) }}'.replace('/0', '/{id}'), 'selected_listing_id')">Delete</button>
+            <button type="button" class="btn btn-danger" onclick="handleDelete('{{ url_for('listings.admin_delete_listing', listing_id=0) }}'.replace('/0', '/{id}'), 'selected_listing_id', 'listing')">Delete</button>
         </div>
     </div>
 
@@ -100,5 +100,4 @@
 
 {% block scripts %}
     <script src="{{ url_for('static', filename='js/form_selection.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/checkbox_select_all.js') }}"></script>
 {% endblock %}
