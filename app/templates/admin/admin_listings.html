@@ -6,11 +6,11 @@
 
     <h2 class="mt-3 mb-3">Listing Management</h2>
     <a href="{{ url_for('admin.dashboard') }}">&larr; Admin Dashboard</a>
-    <form method="post" action="{{ url_for('listings.delete_selected_listings') }}">
+    <div>
         <table class="table">
             <thead>
                 <tr>
-                    <th><input type="checkbox" id="select-all"></th>
+                    <th></th>
                     <th>
                         <a href="{{ url_for('listings.admin_listings', sort='title', direction='asc' if sort != 'title' or direction == 'desc' else 'desc') }}">
                             Title
@@ -51,14 +51,13 @@
                             {% endif %}
                         </a>
                     </th>
-                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for listing in listings %}
                     <tr>
                         <td>
-                            <input type="checkbox" class="row-checkbox" name="selected_listings" value="{{ listing.id }}">
+                            <input type="radio" name="selected_listing_id" value="{{ listing.id }}">
                         </td>
                         <td>
                             <a href="{{ url_for('listings.admin_listing_detail', listing_id=listing.id) }}">{{ listing.title }}</a>
@@ -85,22 +84,21 @@
                                 -
                             {% endif %}
                         </td>
-                        <td>
-                            <a href="{{ url_for('listings.admin_edit_listing', listing_id=listing.id) }}" class="btn btn-warning btn-sm">Edit</a>
-                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
-        <div class="d-flex justify-content-start mb-3">
-            <button type="submit" class="btn btn-danger">Delete Selected</button>
+        <div class="d-flex justify-content-start gap-2 mb-3">
+            <button type="button" class="btn btn-warning" onclick="handleEdit('{{ url_for('listings.admin_edit_listing', listing_id=0) }}'.replace('/0', '/{id}'), 'selected_listing_id')">Edit</button>
+            <button type="button" class="btn btn-danger" onclick="handleDelete('{{ url_for('listings.admin_delete_listing', listing_id=0) }}'.replace('/0', '/{id}'), 'selected_listing_id')">Delete</button>
         </div>
-    </form>
+    </div>
 
     {{ pagination_macros.render_pagination(pagination, 'listings.admin_listings', sort=sort, direction=direction) }}
 
 {% endblock %}
 
 {% block scripts %}
+    <script src="{{ url_for('static', filename='js/form_selection.js') }}"></script>
     <script src="{{ url_for('static', filename='js/checkbox_select_all.js') }}"></script>
 {% endblock %}
