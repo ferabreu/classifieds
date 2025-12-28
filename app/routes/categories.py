@@ -61,6 +61,17 @@ def _validate_category_inputs(name: str, parent_id: int | None, current_id: int 
     return url_name, None
 
 
+def _count_listings_recursive(category, all_categories):
+    """
+    Recursively count listings for a category and all its descendants.
+    """
+    count = len(category.listings)
+    for child in all_categories:
+        if child.parent_id == category.id:
+            count += _count_listings_recursive(child, all_categories)
+    return count
+
+
 @categories_bp.route("/admin/categories")
 @admin_required
 def admin_list():
@@ -69,6 +80,10 @@ def admin_list():
     Shows hierarchy: parent and children.
     """
     categories = Category.query.order_by(Category.name).all()
+
+    # Calculate listing count for each category (including descendants)
+    for c in categories:
+        c.listing_count = _count_listings_recursive(c, categories)
 
     forms = {}
     for c in categories:

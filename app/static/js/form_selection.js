@@ -12,7 +12,7 @@
  * - Action buttons with data attributes specifying behavior
  */
 
-function getSelectedId(radioName = 'selected_user_id') {
+function getSelectedId(radioName) {
     const selected = document.querySelector(`input[name="${radioName}"]:checked`);
     if (!selected) {
         alert('Please select an item first.');
@@ -21,14 +21,14 @@ function getSelectedId(radioName = 'selected_user_id') {
     return selected.value;
 }
 
-function handleEdit(editUrlTemplate) {
-    const id = getSelectedId();
+function handleEdit(editUrlTemplate, radioName) {
+    const id = getSelectedId(radioName);
     if (id) {
         window.location.href = editUrlTemplate.replace('{id}', id);
     }
 }
 
-function handleDelete(deleteUrlTemplate, radioName = 'selected_user_id') {
+function handleDelete(deleteUrlTemplate, radioName) {
     const selected = document.querySelector(`input[name="${radioName}"]:checked`);
     if (!selected) {
         alert('Please select an item first.');
