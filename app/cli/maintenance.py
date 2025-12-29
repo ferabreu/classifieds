@@ -7,9 +7,8 @@ from flask import current_app
 from app.models import ListingImage, db
 
 
-@click.command("backfill-thumbnails")
-def backfill_thumbnails():
-    """Generate thumbnails for existing images that don't have them."""
+def run_backfill_thumbnails():
+    """Generate thumbnails for existing images that don't have them (callable)."""
     from app.routes.utils import create_thumbnail
 
     images_without_thumbnails = ListingImage.query.filter(
@@ -60,3 +59,9 @@ def backfill_thumbnails():
     except Exception as e:
         db.session.rollback()
         print(f"Error committing changes to database: {e}")
+
+
+@click.command("backfill-thumbnails")
+def backfill_thumbnails():
+    """CLI wrapper: generate thumbnails for existing images without them."""
+    run_backfill_thumbnails()
