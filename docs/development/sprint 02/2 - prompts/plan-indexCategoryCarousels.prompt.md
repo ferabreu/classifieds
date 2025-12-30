@@ -29,3 +29,26 @@ Replace the current paginated listings grid with up to N Bootstrap carousels. Ea
 - **Category navigation**: Category heading links to `/listings/<category.url_path>` (category_filtered_listings route)
 - **Responsive**: Use Bootstrap's default carousel responsive behavior
 - **No pagination**: Remove pagination logic entirely when carousels implemented
+## Additional Unplanned Steps (Sprint 1 Leftovers)
+
+### Layout Alignment & Standardization
+6. (DONE) **Align navbar with grid**: Remove horizontal padding from navbar and container-fluid; drop brand/toggle margins to eliminate inset; navbar content now aligns with page content width.
+
+7. (DONE) **Standardize content width across pages**: Wrap content in shared `category-row-content` div for consistent width constraints:
+   - `listing_detail.html`: Breadcrumb, title, description, images, buttons
+   - `listing_form.html`: Form fields; place category dropdown and price side-by-side with responsive grid
+   - `user_profile.html`: Add "Your profile" / "User profile" header; wrap content in width container
+   - `user_form.html`: Add conditional "Edit profile" / "Edit user" header; place first/last name side-by-side with responsive grid
+   - `admin_dashboard.html`: Replace text links with three cards (Manage Users, Categories, Listings) using Bootstrap Icons (bi-people, bi-tags, bi-card-list)
+   - `admin_categories.html`: Remove "Parent" column; right-align "Listings" column; wrap in width container
+   - `admin_listings.html`: Remove "Price" column; rename "Date Created" to "Date"; right-align Date column; wrap in width container
+   - `admin_users.html`: Make "Listings" column sortable with directional arrows; right-align column; wrap in width container
+
+8. (DONE) **Wrap alerts in width container**: Move flash messages inside `category-row-content` in `base.html` so they respect the same width constraints as content.
+
+### Category Browsing Enhancement
+9. (DONE) **Add showcases to intermediate categories**: When viewing an intermediate category (one with children), display showcases of child categories instead of a grid. Each showcase shows up to 6 random listings from that child category and its descendants.
+
+10. (DONE) **Handle orphaned listings in intermediate categories**: Add an "Other <category_name>" showcase at the end of intermediate category pages to display listings posted directly to the intermediate category (not in any child).
+
+11. (DONE) **Add grid view toggle for categories**: Support `?view=listings` query parameter to force any category (leaf or intermediate) to display a full grid with pagination. Intermediate categories link to "Other <category>" showcase with this parameter; leaf categories naturally fall through to grid without it.

@@ -49,10 +49,10 @@ CATEGORY_HIERARCHY = {
 # ==========================
 # Map subcategory names to related keywords for Unsplash
 CATEGORY_KEYWORDS = {
-#    "Phones": ["phone", "smartphone", "mobile", "cellphone"],
-#    "Computers": ["computer", "laptop", "desktop", "notebook", "pc"],
-#    "Furniture": ["table", "chair", "sofa", "desk", "couch", "cabinet"],
-#    "Tools": ["screwdriver", "hammer", "drill", "saw", "wrench", "toolbox", "file", "sandpaper"],
+    "Phones": ["phone", "smartphone", "mobile", "cellphone"],
+    "Computers": ["computer", "laptop", "desktop", "notebook", "pc"],
+    "Furniture": ["table", "chair", "sofa", "desk", "couch", "cabinet"],
+    "Tools": ["screwdriver", "hammer", "drill", "saw", "wrench", "toolbox", "file", "sandpaper"],
     "Cars": ["car", "automobile", "sedan", "convertible", "hatchback"],
     "Motorcycles": ["motorcycle", "scooter", "motorbike"],
     "Clothing": ["shirt", "pants", "dress", "jacket", "blouse", "jeans", "trousers", "hoodie"],
