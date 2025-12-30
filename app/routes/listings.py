@@ -123,16 +123,6 @@ def category_filtered_listings(category_path):
     if not category:
         abort(404)
 
-    page = request.args.get("page", 1, type=int)
-    per_page = 24
-
-    descendant_ids = category.get_descendant_ids()
-    listings_query = Listing.query.filter(Listing.category_id.in_(descendant_ids))
-    pagination = listings_query.order_by(Listing.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
-    listings = pagination.items
-
     # --- Sidebar context additions ---
     # 1. Get all root categories with their children (for sidebar)
     categories = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
@@ -140,17 +130,107 @@ def category_filtered_listings(category_path):
     ancestor_ids = [cat.id for cat in category.breadcrumb[:-1]]
     expanded_ids = ancestor_ids  # List of IDs to auto-expand
 
-    return render_template(
-        "index.html",
-        listings=listings,
-        pagination=pagination,
-        selected_category=category,
-        category_path=category.get_full_path(),
-        categories=categories,
-        active_category_id=category.id,
-        expanded_ids=expanded_ids,
-        page_title=category.name,
-    )
+    # Check if user explicitly requested listings view (grid instead of showcases)
+    view_mode = request.args.get("view", "auto")
+    force_listings_view = view_mode == "listings"
+
+    # Check if this is an intermediate category (has children) or a leaf category
+    if category.children and not force_listings_view:
+        # Intermediate category: show showcase of child categories
+        items_per_carousel = current_app.config.get(
+            "INDEX_CAROUSEL_ITEMS_PER_CATEGORY", 10
+        )
+        display_slots = min(items_per_carousel, 6)  # Up to 6 child categories
+        fetch_limit = max(display_slots * 2, items_per_carousel)
+
+        # Build showcases for each child category
+        child_showcases = []
+        for child_category in sorted(category.children, key=lambda c: c.name):
+            # Fetch listings for this child
+            direct_listings = (
+                Listing.query.filter_by(category_id=child_category.id)
+                .order_by(Listing.created_at.desc())
+                .limit(fetch_limit)
+                .all()
+            )
+
+            listings_pool = list(direct_listings)
+
+            # If not enough, pull from descendants of this child
+            if len(listings_pool) < fetch_limit:
+                descendant_ids = child_category.get_descendant_ids()
+                descendant_ids = [cid for cid in descendant_ids if cid != child_category.id]
+                if descendant_ids:
+                    needed = fetch_limit - len(listings_pool)
+                    descendant_listings = (
+                        Listing.query.filter(Listing.category_id.in_(descendant_ids))
+                        .order_by(Listing.created_at.desc())
+                        .limit(max(needed * 2, display_slots))
+                        .all()
+                    )
+                    listings_pool.extend(descendant_listings)
+
+            if listings_pool:
+                random.shuffle(listings_pool)
+                listings = listings_pool[:display_slots]
+                child_showcases.append(
+                    {"category": child_category, "listings": listings}
+                )
+
+        # Add showcase for listings directly in this intermediate category (not in children)
+        direct_category_listings = (
+            Listing.query.filter_by(category_id=category.id)
+            .order_by(Listing.created_at.desc())
+            .limit(fetch_limit)
+            .all()
+        )
+
+        if direct_category_listings:
+            random.shuffle(direct_category_listings)
+            other_category = type('obj', (object,), {
+                'id': category.id,
+                'name': f'Other {category.name}',
+                'url_path': category.url_path
+            })()
+            child_showcases.append({
+                "category": other_category,
+                "listings": direct_category_listings[:display_slots]
+            })
+
+        return render_template(
+            "index.html",
+            category_carousels=child_showcases,
+            selected_category=category,
+            category_path=category.get_full_path(),
+            categories=categories,
+            active_category_id=category.id,
+            expanded_ids=expanded_ids,
+            any_categories_exist=True,
+            page_title=category.name,
+        )
+    else:
+        # Leaf category or forced listings view: show grid of all listings with pagination
+        page = request.args.get("page", 1, type=int)
+        per_page = 24
+
+        descendant_ids = category.get_descendant_ids()
+        listings_query = Listing.query.filter(Listing.category_id.in_(descendant_ids))
+        pagination = listings_query.order_by(Listing.created_at.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        listings = pagination.items
+
+        return render_template(
+            "index.html",
+            listings=listings,
+            pagination=pagination,
+            selected_category=category,
+            category_path=category.get_full_path(),
+            categories=categories,
+            active_category_id=category.id,
+            expanded_ids=expanded_ids,
+            page_title=category.name,
+        )
 
 
 @listings_bp.route("/listing/<int:listing_id>")

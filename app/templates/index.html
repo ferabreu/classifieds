@@ -39,13 +39,25 @@
                     <div class="category-row-content">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h3 class="mb-0">
-                                <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path) }}" class="text-decoration-none category-title-link">
-                                    {{ carousel_item.category.name }}
-                                </a>
+                                {% if carousel_item.category.name.startswith('Other ') %}
+                                    <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path, view='listings') }}" class="text-decoration-none category-title-link">
+                                        {{ carousel_item.category.name }}
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path) }}" class="text-decoration-none category-title-link">
+                                        {{ carousel_item.category.name }}
+                                    </a>
+                                {% endif %}
                             </h3>
-                            <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path) }}" class="text-decoration-none see-all-link">
-                                <span class="see-all-text">See all </span>→
-                            </a>
+                            {% if carousel_item.category.name.startswith('Other ') %}
+                                <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path, view='listings') }}" class="text-decoration-none see-all-link">
+                                    <span class="see-all-text">See all </span>→
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path) }}" class="text-decoration-none see-all-link">
+                                    <span class="see-all-text">See all </span>→
+                                </a>
+                            {% endif %}
                         </div>
 
                         <div class="category-showcase-container">
