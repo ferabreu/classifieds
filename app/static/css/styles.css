@@ -15,6 +15,12 @@
     object-fit: contain;
 }
 
+/* Admin table standardization */
+.admin-table {
+    table-layout: auto;
+    width: 100%;
+}
+
 /* For a light highlight on dark sidebars */
 /* Sidebar active category: bold font, no background */
 .offcanvas .nav-link.active,
