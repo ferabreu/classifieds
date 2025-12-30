@@ -22,7 +22,7 @@
             <div class="container-fluid d-flex flex-column">
 
             <!-- First row: Brand (with sidebar toggle) and user dropdown -->
-                <div class="d-flex justify-content-between align-items-end w-100">
+                <div class="category-row-content d-flex justify-content-between align-items-end w-100">
                     <ul class="navbar-nav flex-row align-items-center">
                         <li>
                             <a class="navbar-brand ms-1 navbar-brand-font" href="{{ url_for('listings.index') }}">
@@ -30,7 +30,7 @@
                             </a>
                         </li>
                     </ul>
-                    <ul class="navbar-nav flex-row">
+                    <ul class="navbar-nav flex-row d-none d-lg-flex">
                         {% if current_user.is_authenticated %}
                             <li class="nav-item dropdown">
                                 <button class="nav-link dropdown-toggle text-light bg-transparent border-0"
@@ -58,7 +58,7 @@
                 </div>
 
             <!-- Admin dropdown, second row -->
-                <div class="d-flex justify-content-between align-items-end w-100 navbar-row-gap">
+                <div class="category-row-content d-flex justify-content-between align-items-end w-100 navbar-row-gap">
             <!-- Sidebar toggle button -->
                     <li class="nav-item me-2">
                         <button class="btn btn-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#categorySidebar" aria-controls="categorySidebar" aria-label="Toggle category sidebar">
@@ -67,7 +67,7 @@
                     </li>
 
                     {% if current_user.is_admin %}
-                        <ul class="navbar-nav flex-row">
+                        <ul class="navbar-nav flex-row d-none d-lg-flex">
                             <li class="nav-item dropdown">
                                 <button class="nav-link dropdown-toggle text-light bg-transparent border-0"
                                         id="adminDropdown" data-bs-toggle="dropdown" aria-expanded="false">
