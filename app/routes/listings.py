@@ -1,4 +1,5 @@
 import os
+import random
 import shutil
 import uuid
 
@@ -19,7 +20,7 @@ from werkzeug.utils import secure_filename
 from ..forms import ListingForm
 from ..models import Category, Listing, ListingImage, db
 from .decorators import admin_required
-from .utils import create_thumbnail
+from .utils import create_thumbnail, get_index_carousel_categories
 
 listings_bp = Blueprint("listings", __name__)
 
@@ -28,17 +29,35 @@ listings_bp = Blueprint("listings", __name__)
 
 @listings_bp.route("/")
 def index():
-    page = request.args.get("page", 1, type=int)
-    per_page = 24  # Fits the grid layout in the UI
-    pagination = Listing.query.order_by(Listing.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
+    # Check if any categories exist (controls "+ Post New Listing" button visibility)
+    any_categories_exist = Category.query.first() is not None
+
+    # Get selected categories for carousels
+    carousel_categories = get_index_carousel_categories()
+
+    # Build carousel data: for each category, fetch listings and randomize
+    items_per_carousel = current_app.config.get(
+        "INDEX_CAROUSEL_ITEMS_PER_CATEGORY", 10
     )
-    listings = pagination.items
+    category_carousels = []
+    for category in carousel_categories:
+        # Fetch more listings than needed for better randomization
+        all_listings = (
+            Listing.query.filter_by(category_id=category.id)
+            .order_by(Listing.created_at.desc())
+            .limit(items_per_carousel * 3)  # Fetch 3x to have variety
+            .all()
+        )
+        if all_listings:
+            # Shuffle and take only the configured amount
+            random.shuffle(all_listings)
+            listings = all_listings[:items_per_carousel]
+            category_carousels.append({"category": category, "listings": listings})
 
     return render_template(
         "index.html",
-        listings=listings,
-        pagination=pagination,
+        category_carousels=category_carousels,
+        any_categories_exist=any_categories_exist,
         page_title="",
     )
 

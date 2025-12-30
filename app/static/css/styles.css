@@ -15,6 +15,104 @@
     object-fit: contain;
 }
 
+/* Index page category row styles */
+.category-row-section {
+    margin-bottom: 3rem;
+}
+
+.category-row-section h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Wrapper that limits both heading and showcase to same width */
+.category-row-content {
+    /* Will be constrained by media queries below */
+    margin: 0 auto;
+    display: block;
+}
+
+/* Category title link */
+.category-title-link {
+    color: inherit;
+    transition: color 0.2s ease;
+}
+
+.category-title-link:hover {
+    color: #0d6efd;
+}
+
+/* See all link */
+.see-all-link {
+    color: #6c757d;
+    font-size: 0.95rem;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+}
+
+.see-all-link:hover {
+    color: #0d6efd;
+}
+
+/* Hide "See all" text on mobile, show only arrow */
+@media (max-width: 767px) {
+    .see-all-text {
+        display: none;
+    }
+}
+
+/* Showcase container - single line only, hides overflow */
+.category-showcase-container {
+    overflow: hidden;
+}
+
+.category-showcase-container .d-flex {
+    flex-wrap: nowrap;
+}
+
+/* Constrain both heading and showcase container with max-width
+   5 cards: (5 * 192) + (4 * 24) = 1056px
+   4 cards: (4 * 192) + (3 * 24) = 840px
+   3 cards: (3 * 192) + (2 * 24) = 624px
+   2 cards: (2 * 192) + (1 * 24) = 408px
+   1 card:  192px
+*/
+
+/* Ultrawide: 5 cards */
+@media (min-width: 1400px) {
+    .category-row-content {
+        max-width: 1056px;
+    }
+}
+
+/* Desktop XL: 4 cards */
+@media (min-width: 1200px) and (max-width: 1399px) {
+    .category-row-content {
+        max-width: 840px;
+    }
+}
+
+/* Laptop: 3 cards */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .category-row-content {
+        max-width: 624px;
+    }
+}
+
+/* Tablet: 2 cards */
+@media (min-width: 768px) and (max-width: 991px) {
+    .category-row-content {
+        max-width: 408px;
+    }
+}
+
+/* Mobile: 1 card */
+@media (max-width: 767px) {
+    .category-row-content {
+        max-width: 192px;
+    }
+}
+
 /* Admin table standardization */
 .admin-table {
     table-layout: auto;
