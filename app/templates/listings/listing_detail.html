@@ -2,49 +2,51 @@
 
 {% import 'macros/breadcrumb.html' as macros %}
 {% block content %}
-    {{ macros.breadcrumb(listing.category) }}
-    <h2 class="mt-3 mb-3">{{ listing.title }}</h2>
-    <p><strong>Description:</strong> {{ listing.description }}</p>
-    <p><strong>Price:</strong> {% if listing.price == 0 %}Free{% else %}${{ listing.price }}{% endif %}</p>
-    <p><strong>Posted by:</strong>
-        {% if listing.user_id == current_user.id %}
-            <strong>You</strong>
-        {% else %}
-            <a href="mailto:{{ listing.owner.email }}">
-                {{ listing.owner.first_name ~ ' ' ~ listing.owner.last_name ~ ' (' ~ listing.owner.email ~ ')' -}}
-            </a>
-        {% endif %}
-        on {{ listing.created_at.strftime('%Y-%m-%d') }}.
-    </p>
-
-    <div class="row">
-
-        {% for image in listing.images %}
-            <div class="col-auto mb-2">
-                <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
-                    <img src="{{
-                              url_for('static', filename=('uploads/thumbnails/' ~ image.thumbnail_filename
-                              if image.thumbnail_filename
-                              else 'uploads/' ~ image.filename))
-                              }}"
-                         alt="Listing image"
-                         class="img-thumbnail"
-                         style="max-width: 192px; max-height: 192px;"
-                    >
+    <div class="category-row-content">
+        {{ macros.breadcrumb(listing.category) }}
+        <h2 class="mt-3 mb-3">{{ listing.title }}</h2>
+        <p><strong>Description:</strong> {{ listing.description }}</p>
+        <p><strong>Price:</strong> {% if listing.price == 0 %}Free{% else %}${{ listing.price }}{% endif %}</p>
+        <p><strong>Posted by:</strong>
+            {% if listing.user_id == current_user.id %}
+                <strong>You</strong>
+            {% else %}
+                <a href="mailto:{{ listing.owner.email }}">
+                    {{ listing.owner.first_name ~ ' ' ~ listing.owner.last_name ~ ' (' ~ listing.owner.email ~ ')' -}}
                 </a>
-            </div>
-        {% endfor %}
+            {% endif %}
+            on {{ listing.created_at.strftime('%Y-%m-%d') }}.
+        </p>
 
+        <div class="row">
+
+            {% for image in listing.images %}
+                <div class="col-auto mb-2">
+                    <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" target="_blank">
+                        <img src="{{
+                                  url_for('static', filename=('uploads/thumbnails/' ~ image.thumbnail_filename
+                                  if image.thumbnail_filename
+                                  else 'uploads/' ~ image.filename))
+                                  }}"
+                             alt="Listing image"
+                             class="img-thumbnail"
+                             style="max-width: 192px; max-height: 192px;"
+                        >
+                    </a>
+                </div>
+            {% endfor %}
+
+        </div>
+
+        {% if current_user.is_authenticated and (current_user.id == listing.user_id or current_user.is_admin) %}
+            {% set use_admin = request.path.startswith('/admin') or (current_user.is_admin and current_user.id != listing.user_id) %}
+            {% set edit_endpoint = 'listings.admin_edit_listing' if use_admin else 'listings.edit_listing' %}
+            {% set delete_endpoint = 'listings.admin_delete_listing' if use_admin else 'listings.delete_listing' %}
+
+            <a href="{{ url_for(edit_endpoint, listing_id=listing.id) }}" class="btn btn-warning">Edit</a>
+            <form action="{{ url_for(delete_endpoint, listing_id=listing.id) }}" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+            </form>
+        {% endif %}
     </div>
-
-    {% if current_user.is_authenticated and (current_user.id == listing.user_id or current_user.is_admin) %}
-        {% set use_admin = request.path.startswith('/admin') or (current_user.is_admin and current_user.id != listing.user_id) %}
-        {% set edit_endpoint = 'listings.admin_edit_listing' if use_admin else 'listings.edit_listing' %}
-        {% set delete_endpoint = 'listings.admin_delete_listing' if use_admin else 'listings.delete_listing' %}
-
-        <a href="{{ url_for(edit_endpoint, listing_id=listing.id) }}" class="btn btn-warning">Edit</a>
-        <form action="{{ url_for(delete_endpoint, listing_id=listing.id) }}" method="post" style="display:inline;">
-            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
-        </form>
-    {% endif %}
 {% endblock %}
