@@ -4,55 +4,47 @@
     {% import "macros/pagination.html" as pagination_macros %}
     {% import "macros/category.html" as category_macros %}
 
-    <h2 class="mt-3 mb-3">Listing Management</h2>
-    <a href="{{ url_for('admin.dashboard') }}">&larr; Admin Dashboard</a>
-    <table class="table admin-table mt-3">
-        <thead>
-            <tr>
-                <th></th>
-                <th>
-                    <a href="{{ url_for('listings.admin_listings', sort='title', direction='asc' if sort != 'title' or direction == 'desc' else 'desc') }}">
-                        Title
-                        {% if sort == 'title' %}
-                            {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                        {% endif %}
-                    </a>
-                </th>
-                <th>
-                    <a href="{{ url_for('listings.admin_listings', sort='price', direction='asc' if sort != 'price' or direction == 'desc' else 'desc') }}">
-                        Price
-                        {% if sort == 'price' %}
-                            {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                        {% endif %}
-                    </a>
-                </th>
-                <th>
-                    <a href="{{ url_for('listings.admin_listings', sort='category', direction='asc' if sort != 'category' or direction == 'desc' else 'desc') }}">
-                        Category
-                        {% if sort == 'category' %}
-                            {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                        {% endif %}
-                    </a>
-                </th>
-                <th>
-                    <a href="{{ url_for('listings.admin_listings', sort='user', direction='asc' if sort != 'user' or direction == 'desc' else 'desc') }}">
-                        User
-                        {% if sort == 'user' %}
-                            {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                        {% endif %}
-                    </a>
-                </th>
-                <th>
-                    <a href="{{ url_for('listings.admin_listings', sort='created_at', direction='asc' if sort != 'created_at' or direction == 'desc' else 'desc') }}">
-                        Date Created
-                        {% if sort == 'created_at' %}
-                            {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                        {% endif %}
-                    </a>
-                </th>
-            </tr>
-        </thead>
-        <tbody>
+    <div class="category-row-content">
+        <h2 class="mt-3 mb-3">Listing Management</h2>
+        <a href="{{ url_for('admin.dashboard') }}">&larr; Admin Dashboard</a>
+        <table class="table admin-table mt-3">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>
+                        <a href="{{ url_for('listings.admin_listings', sort='title', direction='asc' if sort != 'title' or direction == 'desc' else 'desc') }}">
+                            Title
+                            {% if sort == 'title' %}
+                                {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ url_for('listings.admin_listings', sort='category', direction='asc' if sort != 'category' or direction == 'desc' else 'desc') }}">
+                            Category
+                            {% if sort == 'category' %}
+                                {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ url_for('listings.admin_listings', sort='user', direction='asc' if sort != 'user' or direction == 'desc' else 'desc') }}">
+                            User
+                            {% if sort == 'user' %}
+                                {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th class="text-end">
+                        <a href="{{ url_for('listings.admin_listings', sort='created_at', direction='asc' if sort != 'created_at' or direction == 'desc' else 'desc') }}">
+                            Date
+                            {% if sort == 'created_at' %}
+                                {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                            {% endif %}
+                        </a>
+                    </th>
+                </tr>
+            </thead>
             {% for listing in listings %}
                 <tr>
                     <td>
@@ -60,13 +52,6 @@
                     </td>
                     <td>
                         <a href="{{ url_for('listings.admin_listing_detail', listing_id=listing.id) }}">{{ listing.title }}</a>
-                    </td>
-                    <td>
-                        {% if listing.price is not none %}
-                            {{ "%.2f"|format(listing.price) }}
-                        {% else %}
-                            -
-                        {% endif %}
                     </td>
                     <td>{{ category_macros.render_category(listing.category) }}</td>
                     <td>
@@ -76,7 +61,7 @@
                             -
                         {% endif %}
                     </td>
-                    <td>
+                    <td class="text-end">
                         {% if listing.created_at %}
                             {{ listing.created_at.strftime('%Y-%m-%d') }}
                         {% else %}
@@ -85,15 +70,14 @@
                     </td>
                 </tr>
             {% endfor %}
-        </tbody>
-    </table>
-    <div class="d-flex justify-content-start gap-2 mb-3">
-        <button type="button" class="btn btn-warning" onclick="handleEdit('{{ url_for('listings.admin_edit_listing', listing_id=0) }}'.replace('/0', '/{id}'), 'selected_listing_id')">Edit</button>
-        <button type="button" class="btn btn-danger" onclick="handleDelete('{{ url_for('listings.admin_delete_listing', listing_id=0) }}'.replace('/0', '/{id}'), 'selected_listing_id', 'listing')">Delete</button>
+        </table>
+        <div class="d-flex justify-content-start gap-2 mb-3">
+            <button type="button" class="btn btn-warning" onclick="handleEdit('{{ url_for('listings.admin_edit_listing', listing_id=0) }}'.replace('/0', '/{id}'), 'selected_listing_id')">Edit</button>
+            <button type="button" class="btn btn-danger" onclick="handleDelete('{{ url_for('listings.admin_delete_listing', listing_id=0) }}'.replace('/0', '/{id}'), 'selected_listing_id', 'listing')">Delete</button>
+        </div>
+
+        {{ pagination_macros.render_pagination(pagination, 'listings.admin_listings', sort=sort, direction=direction) }}
     </div>
-
-    {{ pagination_macros.render_pagination(pagination, 'listings.admin_listings', sort=sort, direction=direction) }}
-
 {% endblock %}
 
 {% block scripts %}

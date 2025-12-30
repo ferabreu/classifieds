@@ -5,10 +5,7 @@
             <span style="display: inline-block; width: {{ (level|int) * 16 }}px;"></span>
             <a href="{{ url_for('listings.category_filtered_listings', category_path=category.url_path) }}">{{ category.name }}</a>
         </td>
-        <td>
-            {{ category.parent.name if category.parent else '-' }}
-        </td>
-        {% if include_admin_ui %}<td>{{ category.listing_count }}</td>{% endif %}
+        {% if include_admin_ui %}<td class="text-end">{{ category.listing_count }}</td>{% endif %}
     </tr>
     {% for child in categories if child.parent_id == category.id %}
         {{ render_category_rows(child, categories, level + 1, include_admin_ui=include_admin_ui) }}
