@@ -88,34 +88,36 @@
         {% if listings|length == 0 %}
             <p class="alert alert-info alert-heading mb-4">No listings found.</p>
         {% else %}
-            <div class="row row-cols-xxl-4 row-cols-xl-4 row-cols-lg-3 row-cols-md-3 row-cols-sm-2 row-cols-xs-2 g-5 mb-4">
-                {% for listing in listings %}
-                    <div class="col">
-                        <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}" class="text-decoration-none text-reset">
-                            <div class="card card-dimensions">
-                                <img src="{{
-                                          url_for('static',filename=('uploads/thumbnails/' ~ listing.images[0].thumbnail_filename
-                                          if listing.images and listing.images[0].thumbnail_filename
-                                          else 'img/no-image-thumbnail.png'))
-                                          }}"
-                                     class="card-img-top card-img-top-fit"
-                                     alt="{{ listing.title }}"
-                                >
+            <div class="category-row-content">
+                <div class="row row-cols-xxl-5 row-cols-xl-4 row-cols-lg-3 row-cols-md-2 row-cols-1 g-4 mb-4">
+                    {% for listing in listings %}
+                        <div class="col d-flex justify-content-center">
+                            <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}" class="text-decoration-none text-reset">
+                                <div class="card card-dimensions">
+                                    <img src="{{
+                                              url_for('static',filename=('uploads/thumbnails/' ~ listing.images[0].thumbnail_filename
+                                              if listing.images and listing.images[0].thumbnail_filename
+                                              else 'img/no-image-thumbnail.png'))
+                                              }}"
+                                         class="card-img-top card-img-top-fit"
+                                         alt="{{ listing.title }}"
+                                    >
 
-                                <div class="card-body">
-                                    <h6 class="card-title mb-2">{{ listing.title }}</h6>
-                                    <h5 class="card-subtitle fw-bold">
-                                        {% if listing.price %}
-                                            ${{ "%.2f"|format(listing.price) }}
-                                        {% else %}
-                                            Free
-                                        {% endif %}
-                                    </h5>
+                                    <div class="card-body">
+                                        <h6 class="card-title mb-2">{{ listing.title }}</h6>
+                                        <h5 class="card-subtitle fw-bold">
+                                            {% if listing.price %}
+                                                ${{ "%.2f"|format(listing.price) }}
+                                            {% else %}
+                                                Free
+                                            {% endif %}
+                                        </h5>
+                                    </div>
                                 </div>
-                            </div>
-                        </a>
-                    </div>
-                {% endfor %}
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         {% endif %}
 

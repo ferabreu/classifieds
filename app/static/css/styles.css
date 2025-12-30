@@ -30,6 +30,7 @@
     /* Will be constrained by media queries below */
     margin: 0 auto;
     display: block;
+    width: 100%;
 }
 
 /* Category title link */
