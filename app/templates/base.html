@@ -18,14 +18,14 @@
     </head>
 
     <body>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <div class="container-fluid d-flex flex-column">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-0">
+            <div class="container-fluid d-flex flex-column px-0">
 
             <!-- First row: Brand (with sidebar toggle) and user dropdown -->
                 <div class="category-row-content d-flex justify-content-between align-items-end w-100">
                     <ul class="navbar-nav flex-row align-items-center">
                         <li>
-                            <a class="navbar-brand ms-1 navbar-brand-font" href="{{ url_for('listings.index') }}">
+                            <a class="navbar-brand navbar-brand-font" href="{{ url_for('listings.index') }}">
                                 Classifieds
                             </a>
                         </li>
@@ -59,8 +59,8 @@
 
             <!-- Admin dropdown, second row -->
                 <div class="category-row-content d-flex justify-content-between align-items-end w-100 navbar-row-gap">
-            <!-- Sidebar toggle button -->
-                    <li class="nav-item me-2">
+                <!-- Sidebar toggle button -->
+                    <li class="nav-item">
                         <button class="btn btn-dark" type="button" data-bs-toggle="offcanvas" data-bs-target="#categorySidebar" aria-controls="categorySidebar" aria-label="Toggle category sidebar">
                             <span class="navbar-toggler-icon"></span>
                         </button>
