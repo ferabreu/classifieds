@@ -1,61 +1,125 @@
 {% extends "base.html" %}
 
 {% block content %}
-    {% import 'macros/pagination.html' as pagination_macros %}
     {% import 'macros/breadcrumb.html' as breadcrumb_macros %}
+    {% import 'macros/pagination.html' as pagination_macros %}
 
     {% if selected_category %}
         {{ breadcrumb_macros.breadcrumb(selected_category) }}
         <h2 class="mt-3 mb-3">{{ selected_category.name }}</h2>
     {% endif %}
 
-    {% if current_user.is_authenticated %}
-        <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success mb-4">+ Post New Listing</a>
-    {% endif %}
+    {# Check if this is the index page (carousels) or a category page (grid) #}
+    {% if category_carousels is defined %}
+        {# INDEX PAGE: Display carousels #}
+        {% if not any_categories_exist %}
+            {# No categories exist at all #}
+            <div class="alert alert-warning alert-heading mb-4">
+                No categories available. Please contact the administrator to add categories.
+            </div>
+        {% elif category_carousels|length == 0 %}
+            {# Categories exist but none have listings #}
+            <p class="alert alert-info alert-heading mb-4">No listings found.</p>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success mb-4">+ Post New Listing</a>
+            {% endif %}
+        {% else %}
+            {# Display "+ Post New Listing" button only when categories exist #}
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success mb-4">+ Post New Listing</a>
+            {% endif %}
 
-    {% if listings|length == 0 %}
-        <p class="alert alert-info alert-heading mb-4">No listings found.</p>
-    {% else %}
-        <div class="row row-cols-xxl-4 row-cols-xl-4 row-cols-lg-3 row-cols-md-3 row-cols-sm-2 row-cols-xs-2 g-5 mb-4">
-
-            {% for listing in listings %}
-                <div class="col">
-                    <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}" class="text-decoration-none text-reset">
-                        <div class="card card-dimensions">
-                            {#
-                                The src attribute uses a Jinja inline conditional:
-                                - If listing.images exists and has a thumbnail_filename, it uses that image.
-                                - Otherwise, it falls back to a default placeholder image.
-                            #}
-                            <img src="{{
-                                      url_for('static',filename=('uploads/thumbnails/' ~ listing.images[0].thumbnail_filename
-                                      if listing.images and listing.images[0].thumbnail_filename
-                                      else 'img/no-image-thumbnail.png'))
-                                      }}"
-                                 class="card-img-top card-img-top-fit"
-                                 alt="{{ listing.title }}"
-                            >
-
-                            <div class="card-body">
-                                <h6 class="card-title mb-2">{{ listing.title }}</h6>
-                                <h5 class="card-subtitle fw-bold">
-
-                                    {% if listing.price %}
-                                        ${{ "%.2f"|format(listing.price) }}
-                                    {% else %}
-                                        Free
-                                    {% endif %}
-
-                                </h5>
-                            </div>
+            {# Render showcase rows for each category #}
+            {% for carousel_item in category_carousels %}
+                <div class="category-row-section mb-5">
+                    <div class="category-row-content">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="mb-0">
+                                <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path) }}" class="text-decoration-none category-title-link">
+                                    {{ carousel_item.category.name }}
+                                </a>
+                            </h3>
+                            <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path) }}" class="text-decoration-none see-all-link">
+                                <span class="see-all-text">See all </span>→
+                            </a>
                         </div>
-                    </a>
+
+                        <div class="category-showcase-container">
+                            <div class="d-flex gap-4">
+                            {% for listing in carousel_item.listings %}
+                                <div class="flex-shrink-0" style="width: 192px;">
+                                    <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}" class="text-decoration-none text-reset">
+                                        <div class="card card-dimensions">
+                                            <img src="{{
+                                                      url_for('static', filename=('uploads/thumbnails/' ~ listing.images[0].thumbnail_filename
+                                                      if listing.images and listing.images[0].thumbnail_filename
+                                                      else 'img/no-image-thumbnail.png'))
+                                                      }}"
+                                                 class="card-img-top card-img-top-fit"
+                                                 alt="{{ listing.title }}"
+                                            >
+
+                                            <div class="card-body">
+                                                <h6 class="card-title mb-2">{{ listing.title }}</h6>
+                                                <h5 class="card-subtitle fw-bold">
+                                                    {% if listing.price %}
+                                                        ${{ "%.2f"|format(listing.price) }}
+                                                    {% else %}
+                                                        Free
+                                                    {% endif %}
+                                                </h5>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    </div>
                 </div>
             {% endfor %}
+        {% endif %}
+    {% else %}
+        {# CATEGORY PAGE: Display grid layout (original code) #}
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success mb-4">+ Post New Listing</a>
+        {% endif %}
 
-        </div>
+        {% if listings|length == 0 %}
+            <p class="alert alert-info alert-heading mb-4">No listings found.</p>
+        {% else %}
+            <div class="row row-cols-xxl-4 row-cols-xl-4 row-cols-lg-3 row-cols-md-3 row-cols-sm-2 row-cols-xs-2 g-5 mb-4">
+                {% for listing in listings %}
+                    <div class="col">
+                        <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}" class="text-decoration-none text-reset">
+                            <div class="card card-dimensions">
+                                <img src="{{
+                                          url_for('static',filename=('uploads/thumbnails/' ~ listing.images[0].thumbnail_filename
+                                          if listing.images and listing.images[0].thumbnail_filename
+                                          else 'img/no-image-thumbnail.png'))
+                                          }}"
+                                     class="card-img-top card-img-top-fit"
+                                     alt="{{ listing.title }}"
+                                >
+
+                                <div class="card-body">
+                                    <h6 class="card-title mb-2">{{ listing.title }}</h6>
+                                    <h5 class="card-subtitle fw-bold">
+                                        {% if listing.price %}
+                                            ${{ "%.2f"|format(listing.price) }}
+                                        {% else %}
+                                            Free
+                                        {% endif %}
+                                    </h5>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {{ pagination_macros.render_pagination(pagination, 'listings.index', sort=sort, direction=direction) }}
     {% endif %}
-
-    {{ pagination_macros.render_pagination(pagination, 'listings.index', sort=sort, direction=direction) }}
 
 {% endblock %}
