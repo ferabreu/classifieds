@@ -39,19 +39,39 @@ def index():
     items_per_carousel = current_app.config.get(
         "INDEX_CAROUSEL_ITEMS_PER_CATEGORY", 10
     )
+    # The UI shows up to 5 cards per row on ultrawide; fetch only what's useful
+    display_slots = min(items_per_carousel, 5)
+    # Fetch a bit extra for variety without over-querying
+    fetch_limit = max(display_slots * 2, items_per_carousel)
     category_carousels = []
     for category in carousel_categories:
-        # Fetch more listings than needed for better randomization
-        all_listings = (
+        # Prefer direct category listings first
+        direct_listings = (
             Listing.query.filter_by(category_id=category.id)
             .order_by(Listing.created_at.desc())
-            .limit(items_per_carousel * 3)  # Fetch 3x to have variety
+            .limit(fetch_limit)
             .all()
         )
-        if all_listings:
-            # Shuffle and take only the configured amount
-            random.shuffle(all_listings)
-            listings = all_listings[:items_per_carousel]
+
+        listings_pool = list(direct_listings)
+
+        # If not enough to fill the row, pull from descendants to fill gaps
+        if len(listings_pool) < fetch_limit:
+            descendant_ids = category.get_descendant_ids()
+            descendant_ids = [cid for cid in descendant_ids if cid != category.id]
+            if descendant_ids:
+                needed = fetch_limit - len(listings_pool)
+                descendant_listings = (
+                    Listing.query.filter(Listing.category_id.in_(descendant_ids))
+                    .order_by(Listing.created_at.desc())
+                    .limit(max(needed * 2, display_slots))  # small buffer for variety
+                    .all()
+                )
+                listings_pool.extend(descendant_listings)
+
+        if listings_pool:
+            random.shuffle(listings_pool)
+            listings = listings_pool[:display_slots]
             category_carousels.append({"category": category, "listings": listings})
 
     return render_template(
