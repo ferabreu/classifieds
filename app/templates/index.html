@@ -5,8 +5,10 @@
     {% import 'macros/pagination.html' as pagination_macros %}
 
     {% if selected_category %}
-        {{ breadcrumb_macros.breadcrumb(selected_category) }}
-        <h2 class="mt-3 mb-3">{{ selected_category.name }}</h2>
+        <div class="category-row-content mb-3">
+            {{ breadcrumb_macros.breadcrumb(selected_category) }}
+            <h2 class="mt-3 mb-3">{{ selected_category.name }}</h2>
+        </div>
     {% endif %}
 
     {# Check if this is the index page (carousels) or a category page (grid) #}
@@ -26,7 +28,9 @@
         {% else %}
             {# Display "+ Post New Listing" button only when categories exist #}
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success mb-4">+ Post New Listing</a>
+                <div class="category-row-content">
+                    <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success mb-4">+ Post New Listing</a>
+                </div>
             {% endif %}
 
             {# Render showcase rows for each category #}
@@ -82,7 +86,9 @@
     {% else %}
         {# CATEGORY PAGE: Display grid layout (original code) #}
         {% if current_user.is_authenticated %}
-            <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success mb-4">+ Post New Listing</a>
+            <div class="category-row-content">
+                <a href="{{ url_for('listings.create_listing') }}" class="btn btn-success mb-4">+ Post New Listing</a>
+            </div>
         {% endif %}
 
         {% if listings|length == 0 %}
