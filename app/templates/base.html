@@ -188,9 +188,11 @@
         <div class="container my-4">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
-                    {% endfor %}
+                    <div class="category-row-content">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
+                        {% endfor %}
+                    </div>
                 {% endif %}
             {% endwith %}
 
