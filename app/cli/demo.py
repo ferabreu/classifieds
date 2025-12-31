@@ -6,12 +6,12 @@ import time
 from datetime import datetime
 
 import click
-import numpy as np
+#import numpy as np
 import requests
 from dotenv import load_dotenv
 from faker import Faker
 from flask import current_app
-from PIL import Image, ImageDraw, ImageFont
+#from PIL import Image, ImageDraw, ImageFont
 
 from app import db
 from app.cli.maintenance import run_backfill_thumbnails
