@@ -5,12 +5,15 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Admin Blueprint routes and logic for Flask app.
 
-This module contains administrative views and utilities, including user, type, category, and listing management.
-It ensures only admin users (with is_admin=True) can access these endpoints, and handles deletion of related images on the filesystem.
+This module contains administrative views and utilities,
+including user, type, category, and listing management.
+It ensures only admin users (with is_admin=True) can access these endpoints,
+and handles deletion of related images on the filesystem.
 Category admin now supports hierarchical categories (parent-child).
 """
 

@@ -5,12 +5,14 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Shared route utilities for the classifieds Flask app.
 
-This module contains shared decorators and utility functions for use by multiple route Blueprints.
-Currently, it provides the admin_required decorator for restricting access to admin users.
+This module contains shared decorators and utility functions for use
+by multiple route Blueprints. Currently, it provides the admin_required
+decorator for restricting access to admin users.
 """
 
 import random

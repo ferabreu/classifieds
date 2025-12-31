@@ -5,12 +5,14 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Error handler routes for the classifieds Flask app.
 
-Defines custom responses for common HTTP errors (404, 500, 403), rendering a user-friendly error page
-with appropriate status code and descriptive messages.
+Defines custom responses for common HTTP errors (404, 500, 403),
+rendering a user-friendly error page with appropriate status code
+and descriptive messages.
 """
 
 from flask import Blueprint, render_template
@@ -51,7 +53,10 @@ def internal_error(error):
             "error.html",
             error_code=500,
             error_name=error_name,
-            error_description="An unexpected error has occurred. Please try again later.",
+            error_description=(
+                "An unexpected error has occurred. "
+                "Please try again later."
+            ),
             page_title=error_name,
         ),
         500,

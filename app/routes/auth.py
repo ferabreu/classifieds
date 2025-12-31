@@ -5,12 +5,14 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Authentication and authorization routes for the classifieds Flask app.
 
-Handles user login, logout, registration, password reset (with email or dev-mode token display),
-and LDAP authentication if enabled. Uses Flask-Login for session management, Flask-Mail for
+Handles user login, logout, registration, password reset
+(with email or dev-mode token display), and LDAP authentication if enabled.
+Uses Flask-Login for session management, Flask-Mail for
 reset emails, and itsdangerous for password reset tokens.
 """
 
@@ -97,7 +99,9 @@ def register():
                 "register.html", form=form, page_title=register_title
             )
         user = User(
-            email=email, first_name=form.first_name.data, last_name=form.last_name.data  # type: ignore
+            email=email,
+            first_name=form.first_name.data,  # type: ignore
+            last_name=form.last_name.data,  # type: ignore
         )
         user.set_password(form.password.data)
         db.session.add(user)
@@ -128,13 +132,19 @@ def forgot_password():
 
     form = ForgotPasswordForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower()).first()  # type: ignore
+        user = User.query.filter_by(
+            email=form.email.data.lower()  # type: ignore
+        ).first()
         if user and not user.is_ldap_user:
             token = generate_reset_token(user.email)
             reset_url = url_for("auth.reset_password", token=token, _external=True)
             if not current_app.config.get("MAIL_SERVER"):
                 # Dev mode or no mail config: show reset link directly
-                flash(f"[DEV] Password reset link: {reset_url}", "info")
+                flash(
+                    f"[DEV] Password reset link: {reset_url}",
+                    "info",
+                )
+                return redirect(url_for("auth.login"))
             else:
                 msg = Message(
                     subject="Password Reset Request",
@@ -146,11 +156,13 @@ def forgot_password():
                 try:
                     mail.send(msg)
                     flash(
-                        "If the account exists, a reset link has been sent to your email.",
+                        "If the account exists, a reset link has been "
+                        "sent to your email.",
                         "info",
                     )
                 except Exception as e:
                     flash(f"Failed to send reset email. Error: {str(e)}", "danger")
+                    return redirect(url_for("auth.login"))
         else:
             # Do not reveal whether the email exists or is LDAP user
             flash("If that account exists, a reset link has been sent.", "info")

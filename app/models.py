@@ -5,7 +5,8 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 SQLAlchemy models for the classifieds Flask app.
 
@@ -75,9 +76,11 @@ class Category(db.Model):
     @property
     def breadcrumb(self):
         """
-        Returns a list of categories from root to self for breadcrumb navigation.
+        Returns a list of categories from root to self for breadcrumb
+        navigation.
 
-        Protects against cycles by tracking visited category ids and stopping if a loop is detected.
+        Protects against cycles by tracking visited category ids and
+        stopping if a loop is detected.
         """
         node = self
         nodes = []
@@ -197,7 +200,8 @@ class Category(db.Model):
                 # encountered a loop while walking the chain => cycle
                 return True
             visited.add(current_parent_id)
-            # If we hit the current category id, setting this parent would create a cycle
+            # If we hit the current category id,
+            # setting this parent would create a cycle
             if self.id is not None and current_parent_id == self.id:
                 return True
             # fetch parent row
@@ -226,7 +230,8 @@ class Category(db.Model):
             The Category object at the end of the path, or None if path is invalid
 
         Example:
-            Category.from_path("vehicles/motorcycles") → Category(id=5, name="Motorcycles")
+            Category.from_path("vehicles/motorcycles")
+            → Category(id=5, name="Motorcycles")
         """
         if not path_string or path_string == "/":
             return None
@@ -236,7 +241,8 @@ class Category(db.Model):
         if not segments:
             return None
 
-        # Load all categories once and build an in-memory lookup keyed by (parent_id, url_name)
+        # Load all categories once and build an in-memory lookup
+        # keyed by (parent_id, url_name)
         all_categories = cls.query.all()
         lookup: dict[tuple[Optional[int], str], "Category"] = {
             (category.parent_id, category.url_name): category
@@ -349,7 +355,8 @@ class ListingImage(db.Model):
         ),
         nullable=False,
     )
-    # The listing attribute on ListingImage will be available automatically due to the backref in Listing
+    # The listing attribute on ListingImage will be available automatically
+    # due to the backref in Listing
 
     def __init__(
         self,
@@ -371,11 +378,13 @@ def _prevent_category_cycle(session, flush_context, instances):
     for obj in list(session.new) + list(session.dirty):
         if isinstance(obj, Category):
             # Use the effective parent_id value intended to be persisted.
-            # For new/dirty objects SQLAlchemy will have obj.parent_id set appropriately.
+            # For new/dirty objects SQLAlchemy will have obj.parent_id
+            # set appropriately.
             parent_id = getattr(obj, "parent_id", None)
             if not parent_id:
                 continue
-            # Use helper that walks the chain via this session (avoids multiple queries outside session)
+            # Use helper that walks the chain via this session
+            # (avoids multiple queries outside session)
             if obj.would_create_cycle(parent_id, session):
                 raise ValueError("Cannot set parent: would create a category cycle.")
 

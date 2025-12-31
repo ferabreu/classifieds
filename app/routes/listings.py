@@ -5,7 +5,8 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Listings Blueprint routes for Flask app.
 
@@ -164,7 +165,9 @@ def category_filtered_listings(category_path):
 
         # Build showcases for each child category
         child_showcases = []
-        for child_category in sorted(category.children, key=lambda c: c.name):  # type: ignore[arg-type]
+        for child_category in sorted(
+            category.children, key=lambda c: c.name  # type: ignore[arg-type]
+        ):
             # Fetch listings for this child
             direct_listings = (
                 Listing.query.filter_by(category_id=child_category.id)
@@ -198,7 +201,8 @@ def category_filtered_listings(category_path):
                     {"category": child_category, "listings": listings}
                 )
 
-        # Add showcase for listings directly in this intermediate category (not in children)
+        # Add showcase for listings directly in this intermediate category
+        # (not in children)
         direct_category_listings = (
             Listing.query.filter_by(category_id=category.id)
             .order_by(Listing.created_at.desc())
@@ -233,7 +237,8 @@ def category_filtered_listings(category_path):
             page_title=category.name,
         )
     else:
-        # Leaf category or forced listings view: show grid of all listings with pagination
+        # Leaf category or forced listings view:
+        # show grid of all listings with pagination
         page = request.args.get("page", 1, type=int)
         per_page = 24
 
@@ -305,7 +310,9 @@ def create_listing():
 
     # Populate form category choices with hierarchical names, add blank option
     categories = Category.query.order_by(Category.name).all()
-    form.category.choices = [("", "Select...")] + [(str(cat.id), cat.get_full_path()) for cat in categories]  # type: ignore
+    form.category.choices = [("", "Select...")] + [
+        (str(cat.id), cat.get_full_path()) for cat in categories
+    ]  # type: ignore
 
     if request.method == "POST":
         form.category.choices = [("", "Select...")] + [
@@ -329,7 +336,8 @@ def create_listing():
                 )
             if form.description.data is None:
                 flash(
-                    "Description is missing. Please provide a description for your listing.",
+                    "Description is missing. Please provide a description "
+                    "for your listing.",
                     "danger",
                 )
                 return render_template(
@@ -399,7 +407,8 @@ def create_listing():
                                 if os.path.exists(temp_thumb_path):
                                     os.remove(temp_thumb_path)
                             except Exception as cleanup_err:
-                                # Best-effort temp cleanup; failure is non-fatal but logged
+                                # Best-effort temp cleanup;
+                                # failure is non-fatal but logged
                                 current_app.logger.warning(
                                     "Temp remove failed (image): %s", cleanup_err
                                 )
@@ -417,13 +426,16 @@ def create_listing():
                                     ):
                                         os.remove(prev_temp_thumb_path)
                                 except Exception as cleanup_err:
-                                    # Best-effort temp cleanup; failure is non-fatal but logged
+                                    # Best-effort temp cleanup;
+                                    # failure is non-fatal but logged
                                     current_app.logger.warning(
                                         "Temp remove failed (previous image): %s",
                                         cleanup_err,
                                     )
                             flash(
-                                f"Failed to create thumbnail for image '{file.filename}'. Please try again or use a different image format.",
+                                f"Failed to create thumbnail for image "
+                                f"'{file.filename}'. Please try again or use "
+                                "a different image format.",
                                 "danger",
                             )
                             return render_template(
@@ -455,12 +467,14 @@ def create_listing():
                         if temp_thumb_path and os.path.exists(temp_thumb_path):
                             os.remove(temp_thumb_path)
                     except Exception as cleanup_err:
-                        # Best-effort temp cleanup after rollback; failure is non-fatal but logged
+                        # Best-effort temp cleanup after rollback;
+                        # failure is non-fatal but logged
                         current_app.logger.warning(
                             "Temp remove failed (rollback): %s", cleanup_err
                         )
                 flash(
-                    f"Database error. Listing was not created. Uploaded files were discarded. ({e})",
+                    f"Database error. Listing was not created. "
+                    f"Uploaded files were discarded. ({e})",
                     "danger",
                 )
                 return render_template(
@@ -485,7 +499,8 @@ def create_listing():
                             shutil.move(temp_path, final_path)
                     except Exception as e:
                         flash(
-                            f"Warning: Could not finalize upload for {unique_filename}: {e}",
+                            f"Warning: Could not finalize upload for "
+                            f"{unique_filename}: {e}",
                             "warning",
                         )
                     if temp_thumb_path and thumbnail_filename:
@@ -497,7 +512,8 @@ def create_listing():
                                 shutil.move(temp_thumb_path, final_thumb_path)
                         except Exception as e:
                             flash(
-                                f"Warning: Could not finalize thumbnail for {thumbnail_filename}: {e}",
+                                f"Warning: Could not finalize thumbnail for "
+                                f"{thumbnail_filename}: {e}",
                                 "warning",
                             )
                 flash("Listing created successfully!", "success")
@@ -605,7 +621,8 @@ def delete_selected_listings():
 
 def _delete_listings_impl(listings):
     """
-    Deletes multiple listings and their associated image files using the 'temp' strategy.
+    Deletes multiple listings and their associated image files using
+    the 'temp' strategy.
 
     Args:
         listings: List of Listing objects to delete
@@ -928,7 +945,8 @@ def _edit_listing_impl(listing_id):
                 )
             if form.description.data is None:
                 flash(
-                    "Description is missing. Please provide a description for your listing.",
+                    "Description is missing. Please provide a description "
+                    "for your listing.",
                     "danger",
                 )
                 return render_template(
@@ -956,7 +974,8 @@ def _edit_listing_impl(listing_id):
                 )
             if form.category.data is None:
                 flash(
-                    "Category is missing. Please select a category for your listing.",
+                    "Category is missing. Please select a category for "
+                    "your listing.",
                     "danger",
                 )
                 return render_template(
@@ -980,7 +999,8 @@ def _edit_listing_impl(listing_id):
             upload_dir = current_app.config["UPLOAD_DIR"]
             thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
 
-            # Handle image deletions: move to temp, do not delete yet (enables rollback on DB error)
+            # Handle image deletions: move to temp, do not delete yet
+            # (enables rollback on DB error)
             delete_image_ids = request.form.getlist("delete_images")
             for img_id in delete_image_ids:
                 image = ListingImage.query.get(int(img_id))
@@ -1043,7 +1063,8 @@ def _edit_listing_impl(listing_id):
                                 if os.path.exists(temp_thumb_path):
                                     os.remove(temp_thumb_path)
                             except Exception as cleanup_err:
-                                # Best-effort temp cleanup; failure is non-fatal but logged
+                                # Best-effort temp cleanup; failure is
+                                # non-fatal but logged
                                 current_app.logger.warning(
                                     "Temp remove failed (image during edit): %s",
                                     cleanup_err,
@@ -1062,9 +1083,11 @@ def _edit_listing_impl(listing_id):
                                     ):
                                         os.remove(prev_temp_thumb_path)
                                 except Exception as cleanup_err:
-                                    # Best-effort temp cleanup; failure is non-fatal but logged
+                                    # Best-effort temp cleanup; failure is
+                                    # non-fatal but logged
                                     current_app.logger.warning(
-                                        "Temp remove failed (prev image during edit): %s",
+                                        "Temp remove failed (prev image during "
+                                        "edit): %s",
                                         cleanup_err,
                                     )
                             for (
@@ -1081,13 +1104,16 @@ def _edit_listing_impl(listing_id):
                                     ):
                                         shutil.move(temp_thumb_path, thumbnail_path)
                                 except Exception as restore_err:
-                                    # Best-effort file restore; failure is notable but does not crash
+                                    # Best-effort file restore; failure is
+                                    # notable but does not crash
                                     current_app.logger.warning(
                                         "Restore from temp failed (edit): %s",
                                         restore_err,
                                     )
                             flash(
-                                f"Failed to create thumbnail for image '{file.filename}'. Please try again or use a different image format.",
+                                f"Failed to create thumbnail for image "
+                                f"'{file.filename}'. Please try again or use "
+                                f"a different image format.",
                                 "danger",
                             )
                             return render_template(
@@ -1178,7 +1204,8 @@ def _edit_listing_impl(listing_id):
                             shutil.move(temp_path, final_path)
                     except Exception as e:
                         flash(
-                            f"Warning: Could not finalize upload for {unique_filename}: {e}",
+                            f"Warning: Could not finalize upload for "
+                            f"{unique_filename}: {e}",
                             "warning",
                         )
                     if temp_thumb_path and thumbnail_filename:
@@ -1190,7 +1217,8 @@ def _edit_listing_impl(listing_id):
                                 shutil.move(temp_thumb_path, final_thumb_path)
                         except Exception as e:
                             flash(
-                                f"Warning: Could not finalize thumbnail for {thumbnail_filename}: {e}",
+                                f"Warning: Could not finalize thumbnail for "
+                                f"{thumbnail_filename}: {e}",
                                 "warning",
                             )
                 flash("Listing updated successfully!", "success")
