@@ -21,16 +21,19 @@ import time
 from datetime import datetime
 
 import click
-#import numpy as np
+
+# import numpy as np
 import requests
 from dotenv import load_dotenv
 from faker import Faker
 from flask import current_app
-#from PIL import Image, ImageDraw, ImageFont
 
 from app import db
 from app.cli.maintenance import run_backfill_thumbnails
 from app.models import Category, Listing, ListingImage, User
+
+# from PIL import Image, ImageDraw, ImageFont
+
 
 # ==========================
 # CONFIGURABLE CONSTANTS
@@ -46,7 +49,9 @@ MIN_IMAGES_PER_LISTING = 1  # Minimum images per listing
 MAX_IMAGES_PER_LISTING = 2  # Maximum images per listing
 MIN_PRICE = 5.0
 MAX_PRICE = 5000.0
-DEMO_MARKER = "[DEMO]"  # Marker to identify demo-created listings without schema changes
+DEMO_MARKER = (
+    "[DEMO]"  # Marker to identify demo-created listings without schema changes
+)
 
 # ==========================
 # CATEGORY HIERARCHY
@@ -67,10 +72,28 @@ CATEGORY_KEYWORDS = {
     "Phones": ["phone", "smartphone", "mobile", "cellphone"],
     "Computers": ["computer", "laptop", "desktop", "notebook", "pc"],
     "Furniture": ["table", "chair", "sofa", "desk", "couch", "cabinet"],
-    "Tools": ["screwdriver", "hammer", "drill", "saw", "wrench", "toolbox", "file", "sandpaper"],
+    "Tools": [
+        "screwdriver",
+        "hammer",
+        "drill",
+        "saw",
+        "wrench",
+        "toolbox",
+        "file",
+        "sandpaper",
+    ],
     "Cars": ["car", "automobile", "sedan", "convertible", "hatchback"],
     "Motorcycles": ["motorcycle", "scooter", "motorbike"],
-    "Clothing": ["shirt", "pants", "dress", "jacket", "blouse", "jeans", "trousers", "hoodie"],
+    "Clothing": [
+        "shirt",
+        "pants",
+        "dress",
+        "jacket",
+        "blouse",
+        "jeans",
+        "trousers",
+        "hoodie",
+    ],
     "Shoes": ["shoes", "sneakers", "boots", "sandals", "footwear", "heels"],
 }
 
@@ -128,7 +151,8 @@ def find_cached_image(folder, query):
         return None
 
     matches = [
-        fname for fname in os.listdir(folder)
+        fname
+        for fname in os.listdir(folder)
         if fname.startswith(pattern) and fname.endswith(".jpg")
     ]
     if matches:
@@ -146,7 +170,8 @@ def find_cached_images(folder, query):
         return []
 
     return [
-        fname for fname in os.listdir(folder)
+        fname
+        for fname in os.listdir(folder)
         if fname.startswith(pattern) and fname.endswith(".jpg")
     ]
 
@@ -162,7 +187,7 @@ def ensure_demo_images(
     For the first N queries, fetch from Unsplash (with caching, so repeated titles reuse images).
     For all others, generate random images.
     Returns list of image filenames (relative to folder).
-    
+
     If cache_only=True, only reuse cached images and never fetch from Unsplash.
     """
     os.makedirs(folder, exist_ok=True)
@@ -203,41 +228,45 @@ def ensure_demo_images(
 
 def get_or_create_categories():
     """Get existing categories/subcategories from CATEGORY_HIERARCHY, or create if missing.
-    
+
     Validates that SUBCATEGORY_KEYWORDS keys match the subcategories defined in CATEGORY_HIERARCHY.
     """
     # Validate SUBCATEGORY_KEYWORDS alignment
     expected_subcats = set()
     for subcats_list in CATEGORY_HIERARCHY.values():
         expected_subcats.update(subcats_list)
-    
+
     keyword_keys = set(CATEGORY_KEYWORDS.keys())
     if keyword_keys != expected_subcats:
         missing_in_keywords = expected_subcats - keyword_keys
         extra_in_keywords = keyword_keys - expected_subcats
         if missing_in_keywords:
-            print(f"WARNING: SUBCATEGORY_KEYWORDS missing entries for: {missing_in_keywords}")
+            print(
+                f"WARNING: SUBCATEGORY_KEYWORDS missing entries for: {missing_in_keywords}"
+            )
         if extra_in_keywords:
-            print(f"WARNING: SUBCATEGORY_KEYWORDS has extra entries not in CATEGORY_HIERARCHY: {extra_in_keywords}")
-    
+            print(
+                f"WARNING: SUBCATEGORY_KEYWORDS has extra entries not in CATEGORY_HIERARCHY: {extra_in_keywords}"
+            )
+
     # Get or create parent categories
     categories = Category.query.filter(Category.parent_id.is_(None)).all()  # type: ignore
     existing_parents = {c.name: c for c in categories}
-    
+
     for parent_name in CATEGORY_HIERARCHY.keys():
         if parent_name not in existing_parents:
             parent = Category(name=parent_name)
             db.session.add(parent)
             db.session.flush()  # Get ID without full commit
             existing_parents[parent_name] = parent
-    
+
     if db.session.new:
         db.session.commit()
-    
+
     # Get or create subcategories
     subcats = Category.query.filter(Category.parent_id.isnot(None)).all()  # type: ignore
     existing_subcats = {c.name: c for c in subcats}
-    
+
     for parent_name, subcat_names in CATEGORY_HIERARCHY.items():
         parent = existing_parents[parent_name]
         for subcat_name in subcat_names:
@@ -246,10 +275,10 @@ def get_or_create_categories():
                 db.session.add(subcat)
                 db.session.flush()
                 existing_subcats[subcat_name] = subcat
-    
+
     if db.session.new:
         db.session.commit()
-    
+
     # Return all subcategories (existing + newly created)
     return list(existing_subcats.values())
 
@@ -309,19 +338,25 @@ def demo_data(replace, images_only, cache_only):
                 if fetch_unsplash_image(query, img_path):
                     fetched_count += 1
                 unsplash_calls += 1
-        
+
         print(f"Fetched {fetched_count} fresh images to {src_folder}")
         print("No listings created due to --images-only.")
         return
 
     if replace:
-        print("Replacing demo listings: clearing demo listings/images only; preserving users and categories.")
+        print(
+            "Replacing demo listings: clearing demo listings/images only; preserving users and categories."
+        )
         upload_dir = current_app.config["UPLOAD_DIR"]
         thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
 
         # Identify demo listings by marker in description
         all_listings = Listing.query.all()
-        demo_listings = [lst for lst in all_listings if (lst.description or "").find(DEMO_MARKER) != -1]
+        demo_listings = [
+            lst
+            for lst in all_listings
+            if (lst.description or "").find(DEMO_MARKER) != -1
+        ]
         if not demo_listings:
             print("No demo listings found to replace.")
             return
@@ -335,7 +370,9 @@ def demo_data(replace, images_only, cache_only):
             for lst in demo_listings:
                 db.session.delete(lst)
             db.session.commit()
-            print(f"Deleted {len(demo_listings)} demo listings (images removed via cascade).")
+            print(
+                f"Deleted {len(demo_listings)} demo listings (images removed via cascade)."
+            )
         except Exception as e:
             db.session.rollback()
             print(f"ERROR: Failed to clear demo listings: {e}")
@@ -372,7 +409,9 @@ def demo_data(replace, images_only, cache_only):
     else:
         demo_user = User.query.filter_by(email=USER_EMAIL).first()
         if not demo_user:
-            print(f"ERROR: Demo user with email '{USER_EMAIL}' does not exist. Aborting.")
+            print(
+                f"ERROR: Demo user with email '{USER_EMAIL}' does not exist. Aborting."
+            )
             return
         demo_users = [demo_user]
 
@@ -396,22 +435,49 @@ def demo_data(replace, images_only, cache_only):
     random.shuffle(keyword_pairs)
 
     # Create listings without exceeding Unsplash API limit (cap by images per listing)
-    listings_limit = MAX_UNSPLASH_IMAGES // MAX_IMAGES_PER_LISTING if MAX_IMAGES_PER_LISTING else 0
+    listings_limit = (
+        MAX_UNSPLASH_IMAGES // MAX_IMAGES_PER_LISTING if MAX_IMAGES_PER_LISTING else 0
+    )
     total_listings = listings_limit if keyword_pairs else 0
+
     # Helper function to generate realistic product titles
     def generate_product_title(keyword, category_name):
         """Generate realistic product-like titles using keyword + descriptors."""
         adjectives = [
-            "Premium", "Professional", "Classic", "Modern", "Deluxe",
-            "Compact", "Portable", "Heavy-Duty", "Ultra", "Pro",
-            "Elite", "Standard", "Advanced", "Essential", "Durable",
-            "Sleek", "Elegant", "Rugged", "Eco-Friendly", "Smart"
+            "Premium",
+            "Professional",
+            "Classic",
+            "Modern",
+            "Deluxe",
+            "Compact",
+            "Portable",
+            "Heavy-Duty",
+            "Ultra",
+            "Pro",
+            "Elite",
+            "Standard",
+            "Advanced",
+            "Essential",
+            "Durable",
+            "Sleek",
+            "Elegant",
+            "Rugged",
+            "Eco-Friendly",
+            "Smart",
         ]
         brands = [
-            "TechPro", "ProHome", "MaxPower", "EcoStyle", "SmartLiving",
-            "PrestigePlus", "FutureGen", "ClassicCraft", "ModernLiving", "VersaMax"
+            "TechPro",
+            "ProHome",
+            "MaxPower",
+            "EcoStyle",
+            "SmartLiving",
+            "PrestigePlus",
+            "FutureGen",
+            "ClassicCraft",
+            "ModernLiving",
+            "VersaMax",
         ]
-        
+
         # Randomly choose between brand-based or adjective-based title
         if random.choice([True, False]):
             # Brand + keyword style: "TechPro Smartphone"
@@ -421,7 +487,7 @@ def demo_data(replace, images_only, cache_only):
             # Adjective + keyword style: "Premium Smartphone"
             adjective = random.choice(adjectives)
             title = f"{adjective} {keyword.title()}"
-        
+
         return title
 
     for i in range(total_listings):
@@ -457,7 +523,7 @@ def demo_data(replace, images_only, cache_only):
         )
         db.session.add(listing)
         demo_listings.append(listing)
-    
+
     # Commit listings to database (assigns IDs)
     try:
         db.session.commit()
@@ -471,9 +537,11 @@ def demo_data(replace, images_only, cache_only):
     dest_folder = os.path.join(current_app.root_path, current_app.config["UPLOAD_DIR"])
     os.makedirs(dest_folder, exist_ok=True)
     os.makedirs(thumbnail_dir, exist_ok=True)
-    
+
     # Build/refresh cache; returns only real images (no randoms)
-    image_files = ensure_demo_images(src_folder, queries=listing_queries, cache_only=cache_only)
+    image_files = ensure_demo_images(
+        src_folder, queries=listing_queries, cache_only=cache_only
+    )
     # Optional eager copy to uploads for the ones we have
     for fname in image_files:
         src_path = os.path.join(src_folder, fname)
@@ -505,7 +573,7 @@ def demo_data(replace, images_only, cache_only):
                     continue
             db.session.add(ListingImage(listing_id=listing.id, filename=img_name))
             attachments_created += 1
-    
+
     # Commit image associations
     try:
         db.session.commit()
@@ -513,7 +581,7 @@ def demo_data(replace, images_only, cache_only):
         db.session.rollback()
         print(f"ERROR: Failed to attach images to listings: {e}")
         return
-    
+
     # Run backfill_thumbnails AFTER images are attached
     if attachments_created:
         try:
@@ -527,17 +595,17 @@ def demo_data(replace, images_only, cache_only):
     print(
         f"Demo data seeded: categories, listings, images. {'(Listings replaced)' if replace else '(Added to existing data)'}"
     )
-    
+
     print(
         f"Up to {MAX_UNSPLASH_IMAGES} images requested from Unsplash (cached locally)."
     )
-    
+
     print(
         f"Each listing gets between {MIN_IMAGES_PER_LISTING} and {MAX_IMAGES_PER_LISTING} images."
     )
-    
+
     print(f"Thumbnails generated in {thumbnail_dir} using the shared utility.")
-    
+
     if UNSPLASH_ACCESS_KEY is None:
         print(
             "Set UNSPLASH_ACCESS_KEY environment variable before running for best results."

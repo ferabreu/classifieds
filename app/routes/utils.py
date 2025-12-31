@@ -21,7 +21,6 @@ from sqlalchemy import func
 
 from app.models import Category, Listing, db
 
-
 utils_bp = Blueprint("utils", __name__)
 
 
@@ -68,14 +67,10 @@ def get_index_carousel_categories():
     category_ids = [cat_id for cat_id, count in category_listing_counts if count > 0]
 
     # Randomly select up to N from the top 2N
-    selected_ids = random.sample(
-        category_ids, min(carousel_count, len(category_ids))
-    )
+    selected_ids = random.sample(category_ids, min(carousel_count, len(category_ids)))
 
     # Fetch and return the selected categories
-    selected_categories = Category.query.filter(
-        Category.id.in_(selected_ids)
-    ).all()
+    selected_categories = Category.query.filter(Category.id.in_(selected_ids)).all()
 
     return selected_categories
 

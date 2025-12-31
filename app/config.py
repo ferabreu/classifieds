@@ -57,7 +57,7 @@ class Config:
     # Index page carousel configuration
     INDEX_CAROUSEL_COUNT = int(6)
     INDEX_CAROUSEL_ITEMS_PER_CATEGORY = int(10)
-    
+
     # INDEX_CAROUSEL_CATEGORIES: list of category IDs to display, or None for auto-selection
     # Example: [1, 3, 5] to show specific categories; None to auto-select from top 2N
     INDEX_CAROUSEL_CATEGORIES = None

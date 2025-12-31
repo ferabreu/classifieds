@@ -18,11 +18,10 @@ from typing import Optional
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
+from slugify import slugify
 from sqlalchemy import event
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-
-from slugify import slugify
 from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
@@ -411,5 +410,5 @@ def generate_url_name(name: str) -> str:
     - Strips leading/trailing separators
     - Returns an empty string if the input contains no slug-worthy characters
     """
-    
+
     return slugify(name or "", separator="-")

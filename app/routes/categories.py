@@ -30,19 +30,19 @@ from flask_login import login_required
 
 from ..forms import CategoryForm
 from ..models import (
+    RESERVED_CATEGORY_NAMES,
     Category,
     Listing,
     db,
     generate_url_name,
-    RESERVED_CATEGORY_NAMES,
 )
 from .decorators import admin_required
-
 
 categories_bp = Blueprint("categories", __name__)
 
 
 # -------------------- ADMIN ROUTES --------------------------
+
 
 @categories_bp.route("/admin/categories")
 @admin_required
@@ -119,7 +119,9 @@ def admin_new():
     )
 
 
-@categories_bp.route("/admin/categories/edit/<int:category_id>", methods=["GET", "POST"])
+@categories_bp.route(
+    "/admin/categories/edit/<int:category_id>", methods=["GET", "POST"]
+)
 @admin_required
 def admin_edit(category_id):
     """
@@ -151,7 +153,9 @@ def admin_edit(category_id):
             int(form.parent_id.data) if form.parent_id.data != "0" else None
         )
 
-        url_name, error = _validate_category_inputs(name, parent_candidate, current_id=category.id)
+        url_name, error = _validate_category_inputs(
+            name, parent_candidate, current_id=category.id
+        )
         if error:
             flash(error, "danger")
             return render_template(
@@ -223,6 +227,7 @@ def admin_delete(category_id):
 
 # -------------------- API/AJAX ENDPOINTS --------------------
 
+
 @categories_bp.route("/api/categories/children/<int:parent_id>")
 @login_required
 def api_children(parent_id):
@@ -256,7 +261,10 @@ def api_breadcrumb(category_id):
 
 # -------------------- HELPER FUNCTIONS ----------------------
 
-def _validate_category_inputs(name: str, parent_id: int | None, current_id: int | None = None):
+
+def _validate_category_inputs(
+    name: str, parent_id: int | None, current_id: int | None = None
+):
     """
     Common validation used by category create and edit flows.
 
@@ -268,7 +276,10 @@ def _validate_category_inputs(name: str, parent_id: int | None, current_id: int 
 
     # Empty after normalization
     if not url_name:
-        return None, "Category name resolves to an empty URL segment; choose a different name."
+        return (
+            None,
+            "Category name resolves to an empty URL segment; choose a different name.",
+        )
 
     # Reserved route names
     if url_name.lower() in RESERVED_CATEGORY_NAMES:

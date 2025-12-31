@@ -15,7 +15,6 @@ with appropriate status code and descriptive messages.
 
 from flask import Blueprint, render_template
 
-
 errors_bp = Blueprint("errors", __name__)
 
 

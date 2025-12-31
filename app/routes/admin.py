@@ -22,11 +22,11 @@ from flask import (
 from ..models import Category, Listing, User
 from .decorators import admin_required
 
-
 admin_bp = Blueprint("admin", __name__)
 
 
 # -------------------- ADMIN ROUTES --------------------------
+
 
 @admin_bp.route("/dashboard")
 @admin_required

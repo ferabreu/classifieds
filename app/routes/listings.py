@@ -42,11 +42,11 @@ from ..models import Category, Listing, ListingImage, db
 from .decorators import admin_required
 from .utils import create_thumbnail, get_index_carousel_categories
 
-
 listings_bp = Blueprint("listings", __name__)
 
 
 # -------------------- LISTINGS ROUTES -----------------------
+
 
 @listings_bp.route("/")
 def index():
@@ -57,9 +57,7 @@ def index():
     carousel_categories = get_index_carousel_categories()
 
     # Build carousel data: for each category, fetch listings and randomize
-    items_per_carousel = current_app.config.get(
-        "INDEX_CAROUSEL_ITEMS_PER_CATEGORY", 10
-    )
+    items_per_carousel = current_app.config.get("INDEX_CAROUSEL_ITEMS_PER_CATEGORY", 10)
     # The UI shows up to 5 cards per row on ultrawide; fetch only what's useful
     display_slots = min(items_per_carousel, 5)
     # Fetch a bit extra for variety without over-querying
@@ -180,7 +178,9 @@ def category_filtered_listings(category_path):
             # If not enough, pull from descendants of this child
             if len(listings_pool) < fetch_limit:
                 descendant_ids = child_category.get_descendant_ids()
-                descendant_ids = [cid for cid in descendant_ids if cid != child_category.id]
+                descendant_ids = [
+                    cid for cid in descendant_ids if cid != child_category.id
+                ]
                 if descendant_ids:
                     needed = fetch_limit - len(listings_pool)
                     descendant_listings = (
@@ -212,12 +212,14 @@ def category_filtered_listings(category_path):
             other_category = MockCategory(
                 id=category.id,
                 name=f'Other {category.name}',
-                url_path=category.url_path
+                url_path=category.url_path,
             )
-            child_showcases.append({
-                "category": other_category,
-                "listings": direct_category_listings[:display_slots]
-            })
+            child_showcases.append(
+                {
+                    "category": other_category,
+                    "listings": direct_category_listings[:display_slots],
+                }
+            )
 
         return render_template(
             "index.html",
@@ -521,6 +523,7 @@ def edit_listing(listing_id):
 
 # ---------------- ADMIN LISTINGS MANAGEMENT -----------------
 
+
 @listings_bp.route("/admin/listings/delete/<int:listing_id>", methods=["POST"])
 @admin_required
 def admin_delete_listing(listing_id):
@@ -599,6 +602,7 @@ def delete_selected_listings():
 
 # -------------------- HELPER FUNCTIONS -----------------------
 
+
 def _delete_listings_impl(listings):
     """
     Deletes multiple listings and their associated image files using the 'temp' strategy.
@@ -642,11 +646,7 @@ def _delete_listings_impl(listings):
                     original_paths.append(orig)
                     temp_paths.append(temped)
 
-                if (
-                    orig_thumb
-                    and temped_thumb
-                    and os.path.exists(orig_thumb)
-                ):
+                if orig_thumb and temped_thumb and os.path.exists(orig_thumb):
                     shutil.move(orig_thumb, temped_thumb)
                     original_thumb_paths.append(orig_thumb)
                     temp_thumb_paths.append(temped_thumb)
@@ -691,9 +691,7 @@ def _delete_listings_impl(listings):
                 current_app.logger.warning(
                     "Restore from temp failed (bulk db error): %s", restore_err
                 )
-        for orig_thumb, temped_thumb in zip(
-            original_thumb_paths, temp_thumb_paths
-        ):
+        for orig_thumb, temped_thumb in zip(original_thumb_paths, temp_thumb_paths):
             try:
                 if os.path.exists(temped_thumb):
                     shutil.move(temped_thumb, orig_thumb)

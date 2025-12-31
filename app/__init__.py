@@ -13,11 +13,11 @@ Creates and configures the Flask app instance with database, authentication, mig
 CLI commands, and blueprint registration.
 """
 
+import logging
 import os
+from logging.handlers import RotatingFileHandler
 
 from flask import Flask
-import logging
-from logging.handlers import RotatingFileHandler
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
