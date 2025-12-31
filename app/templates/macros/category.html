@@ -1,3 +1,10 @@
+{#
+  Template written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu.
+  See LICENSE file in the project root for full license information.
+
+  Category macro. Renders a category with its full ancestor chain, with loop protection.
+#}
+
 {# Macro to render a category with its ancestor chain, protects against self-referencing loops #}
 {% macro render_category(cat, _depth=0) -%}
     {%- if not cat %}

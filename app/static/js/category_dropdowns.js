@@ -1,8 +1,21 @@
-// This script dynamically creates category dropdowns for each level of the category tree.
-// It requires the template to provide configuration via data-* attributes on the container:
-//   - data-hidden-field-id: id of the original WTForms <select> (hidden)
-//   - data-subcategories-url: URL template with "{parent_id}" placeholder
-//   - data-breadcrumb-url: URL template with "{category_id}" placeholder
+/*
+ * SPDX-License-Identifier: GPL-2.0-only
+ * Copyright (c) 2025 Fernando "ferabreu" Mees Abreu
+ *
+ * Licensed under the GNU General Public License v2.0 (GPL-2.0-only).
+ * See LICENSE file in the project root for full license information.
+ *
+ * This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+ */
+
+/**
+ * This script dynamically creates category dropdowns for each level of the category tree.
+ * It requires the template to provide configuration via data-* attributes on the container:
+ *   - data-hidden-field-id: id of the original WTForms <select> (hidden)
+ *   - data-subcategories-url: URL template with "{parent_id}" placeholder
+ *   - data-breadcrumb-url: URL template with "{category_id}" placeholder
+ */
+
 document.addEventListener('DOMContentLoaded', function() {
     // Container for dynamic dropdowns
     const categoryContainer = document.getElementById('category-dropdowns');

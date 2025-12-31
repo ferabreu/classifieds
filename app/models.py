@@ -1,6 +1,12 @@
-# Created by GitHub Copilot for Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu)
-
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (c) 2025 Fernando "ferabreu" Mees Abreu
+#
+# Licensed under the GNU General Public License v2.0 (GPL-2.0-only).
+# See LICENSE file in the project root for full license information.
+#
 """
+This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+
 SQLAlchemy models for the classifieds Flask app.
 
 Defines User, Category, Listing, and ListingImage entities.
@@ -34,9 +40,21 @@ class Category(db.Model):
     name = db.Column(db.String(64), nullable=False)
     url_name = db.Column(db.String(128), nullable=False, index=True)
     # Recursive fields for multi-level categories
-    parent_id = db.Column(db.Integer, db.ForeignKey("category.id"), nullable=True)
-    parent_id: InstrumentedAttribute[Optional[int]]
-    parent = db.relationship("Category", remote_side=[id], backref="children")
+    parent_id: InstrumentedAttribute[Optional[int]] = db.Column(
+        db.Integer, db.ForeignKey("category.id"), nullable=True
+    )
+    parent = db.relationship(
+        "Category",
+        remote_side=[id],
+        back_populates="children",
+        foreign_keys=[parent_id],
+    )  # type: ignore[assignment]
+    children = db.relationship(
+        "Category",
+        back_populates="parent",
+        foreign_keys=[parent_id],
+        cascade="all, delete-orphan",
+    )  # type: ignore[assignment]
     listings = db.relationship("Listing", backref="category", lazy=True)
     sort_order = db.Column(db.Integer, nullable=False, default=0)
     __table_args__ = (

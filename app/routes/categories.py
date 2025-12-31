@@ -17,7 +17,15 @@ All admin routes require admin privileges and use the @admin_required decorator.
 API endpoints return JSON only and are used for AJAX calls from the frontend.
 """
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import login_required
 
 from ..forms import CategoryForm
@@ -30,47 +38,11 @@ from ..models import (
 )
 from .decorators import admin_required
 
+
 categories_bp = Blueprint("categories", __name__)
 
-# -------------------- ADMIN ROUTES --------------------
 
-
-def _validate_category_inputs(name: str, parent_id: int | None, current_id: int | None = None):
-    """
-    Common validation used by category create and edit flows.
-
-    Returns a tuple (url_name, error_message). If validation passes, error_message is None
-    and url_name is the normalized string. If validation fails, url_name is None and
-    error_message contains a user-facing message.
-    """
-    url_name = generate_url_name(name)
-
-    # Empty after normalization
-    if not url_name:
-        return None, "Category name resolves to an empty URL segment; choose a different name."
-
-    # Reserved route names
-    if url_name.lower() in RESERVED_CATEGORY_NAMES:
-        return None, f"'{name}' conflicts with system routes and cannot be used."
-
-    # Sibling uniqueness (ignore self if editing)
-    existing = Category.query.filter_by(url_name=url_name, parent_id=parent_id).first()
-    if existing and (current_id is None or existing.id != current_id):
-        return None, "A category with a similar URL name already exists at this level."
-
-    return url_name, None
-
-
-def _count_listings_recursive(category, all_categories):
-    """
-    Recursively count listings for a category and all its descendants.
-    """
-    count = len(category.listings)
-    for child in all_categories:
-        if child.parent_id == category.id:
-            count += _count_listings_recursive(child, all_categories)
-    return count
-
+# -------------------- ADMIN ROUTES --------------------------
 
 @categories_bp.route("/admin/categories")
 @admin_required
@@ -251,7 +223,6 @@ def admin_delete(category_id):
 
 # -------------------- API/AJAX ENDPOINTS --------------------
 
-
 @categories_bp.route("/api/categories/children/<int:parent_id>")
 @login_required
 def api_children(parent_id):
@@ -281,3 +252,42 @@ def api_breadcrumb(category_id):
         return jsonify([])  # No breadcrumb for root
     category = Category.query.get_or_404(category_id)
     return jsonify([c.to_dict() for c in category.breadcrumb])
+
+
+# -------------------- HELPER FUNCTIONS ----------------------
+
+def _validate_category_inputs(name: str, parent_id: int | None, current_id: int | None = None):
+    """
+    Common validation used by category create and edit flows.
+
+    Returns a tuple (url_name, error_message). If validation passes, error_message is None
+    and url_name is the normalized string. If validation fails, url_name is None and
+    error_message contains a user-facing message.
+    """
+    url_name = generate_url_name(name)
+
+    # Empty after normalization
+    if not url_name:
+        return None, "Category name resolves to an empty URL segment; choose a different name."
+
+    # Reserved route names
+    if url_name.lower() in RESERVED_CATEGORY_NAMES:
+        return None, f"'{name}' conflicts with system routes and cannot be used."
+
+    # Sibling uniqueness (ignore self if editing)
+    existing = Category.query.filter_by(url_name=url_name, parent_id=parent_id).first()
+    if existing and (current_id is None or existing.id != current_id):
+        return None, "A category with a similar URL name already exists at this level."
+
+    return url_name, None
+
+
+def _count_listings_recursive(category, all_categories):
+    """
+    Recursively count listings for a category and all its descendants.
+    """
+    count = len(category.listings)
+    for child in all_categories:
+        if child.parent_id == category.id:
+            count += _count_listings_recursive(child, all_categories)
+    return count

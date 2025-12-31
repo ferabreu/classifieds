@@ -1,9 +1,16 @@
+{#
+  Template written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu.
+  See LICENSE file in the project root for full license information.
+
+  Index/category browsing page. Displays listings grid, carousels of child categories, or category showcases.
+#}
+
 {% extends "base.html" %}
 
-{% block content %}
-    {% import 'macros/breadcrumb.html' as breadcrumb_macros %}
-    {% import 'macros/pagination.html' as pagination_macros %}
+{% import 'macros/breadcrumb.html' as breadcrumb_macros %}
+{% import 'macros/pagination.html' as pagination_macros %}
 
+{% block content %}
     {% if selected_category %}
         <div class="category-row-content mb-3">
             {{ breadcrumb_macros.breadcrumb(selected_category) }}

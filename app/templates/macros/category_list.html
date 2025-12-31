@@ -1,3 +1,10 @@
+{#
+  Template written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu.
+  See LICENSE file in the project root for full license information.
+
+  Category list macro. Renders a hierarchical category tree as a table for admin interfaces.
+#}
+
 {% macro render_category_rows(category, categories, level=0, include_admin_ui=False) %}
     <tr>
         {% if include_admin_ui %}<td><input type="radio" name="selected_category_id" value="{{ category.id }}" data-listing-count="{{ category.listing_count }}"></td>{% endif %}

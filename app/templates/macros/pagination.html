@@ -1,16 +1,20 @@
-{# 
-    Macro: render_pagination
-    Renders Bootstrap pagination controls for paginated Flask views.
-    It includes links for previous, next, and individual page numbers.
-    It also handles sorting parameters if provided.
-    Args:
-        pagination: Flask-SQLAlchemy pagination object
-        endpoint: Flask endpoint name for url_for
-        sort: (optional) current sort field
-        direction: (optional) current sort direction
-    Usage:
-        {{ render_pagination(pagination, 'listings.index', sort=sort, direction=direction) }}
+{#
+  Template written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu.
+  See LICENSE file in the project root for full license information.
+
+  Pagination macro.
+  Renders Bootstrap pagination controls for paginated Flask views.
+  Includes links for previous, next, and individual page numbers.
+  Also handles sorting parameters if provided.
+  Args:
+      pagination: Flask-SQLAlchemy pagination object
+      endpoint: Flask endpoint name for url_for
+      sort: (optional) current sort field
+      direction: (optional) current sort direction
+  Usage:
+      {{ render_pagination(pagination, 'listings.index', sort=sort, direction=direction) }}
 #}
+
 {% macro render_pagination(pagination, endpoint, sort=None, direction=None) %}
 
     {# Ensure sort and direction are set to avoid errors #}

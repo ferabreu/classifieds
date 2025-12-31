@@ -1,9 +1,13 @@
 {#
-    Macro: breadcrumb
-    Usage: {{ macros.breadcrumb(category) }}
-    Renders a breadcrumb navigation bar for a given category (self-referring tree).
-    Expects a category object with 'breadcrumb' property (list of categories from root to self).
+  Template written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu.
+  See LICENSE file in the project root for full license information.
+
+  Breadcrumb macro.
+  Renders a breadcrumb navigation bar for a given category (self-referring tree).
+  Expects a category object with 'breadcrumb' property (list of categories from root to self).
+  Usage: {{ macros.breadcrumb(category) }}
 #}
+
 {% macro breadcrumb(category) %}
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
