@@ -1,5 +1,5 @@
 # CLASSIFIEDS
-#### Video Demo:  <URL HERE>
+#### Video Demo:  https://youtu.be/wHYZU9o-w3s
 #### Description:
 *Classifieds* is a web application for managing classifieds listings, and display them as a board. It is being built it to replace an old APEX-based application used at the company I work for.
 
