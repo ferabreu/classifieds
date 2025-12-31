@@ -21,6 +21,7 @@ from sqlalchemy import func
 
 from app.models import Category, Listing, db
 
+
 utils_bp = Blueprint("utils", __name__)
 
 

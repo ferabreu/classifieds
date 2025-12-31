@@ -1,9 +1,16 @@
+{#
+  Template written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu.
+  See LICENSE file in the project root for full license information.
+
+  Admin listings management page. Displays sortable table of all listings with bulk operations and moderation tools.
+#}
+
 {% extends "base.html" %}
 
-{% block content %}
-    {% import "macros/pagination.html" as pagination_macros %}
-    {% import "macros/category.html" as category_macros %}
+{% import "macros/pagination.html" as pagination_macros %}
+{% import "macros/category.html" as category_macros %}
 
+{% block content %}
     <div class="category-row-content">
         <h2 class="mt-3 mb-3">Listing Management</h2>
         <a href="{{ url_for('admin.dashboard') }}">&larr; Admin Dashboard</a>

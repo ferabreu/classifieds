@@ -14,7 +14,14 @@ Admin-only routes are grouped under /admin/users and require the user to be an a
 Self-service routes at /profile use @login_required only.
 """
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user, login_required
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
@@ -24,9 +31,11 @@ from ..models import Listing, User, db
 from .decorators import admin_required
 from .listings import _delete_listings_impl
 
+
 users_bp = Blueprint("users", __name__)
 
-# -------------------- USER SELF-SERVICE --------------------
+
+# --------------------- USER ROUTES --------------------------
 
 @users_bp.route("/profile")
 @login_required
@@ -50,9 +59,9 @@ def edit_profile():
     if hasattr(form, "is_admin"):
         delattr(form, "is_admin")
     if form.validate_on_submit():
-        user.email = form.email.data.strip()
-        user.first_name = form.first_name.data.strip()
-        user.last_name = form.last_name.data.strip()
+        user.email = form.email.data.strip() # type: ignore
+        user.first_name = form.first_name.data.strip() # type: ignore
+        user.last_name = form.last_name.data.strip() # type: ignore
         db.session.commit()
         flash("Profile updated.", "success")
         return redirect(url_for("users.profile"))
@@ -96,9 +105,9 @@ def admin_list():
     # See tech debt issue: "Migrate from legacy .query API to modern select() API"
     listing_count_subquery = (
         db.session.query(
-            Listing.user_id,
+            Listing.user_id, # type: ignore
             func.count(Listing.id).label("listing_count"),
-        )
+        ) # type: ignore
         .group_by(Listing.user_id)
         .subquery()
     )  # type: ignore
@@ -114,7 +123,7 @@ def admin_list():
             )
         )
         .order_by(sort_order)
-        .paginate(page=page, per_page=20)
+        .paginate(page=page, per_page=20) # type: ignore
     )  # type: ignore
 
     # Extract User objects and attach listing_count as an attribute for template
@@ -160,9 +169,9 @@ def admin_edit(user_id):
             if admins == 1 and user.is_admin:
                 flash("Cannot remove the last administrator.", "danger")
                 return redirect(url_for("users.admin_edit", user_id=user.id))
-        user.email = form.email.data.strip()
-        user.first_name = form.first_name.data.strip()
-        user.last_name = form.last_name.data.strip()
+        user.email = form.email.data.strip() # type: ignore
+        user.first_name = form.first_name.data.strip() # type: ignore
+        user.last_name = form.last_name.data.strip() # type: ignore
         user.is_admin = form.is_admin.data
         db.session.commit()
         flash("User updated.", "success")
