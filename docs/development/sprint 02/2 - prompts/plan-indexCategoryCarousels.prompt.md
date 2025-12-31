@@ -29,6 +29,7 @@ Replace the current paginated listings grid with up to N Bootstrap carousels. Ea
 - **Category navigation**: Category heading links to `/listings/<category.url_path>` (category_filtered_listings route)
 - **Responsive**: Use Bootstrap's default carousel responsive behavior
 - **No pagination**: Remove pagination logic entirely when carousels implemented
+
 ## Additional Unplanned Steps (Sprint 1 Leftovers)
 
 ### Layout Alignment & Standardization
