@@ -33,6 +33,7 @@ Replace the current paginated listings grid with up to N Bootstrap carousels. Ea
 ## Additional Unplanned Steps (Sprint 1 Leftovers)
 
 ### Layout Alignment & Standardization
+
 6. (DONE) **Align navbar with grid**: Remove horizontal padding from navbar and container-fluid; drop brand/toggle margins to eliminate inset; navbar content now aligns with page content width.
 
 7. (DONE) **Standardize content width across pages**: Wrap content in shared `category-row-content` div for consistent width constraints:
