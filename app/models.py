@@ -263,9 +263,9 @@ class User(UserMixin, db.Model):
         is_ldap_user: bool = False,
         is_admin: bool = False,
     ):
-        self.email = email
-        self.first_name = first_name
-        self.last_name = last_name
+        self.email = email.strip()
+        self.first_name = first_name.strip()
+        self.last_name = last_name.strip()
         self.is_ldap_user = is_ldap_user
         self.is_admin = is_admin
         if password:

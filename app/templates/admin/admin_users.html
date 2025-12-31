@@ -6,72 +6,73 @@
     <div class="category-row-content">
         <h2 class="mt-3 mb-3">User Management</h2>
         <a href="{{ url_for('admin.dashboard') }}">&larr; Admin Dashboard</a>
-        <table class="table admin-table mt-3">
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>
-                        <a href="{{ url_for('users.admin_list', sort='email', direction='asc' if sort != 'email' or direction == 'desc' else 'desc') }}">
-                            Email
-                            {% if sort == 'email' %}
-                                {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                            {% endif %}
-                        </a>
-                    </th>
-                    <th>
-                        <a href="{{ url_for('users.admin_list', sort='name', direction='asc' if sort != 'name' or direction == 'desc' else 'desc') }}">
-                            Name
-                            {% if sort == 'name' %}
-                                {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                            {% endif %}
-                        </a>
-                    </th>
-                    <th>
-                        <a href="{{ url_for('users.admin_list', sort='is_admin', direction='asc' if sort != 'is_admin' or direction == 'desc' else 'desc') }}">
-                            Admin
-                            {% if sort == 'is_admin' %}
-                                {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                            {% endif %}
-                        </a>
-                    </th>
-                    <th>
-                        <a href="{{ url_for('users.admin_list', sort='is_ldap_user', direction='asc' if sort != 'is_ldap_user' or direction == 'desc' else 'desc') }}">
-                            LDAP?
-                            {% if sort == 'is_ldap_user' %}
-                                {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                            {% endif %}
-                        </a>
-                    </th>
-                    <th class="text-end">
-                        <a href="{{ url_for('users.admin_list', sort='id', direction='asc' if sort != 'id' or direction == 'desc' else 'desc') }}">
-                            Listings
-                            {% if sort == 'id' %}
-                                {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                            {% endif %}
-                        </a>
-                    </th>
-                </tr>
-            </thead>
-            {% for user in users %}
-                <tr>
-                    <td>
-                        <input type="radio" name="selected_user_id" value="{{ user.id }}" data-listing-count="{{ user.listing_count }}">
-                    </td>
-                    <td><a href="{{ url_for('users.admin_profile', user_id=user.id) }}">{{ user.email }}</a></td>
-                    <td>{{ user.first_name }} {{ user.last_name }}</td>
-                    <td>{% if user.is_admin %}Yes{% else %}No{% endif %}</td>
-                    <td>{% if user.is_ldap_user %}Yes{% else %}No{% endif %}</td>
-                    <td class="text-end">{{ user.listing_count }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <div class="d-flex justify-content-start gap-2 mb-3">
-        <button type="button" class="btn btn-warning" onclick="handleEdit('{{ url_for('users.admin_edit', user_id=0) }}'.replace('/0', '/{id}'), 'selected_user_id')">Edit</button>
-        <button type="button" class="btn btn-danger" onclick="handleDelete('{{ url_for('users.admin_delete', user_id=0) }}'.replace('/0', '/{id}'), 'selected_user_id', 'user')">Delete</button>
-    </div>
+        <div class="table-responsive admin-table-wrapper mt-3">
+            <table class="table admin-table mb-0">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>
+                            <a href="{{ url_for('users.admin_list', sort='email', direction='asc' if sort != 'email' or direction == 'desc' else 'desc') }}">
+                                Email
+                                {% if sort == 'email' %}
+                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('users.admin_list', sort='name', direction='asc' if sort != 'name' or direction == 'desc' else 'desc') }}">
+                                Name
+                                {% if sort == 'name' %}
+                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('users.admin_list', sort='is_admin', direction='asc' if sort != 'is_admin' or direction == 'desc' else 'desc') }}">
+                                Admin
+                                {% if sort == 'is_admin' %}
+                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('users.admin_list', sort='is_ldap_user', direction='asc' if sort != 'is_ldap_user' or direction == 'desc' else 'desc') }}">
+                                LDAP?
+                                {% if sort == 'is_ldap_user' %}
+                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th class="text-end">
+                            <a href="{{ url_for('users.admin_list', sort='id', direction='asc' if sort != 'id' or direction == 'desc' else 'desc') }}">
+                                Listings
+                                {% if sort == 'id' %}
+                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
+                                {% endif %}
+                            </a>
+                        </th>
+                    </tr>
+                </thead>
+                {% for user in users %}
+                    <tr>
+                        <td>
+                            <input type="radio" name="selected_user_id" value="{{ user.id }}" data-listing-count="{{ user.listing_count }}">
+                        </td>
+                        <td><a href="{{ url_for('users.admin_profile', user_id=user.id) }}">{{ user.email }}</a></td>
+                        <td>{{ user.first_name }} {{ user.last_name }}</td>
+                        <td>{% if user.is_admin %}Yes{% else %}No{% endif %}</td>
+                        <td>{% if user.is_ldap_user %}Yes{% else %}No{% endif %}</td>
+                        <td class="text-end">{{ user.listing_count }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+        <div class="d-flex justify-content-start gap-2 mb-3">
+            <button type="button" class="btn btn-warning" onclick="handleEdit('{{ url_for('users.admin_edit', user_id=0) }}'.replace('/0', '/{id}'), 'selected_user_id')">Edit</button>
+            <button type="button" class="btn btn-danger" onclick="handleDelete('{{ url_for('users.admin_delete', user_id=0) }}'.replace('/0', '/{id}'), 'selected_user_id', 'user')">Delete</button>
+        </div>
 
-    {{ pagination_macros.render_pagination(pagination, 'users.admin_list', sort=sort, direction=direction) }}
+        {{ pagination_macros.render_pagination(pagination, 'users.admin_list', sort=sort, direction=direction) }}
     </div>
 {% endblock %}
 

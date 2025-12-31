@@ -11,6 +11,11 @@
     width: 192px;
 }
 
+.admin-card-icon {
+    font-size: 3.5rem;
+    line-height: 1;
+}
+
 .card-img-top-fit {
     object-fit: contain;
 }
@@ -118,6 +123,15 @@
 .admin-table {
     table-layout: auto;
     width: 100%;
+}
+
+.admin-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.admin-table-wrapper .admin-table {
+    min-width: 640px;
 }
 
 /* For a light highlight on dark sidebars */
