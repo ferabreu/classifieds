@@ -43,14 +43,7 @@
                                 {% endif %}
                             </a>
                         </th>
-                        <th class="text-end">
-                            <a href="{{ url_for('users.admin_list', sort='id', direction='asc' if sort != 'id' or direction == 'desc' else 'desc') }}">
-                                Listings
-                                {% if sort == 'id' %}
-                                    {% if direction == 'asc' %}&#9650;{% else %}&#9660;{% endif %}
-                                {% endif %}
-                            </a>
-                        </th>
+                        <th class="text-end">Listings</th>
                     </tr>
                 </thead>
                 {% for user in users %}

@@ -265,23 +265,24 @@ INDEX_CAROUSEL_CATEGORIES = None
 
 ### 🟡 Low-Risk Observations
 
-1. **"Other" category mock object** (app/routes/listings.py:196)
+1. (DONE) **"Other" category mock object** (app/routes/listings.py:196)
    - Currently: `type('obj', (object,), {...})()`
    - Works fine, but could use namedtuple for clarity
    - **Impact:** None (template doesn't care about type)
    - **Recommendation:** Consider for future refactor
 
-2. **Listings column sort in admin_users.html** (app/routes/users.py line ~100)
+2. (WONTFIX) **Listings column sort in admin_users.html** (app/routes/users.py line ~100)
    - Sorts by `id` instead of `listing_count`
    - **Why:** listing_count is computed in route, not a model column
    - **Impact:** Minor (sorting works, just orders by user ID when clicked)
    - **Recommendation:** Could add a sort option for listing_count in future
+   - **SOLUTION ADOPTED:** removed sorting on this column.
 
-3. **Mobile table layout on admin_listings.html**
+3. (OK) **Mobile table layout on admin_listings.html**
    - Removed price column, but check responsiveness on very small screens
    - **Recommendation:** Test on iPhone/Android to verify readability
 
-4. **Alert styling inside category-row-content**
+4. (OK) **Alert styling inside category-row-content**
    - Alerts now match grid width, which is good for consistency
    - However, alerts with long messages might look cramped on mobile
    - **Impact:** Minimal (alerts are usually short)
@@ -404,17 +405,19 @@ Before merging to main, verify:
 2. **Consider adding:**
    - (DONE) Breadcrumb on category pages (already in listing_detail, could be on showcase pages)
      - Already implemented - the breadcrumb shows up on all showcase pages.
-   - "Back" link for non-index pages
+   - (WONTFIX) "Back" link for non-index pages
+     - No need for this. Maybe in the future.
    - Search functionality (mentioned as alternative to "Other" category approach)
 
-3. **Performance optimization** (optional):
+3. **Performance optimization** (defer to future sprint):
+   - ⚠️ **Index page N+1 query issue:** Currently fetches listings per carousel category in a loop (6+ queries). Could batch-fetch all listings in single query and group in Python. See [GitHub issue] for details.
    - Cache category hierarchy (low-priority - queries are fast)
    - Consider SQL optimization for descendant fetching on deeply nested categories
 
 4. **UI/UX refinement:**
    - Add visual indicator when ?view=listings is active
    - Consider toggle button instead of hidden parameter (more discoverable)
-   - Mobile alert max-width for long messages
+   - (NONEED) Mobile alert max-width for long messages
 
 ### 📋 Final Verdict
 
