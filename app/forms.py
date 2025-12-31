@@ -26,7 +26,7 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 
-from .models import Category, generate_url_name, RESERVED_CATEGORY_NAMES
+from .models import RESERVED_CATEGORY_NAMES, Category, generate_url_name
 
 
 class RegistrationForm(FlaskForm):

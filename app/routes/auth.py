@@ -30,11 +30,11 @@ from ..forms import ForgotPasswordForm, LoginForm, RegistrationForm, ResetPasswo
 from ..ldap_auth import authenticate_with_ldap
 from ..models import User, db
 
-
 auth_bp = Blueprint("auth", __name__)
 
 
 # -------------------- AUTH ROUTES ---------------------------
+
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -51,7 +51,7 @@ def login():
     )
 
     if form.validate_on_submit():
-        email = form.email.data.lower() # type: ignore
+        email = form.email.data.lower()  # type: ignore
         password = form.password.data
         user = User.query.filter_by(email=email).first()
         # Try local authentication
@@ -90,14 +90,14 @@ def register():
     register_title = "Sign up"
 
     if form.validate_on_submit():
-        email = form.email.data.lower() # type: ignore
+        email = form.email.data.lower()  # type: ignore
         if User.query.filter_by(email=email).first():
             flash("Email already registered.", "danger")
             return render_template(
                 "register.html", form=form, page_title=register_title
             )
         user = User(
-            email=email, first_name=form.first_name.data, last_name=form.last_name.data # type: ignore
+            email=email, first_name=form.first_name.data, last_name=form.last_name.data  # type: ignore
         )
         user.set_password(form.password.data)
         db.session.add(user)
@@ -128,7 +128,7 @@ def forgot_password():
 
     form = ForgotPasswordForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower()).first() # type: ignore
+        user = User.query.filter_by(email=form.email.data.lower()).first()  # type: ignore
         if user and not user.is_ldap_user:
             token = generate_reset_token(user.email)
             reset_url = url_for("auth.reset_password", token=token, _external=True)
@@ -191,6 +191,7 @@ def reset_password(token):
 
 
 # -------------------- HELPER FUNCTIONS ----------------------
+
 
 def generate_reset_token(email):
     """Generate a time-limited token for password reset using the user's email."""
