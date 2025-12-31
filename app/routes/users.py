@@ -50,9 +50,9 @@ def edit_profile():
     if hasattr(form, "is_admin"):
         delattr(form, "is_admin")
     if form.validate_on_submit():
-        user.email = form.email.data
-        user.first_name = form.first_name.data
-        user.last_name = form.last_name.data
+        user.email = form.email.data.strip()
+        user.first_name = form.first_name.data.strip()
+        user.last_name = form.last_name.data.strip()
         db.session.commit()
         flash("Profile updated.", "success")
         return redirect(url_for("users.profile"))
@@ -160,9 +160,9 @@ def admin_edit(user_id):
             if admins == 1 and user.is_admin:
                 flash("Cannot remove the last administrator.", "danger")
                 return redirect(url_for("users.admin_edit", user_id=user.id))
-        user.email = form.email.data
-        user.first_name = form.first_name.data
-        user.last_name = form.last_name.data
+        user.email = form.email.data.strip()
+        user.first_name = form.first_name.data.strip()
+        user.last_name = form.last_name.data.strip()
         user.is_admin = form.is_admin.data
         db.session.commit()
         flash("User updated.", "success")

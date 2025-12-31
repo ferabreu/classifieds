@@ -2,6 +2,7 @@ import os
 import random
 import shutil
 import uuid
+from collections import namedtuple
 
 from flask import (
     Blueprint,
@@ -187,11 +188,12 @@ def category_filtered_listings(category_path):
 
         if direct_category_listings:
             random.shuffle(direct_category_listings)
-            other_category = type('obj', (object,), {
-                'id': category.id,
-                'name': f'Other {category.name}',
-                'url_path': category.url_path
-            })()
+            MockCategory = namedtuple('MockCategory', ['id', 'name', 'url_path'])
+            other_category = MockCategory(
+                id=category.id,
+                name=f'Other {category.name}',
+                url_path=category.url_path
+            )
             child_showcases.append({
                 "category": other_category,
                 "listings": direct_category_listings[:display_slots]

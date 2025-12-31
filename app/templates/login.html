@@ -1,29 +1,31 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <form method="POST">
+    <div class="category-row-content">
+        <form method="POST">
 
-        {{ form.hidden_tag() }}
+            {{ form.hidden_tag() }}
 
-        <div class="mb-3">
+            <div class="mb-3">
 
-            {{ form.email.label }} {{ form.email(class="form-control") }}
+                {{ form.email.label }} {{ form.email(class="form-control") }}
 
-        </div>
-        <div class="mb-3">
+            </div>
+            <div class="mb-3">
 
-            {{ form.password.label }} {{ form.password(class="form-control") }}
+                {{ form.password.label }} {{ form.password(class="form-control") }}
 
-        </div>
-        <button type="submit" class="btn btn-primary">Sign in</button>
-        <a href="{{ url_for('auth.forgot_password') }}" class="btn btn-link">Forgot password?</a>
-    </form>
-    <p class="my-3">Don't have an account? <a href="{{ url_for('auth.register') }}">Sign up here</a>.</p>
+            </div>
+            <button type="submit" class="btn btn-primary">Sign in</button>
+            <a href="{{ url_for('auth.forgot_password') }}" class="btn btn-link">Forgot password?</a>
+        </form>
+        <p class="my-3">Don't have an account? <a href="{{ url_for('auth.register') }}">Sign up here</a>.</p>
 
-    {% if ldap_enabled %}
-        <div class="alert alert-info">
-            LDAP login is enabled and will be attempted if your account is not found locally.
-        </div>
-    {% endif %}
+        {% if ldap_enabled %}
+            <div class="alert alert-info">
+                LDAP login is enabled and will be attempted if your account is not found locally.
+            </div>
+        {% endif %}
+    </div>
 
 {% endblock %}

@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="alert alert-danger text-center">
-        <h1 class="alert-heading">Error {{ error_code }}: {{ error_name }}</h1>
-        <p class="lead">{{ error_description }}</p>
-        <a href="{{ url_for('listings.index') }}" class="btn btn-primary mt-3">Return to Home</a>
+    <div class="category-row-content">
+        <div class="alert alert-danger text-center">
+            <h1 class="alert-heading">Error {{ error_code }}: {{ error_name }}</h1>
+            <p class="lead">{{ error_description }}</p>
+            <a href="{{ url_for('listings.index') }}" class="btn btn-primary mt-3">Return to Home</a>
+        </div>
     </div>
 {% endblock %}
