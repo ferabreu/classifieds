@@ -6,11 +6,13 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Simple dependency license scanner.
 
-Scans installed Python packages and outputs license information to docs/dependency_licenses.md.
+Scans installed Python packages and outputs license information to
+docs/dependency_licenses.md.
 
 Usage:
   python scripts/check_licenses.py
@@ -164,14 +166,17 @@ def main():
         f"- Packages flagged as GPLv2-only (heuristic): {summary['gpl2_only']}\n"
     )
     out_lines.append(
-        "\n> Notes: This scanner uses heuristics based on PyPI metadata and classifiers. Manual review of any flagged packages is required to determine true license compatibility.\n"
+        "\n> Notes: This scanner uses heuristics based on PyPI metadata "
+        "and classifiers. Manual review of any flagged packages is required "
+        "to determine true license compatibility.\n"
     )
 
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     OUT_FILE.write_text("".join(out_lines))
     print(f"Wrote license report to {OUT_FILE}")
     print(
-        "Manual next steps: review any flagged packages for 'GPL-2.0-only' vs 'GPL-2.0-or-later' and decide remediation."
+        "Manual next steps: review any flagged packages for "
+        "'GPL-2.0-only' vs 'GPL-2.0-or-later' and decide remediation."
     )
     return 0
 

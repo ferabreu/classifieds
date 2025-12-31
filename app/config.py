@@ -5,11 +5,13 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Flask application configuration classes.
 
-Defines environment-specific settings for development, testing, and production deployments.
+Defines environment-specific settings for development, testing,
+and production deployments.
 Includes database, mail, LDAP, upload directories, and feature toggles.
 """
 
@@ -25,11 +27,11 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
 
     # LDAP auth support
-    LDAP_SERVER = os.environ.get("LDAP_SERVER", "")
-    LDAP_DOMAIN = os.environ.get("LDAP_DOMAIN", "")
+    LDAP_SERVER = os.environ.get("LDAP_SERVER") or None
+    LDAP_DOMAIN = os.environ.get("LDAP_DOMAIN") or None
 
     # Flask-Mail config (for password reset)
-    MAIL_SERVER = os.environ.get("MAIL_SERVER", "")
+    MAIL_SERVER = os.environ.get("MAIL_SERVER") or None
     MAIL_PORT = int(os.environ.get("MAIL_PORT", 25))
     MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "false").lower() in [
         "1",
@@ -58,8 +60,10 @@ class Config:
     INDEX_CAROUSEL_COUNT = int(6)
     INDEX_CAROUSEL_ITEMS_PER_CATEGORY = int(10)
 
-    # INDEX_CAROUSEL_CATEGORIES: list of category IDs to display, or None for auto-selection
-    # Example: [1, 3, 5] to show specific categories; None to auto-select from top 2N
+    # INDEX_CAROUSEL_CATEGORIES: list of category IDs to display,
+    # or None for auto-selection
+    # Example: [1, 3, 5] to show specific categories;
+    # None to auto-select from top 2N
     INDEX_CAROUSEL_CATEGORIES = None
 
     # Logging
@@ -78,7 +82,7 @@ class DevelopmentConfig(Config):
     TEMPLATES_AUTO_RELOAD = True
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DEV_DATABASE_URL", "sqlite:///classifieds.db"
-    )  #'sqlite:///dev.db'
+    )  # 'sqlite:///dev.db'
 
 
 class TestingConfig(Config):

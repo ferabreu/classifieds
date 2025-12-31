@@ -5,7 +5,8 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 User and User Admin Blueprint routes and logic for Flask app.
 
@@ -223,7 +224,8 @@ def admin_delete(user_id):
     # Provide appropriate feedback
     if listing_count > 0:
         flash(
-            f"User deleted. Also deleted {listing_count} listing(s) owned by this user.",
+            f"User deleted. Also deleted {listing_count} listing(s) "
+            "owned by this user.",
             "success",
         )
     else:

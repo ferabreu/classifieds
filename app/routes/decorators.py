@@ -5,11 +5,13 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Route decorators for the classifieds Flask app.
 
-This module provides authorization decorators and permission helpers for route protection.
+This module provides authorization decorators and permission helpers
+for route protection.
 """
 
 from functools import wraps

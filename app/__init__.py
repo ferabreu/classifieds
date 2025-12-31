@@ -5,7 +5,8 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Flask application factory and initialization.
 
@@ -138,7 +139,9 @@ def create_app(config_class=None):
             db_path = db_uri.replace("sqlite:///", "")
             if os.path.exists(db_path):
                 print(
-                    f"Database already exists at {db_path}.\nDatabase initialization skipped to avoid overwriting existing data."
+                    f"Database already exists at {db_path}.\n"
+                    "Database initialization skipped to avoid "
+                    "overwriting existing data."
                 )
                 return
 
@@ -164,7 +167,8 @@ def create_app(config_class=None):
         db.session.commit()
         print("Database initialized with default admin user.")
         print(
-            "No default categories created. Please create categories via the admin dashboard as needed."
+            "No default categories created. "
+            "Please create categories via the admin dashboard as needed."
         )
 
     # Import CLI commands from separate modules based on environment

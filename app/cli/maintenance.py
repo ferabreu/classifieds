@@ -5,11 +5,13 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Flask CLI commands for database maintenance tasks.
 
-Provides thumbnail backfill command to regenerate missing thumbnails for existing listing images.
+Provides thumbnail backfill command to regenerate missing thumbnails
+for existing listing images.
 """
 
 import os

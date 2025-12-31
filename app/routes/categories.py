@@ -5,7 +5,8 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Categories Blueprint routes for Flask app.
 
@@ -134,7 +135,8 @@ def admin_edit(category_id):
     # compute ids to exclude (the category itself + all descendants) to avoid cycles
     exclude_ids = category.get_descendant_ids()
 
-    # Populate parent_id choices (exclude self + descendants) so the hidden select has valid options
+    # Populate parent_id choices (exclude self + descendants)
+    # so the hidden select has valid options
     all_cats = Category.query.order_by(Category.name).all()
     form.parent_id.choices = [("0", "- None -")] + [
         (str(cat.id), cat.get_full_path())
@@ -268,9 +270,10 @@ def _validate_category_inputs(
     """
     Common validation used by category create and edit flows.
 
-    Returns a tuple (url_name, error_message). If validation passes, error_message is None
-    and url_name is the normalized string. If validation fails, url_name is None and
-    error_message contains a user-facing message.
+    Returns a tuple (url_name, error_message). If validation passes,
+    error_message is None and url_name is the normalized string.
+    If validation fails, url_name is None and error_message contains
+    a user-facing message.
     """
     url_name = generate_url_name(name)
 

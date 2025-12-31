@@ -5,12 +5,15 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Flask CLI commands for demo data generation.
 
-Provides commands to populate the database with sample categories, users, and listings with images.
-Includes smart category creation, realistic listing generation, and Unsplash image integration.
+Provides commands to populate the database with sample
+categories, users, and listings with images.
+Includes smart category creation, realistic listing generation,
+and Unsplash image integration.
 """
 
 import os
@@ -39,8 +42,11 @@ from app.models import Category, Listing, ListingImage, User
 # CONFIGURABLE CONSTANTS
 # ==========================
 UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY")
-USER_EMAIL = "admin@classifieds.io"  # Email of admin user (fallback if DISTRIBUTE_ACROSS_USERS is False)
-DISTRIBUTE_ACROSS_USERS = True  # If True, distribute listings across all existing users; if False, assign all to admin
+USER_EMAIL = "admin@classifieds.io"
+# Email of admin user (fallback if DISTRIBUTE_ACROSS_USERS is False)
+DISTRIBUTE_ACROSS_USERS = True
+# If True, distribute listings across all existing users;
+# if False, assign all to admin
 MAX_UNSPLASH_IMAGES = 50  # Max Unsplash API calls per run
 UNSPLASH_API_DELAY = 1.2  # Seconds to wait between Unsplash API calls
 DEMO_IMAGES_FOLDER = "static/demo_images"
@@ -103,8 +109,10 @@ fake = Faker()
 def fetch_unsplash_image(
     query, dest_path, access_key=UNSPLASH_ACCESS_KEY, delay=UNSPLASH_API_DELAY
 ):
-    """Fetches a random Unsplash image for a query and saves it to dest_path. Returns True if successful.
-    Respects delay to avoid hitting API rate limits."""
+    """
+    Fetches a random Unsplash image for a query and saves it to dest_path.
+    Returns True if successful. Respects delay to avoid hitting API rate limits.
+    """
     if not access_key:
         print("Unsplash API key not set. Skipping Unsplash fetch.")
         return False
@@ -184,8 +192,8 @@ def ensure_demo_images(
     cache_only=False,
 ):
     """
-    For the first N queries, fetch from Unsplash (with caching, so repeated titles reuse images).
-    For all others, generate random images.
+    For the first N queries, fetch from Unsplash (with caching,
+    so repeated titles reuse images). For all others, generate random images.
     Returns list of image filenames (relative to folder).
 
     If cache_only=True, only reuse cached images and never fetch from Unsplash.
@@ -227,9 +235,11 @@ def ensure_demo_images(
 
 
 def get_or_create_categories():
-    """Get existing categories/subcategories from CATEGORY_HIERARCHY, or create if missing.
+    """Get existing categories/subcategories from CATEGORY_HIERARCHY,
+    or create if missing.
 
-    Validates that SUBCATEGORY_KEYWORDS keys match the subcategories defined in CATEGORY_HIERARCHY.
+    Validates that SUBCATEGORY_KEYWORDS keys match the subcategories
+    defined in CATEGORY_HIERARCHY.
     """
     # Validate SUBCATEGORY_KEYWORDS alignment
     expected_subcats = set()
@@ -242,15 +252,19 @@ def get_or_create_categories():
         extra_in_keywords = keyword_keys - expected_subcats
         if missing_in_keywords:
             print(
-                f"WARNING: SUBCATEGORY_KEYWORDS missing entries for: {missing_in_keywords}"
+                f"WARNING: SUBCATEGORY_KEYWORDS missing entries for: "
+                f"{missing_in_keywords}"
             )
         if extra_in_keywords:
             print(
-                f"WARNING: SUBCATEGORY_KEYWORDS has extra entries not in CATEGORY_HIERARCHY: {extra_in_keywords}"
+                f"WARNING: SUBCATEGORY_KEYWORDS has extra entries "
+                f"not in CATEGORY_HIERARCHY: {extra_in_keywords}"
             )
 
     # Get or create parent categories
-    categories = Category.query.filter(Category.parent_id.is_(None)).all()  # type: ignore
+    categories = Category.query.filter(
+        Category.parent_id.is_(None)  # type: ignore
+    ).all()
     existing_parents = {c.name: c for c in categories}
 
     for parent_name in CATEGORY_HIERARCHY.keys():
@@ -264,7 +278,9 @@ def get_or_create_categories():
         db.session.commit()
 
     # Get or create subcategories
-    subcats = Category.query.filter(Category.parent_id.isnot(None)).all()  # type: ignore
+    subcats = Category.query.filter(
+        Category.parent_id.isnot(None)  # type: ignore
+    ).all()
     existing_subcats = {c.name: c for c in subcats}
 
     for parent_name, subcat_names in CATEGORY_HIERARCHY.items():
@@ -303,8 +319,9 @@ def get_or_create_categories():
 )
 def demo_data(replace, images_only, cache_only):
     """
-    Seed demo categories, users, listings, and images with realistic data using Unsplash or random images (cached).
-    By default, adds more data each run. Use --replace to remove all and start fresh.
+    Seed demo categories, users, listings, and images with realistic data
+    using Unsplash or random images (cached). By default, adds more data
+    each run. Use --replace to remove all and start fresh.
     """
     # Load .env at command runtime (safe, minimal side effect)
     try:
@@ -345,7 +362,8 @@ def demo_data(replace, images_only, cache_only):
 
     if replace:
         print(
-            "Replacing demo listings: clearing demo listings/images only; preserving users and categories."
+            "Replacing demo listings: clearing demo listings/images only; "
+            "preserving users and categories."
         )
         upload_dir = current_app.config["UPLOAD_DIR"]
         thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
@@ -371,7 +389,8 @@ def demo_data(replace, images_only, cache_only):
                 db.session.delete(lst)
             db.session.commit()
             print(
-                f"Deleted {len(demo_listings)} demo listings (images removed via cascade)."
+                f"Deleted {len(demo_listings)} demo listings "
+                f"(images removed via cascade)."
             )
         except Exception as e:
             db.session.rollback()
@@ -403,7 +422,7 @@ def demo_data(replace, images_only, cache_only):
     if DISTRIBUTE_ACROSS_USERS:
         demo_users = User.query.all()
         if not demo_users:
-            print(f"ERROR: No users exist in the database. Aborting.")
+            print("ERROR: No users exist in the database. Aborting.")
             return
         print(f"Distributing listings across {len(demo_users)} existing users.")
     else:
@@ -415,12 +434,12 @@ def demo_data(replace, images_only, cache_only):
             return
         demo_users = [demo_user]
 
-    # Build listings from SUBCATEGORY_KEYWORDS values only (query terms), mapped to their category keys
+    # Build listings from SUBCATEGORY_KEYWORDS values only (query terms),
+    # mapped to their category keys
     demo_listings = []
     listing_queries = []
     listing_keywords = []  # Track per-listing keyword for semantic image attachment
     user_index = 0  # For round-robin user assignment
-    demo_folder_path = os.path.join(current_app.root_path, DEMO_IMAGES_FOLDER)
 
     # Map subcategory name -> Category object for assignment
     subcat_map = {c.name: c for c in subcats}
@@ -503,11 +522,15 @@ def demo_data(replace, images_only, cache_only):
 
         # Title and description
         title = generate_product_title(keyword, cat_name)
-        # Add keyword multiple times to listing_queries to fetch multiple images per keyword
+        # Add keyword multiple times to listing_queries to fetch
+        # multiple images per keyword
         for _ in range(MAX_IMAGES_PER_LISTING):
             listing_queries.append(keyword)
         listing_keywords.append(keyword)
-        description = f"High-quality {keyword}. {fake.paragraph(nb_sentences=2)} Great for {cat_name} enthusiasts.\n{DEMO_MARKER}"
+        description = (
+            f"High-quality {keyword}. {fake.paragraph(nb_sentences=2)} "
+            f"Great for {cat_name} enthusiasts.\n{DEMO_MARKER}"
+        )
         price = round(random.uniform(MIN_PRICE, MAX_PRICE), 2)
 
         # Assign user in round-robin fashion
@@ -534,7 +557,9 @@ def demo_data(replace, images_only, cache_only):
 
     # Demo images: fetch/reuse Unsplash images for keyword queries
     src_folder = os.path.join(current_app.root_path, DEMO_IMAGES_FOLDER)
-    dest_folder = os.path.join(current_app.root_path, current_app.config["UPLOAD_DIR"])
+    dest_folder = os.path.join(
+        current_app.root_path, current_app.config["UPLOAD_DIR"]
+    )
     os.makedirs(dest_folder, exist_ok=True)
     os.makedirs(thumbnail_dir, exist_ok=True)
 
@@ -549,7 +574,8 @@ def demo_data(replace, images_only, cache_only):
         if os.path.exists(src_path) and not os.path.exists(dest_path):
             shutil.copyfile(src_path, dest_path)
 
-    # Attach images to each listing - match images to listing's own query for semantic correspondence
+    # Attach images to each listing - match images to listing's own
+    # query for semantic correspondence
     attachments_created = 0
     for i, listing in enumerate(demo_listings):
         n_images = random.randint(MIN_IMAGES_PER_LISTING, MAX_IMAGES_PER_LISTING)
@@ -593,20 +619,24 @@ def demo_data(replace, images_only, cache_only):
         print("No images attached; skipping thumbnail backfill.")
 
     print(
-        f"Demo data seeded: categories, listings, images. {'(Listings replaced)' if replace else '(Added to existing data)'}"
+        f"Demo data seeded: categories, listings, images. "
+        f"{'(Listings replaced)' if replace else '(Added to existing data)'}"
     )
 
     print(
-        f"Up to {MAX_UNSPLASH_IMAGES} images requested from Unsplash (cached locally)."
+        f"Up to {MAX_UNSPLASH_IMAGES} images requested from Unsplash "
+        f"(cached locally)."
     )
 
     print(
-        f"Each listing gets between {MIN_IMAGES_PER_LISTING} and {MAX_IMAGES_PER_LISTING} images."
+        f"Each listing gets between {MIN_IMAGES_PER_LISTING} and "
+        f"{MAX_IMAGES_PER_LISTING} images."
     )
 
     print(f"Thumbnails generated in {thumbnail_dir} using the shared utility.")
 
     if UNSPLASH_ACCESS_KEY is None:
         print(
-            "Set UNSPLASH_ACCESS_KEY environment variable before running for best results."
+            "Set UNSPLASH_ACCESS_KEY environment variable before running "
+            "for best results."
         )

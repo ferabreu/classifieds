@@ -5,11 +5,13 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Test script for reserved category name validation.
 
-Validates that reserved URL names (admin, static, etc.) are properly rejected in category creation.
+Validates that reserved URL names (admin, static, etc.) are properly
+rejected in category creation.
 """
 
 from app import create_app

@@ -5,7 +5,8 @@
 # See LICENSE file in the project root for full license information.
 #
 """
-This code was written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
+This code was written and annotated by GitHub Copilot
+at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 WTForms form definitions for user management, listings, and categories.
 
@@ -103,7 +104,8 @@ class ListingForm(FlaskForm):
 
     def validate_description(self, field):
         """
-        Ensure the description is a full sentence with at least four words and sentence-ending punctuation.
+        Ensure the description is a full sentence with at least four words
+        and sentence-ending punctuation.
         """
         import re
 
@@ -154,17 +156,21 @@ class CategoryForm(FlaskForm):
         url_name = generate_url_name(raw)
         if not url_name:
             raise ValidationError(
-                "Category name resolves to an empty URL segment; choose a different name."
+                "Category name resolves to an empty URL segment; "
+                "choose a different name."
             )
         if url_name.lower() in RESERVED_CATEGORY_NAMES:
             raise ValidationError(
-                "This name conflicts with system routes; choose a different name."
+                "This name conflicts with system routes; "
+                "choose a different name."
             )
 
     def validate_parent_id(self, field):
         """
-        Prevent selecting self or a descendant as parent (protects against client tampering).
-        Assumes the form sets `self._obj` to the Category instance when editing (common pattern).
+        Prevent selecting self or a descendant as parent
+        (protects against client tampering).
+        Assumes the form sets `self._obj` to the Category instance
+        when editing (common pattern).
         """
         parent_id = field.data
         if not parent_id:
