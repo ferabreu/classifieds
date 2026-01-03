@@ -33,7 +33,7 @@
 
 \* Refer to Mr. Copilot's security review.
 \* Refer to Mr. Copilot's internationalization guide
-\* Refer to Mr. Copilot's performance optimization tipss.
+\* Refer to Mr. Copilot's performance optimization tips.
 \* Refer to Mr. Copilot's accessibility checklist.
 \* Refer to Mr. Copilot's deployment checklist.
 \* Refer to Mr. Copilot's SEO best practices.
