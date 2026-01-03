@@ -14,6 +14,7 @@ Defines User, Category, Listing, and ListingImage entities.
 Handles hierarchical categories, user accounts, and listing image management.
 """
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -35,6 +36,8 @@ class Category(db.Model):
     Supports parent-child relationships for multi-level categories.
     The url_name field stores URL-safe category names for clean hierarchical paths.
     """
+
+    __allow_unmapped__ = True
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), nullable=False)
@@ -259,6 +262,41 @@ class Category(db.Model):
                 return None
             parent_id = current_category.id
         return current_category
+
+
+@dataclass
+class CategoryView:
+    """
+    Lightweight view model for category display.
+
+    Used when we need a category-like object without database overhead
+    (e.g., "Other Category" pseudo-categories in showcases).
+
+    This is immutable and can safely be used in templates expecting
+    a category-like interface with id, name, and url_path attributes.
+    """
+
+    id: int
+    name: str
+    url_path: str
+
+    @classmethod
+    def from_category(cls, category: Category, name_override: Optional[str] = None) -> 'CategoryView':
+        """
+        Create a CategoryView from a Category model instance.
+
+        Args:
+            category: The Category model to base the view on.
+            name_override: Optional custom name (e.g., "Other Electronics").
+
+        Returns:
+            A CategoryView instance with the specified attributes.
+        """
+        return cls(
+            id=category.id,
+            name=name_override or category.name,
+            url_path=category.url_path,
+        )
 
 
 class User(UserMixin, db.Model):
