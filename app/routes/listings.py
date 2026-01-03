@@ -22,7 +22,6 @@ import os
 import random
 import shutil
 import uuid
-from collections import namedtuple
 
 from flask import (
     Blueprint,
@@ -39,9 +38,15 @@ from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from ..forms import ListingForm
-from ..models import Category, Listing, ListingImage, db
+from ..models import Category, CategoryView, Listing, ListingImage, db
 from .decorators import admin_required
-from .utils import create_thumbnail, get_index_carousel_categories
+from .utils import (
+    cleanup_temp_files,
+    create_thumbnail,
+    get_index_carousel_categories,
+    move_image_files_to_temp,
+    restore_files_from_temp,
+)
 
 listings_bp = Blueprint("listings", __name__)
 
@@ -212,11 +217,9 @@ def category_filtered_listings(category_path):
 
         if direct_category_listings:
             random.shuffle(direct_category_listings)
-            MockCategory = namedtuple('MockCategory', ['id', 'name', 'url_path'])
-            other_category = MockCategory(
-                id=category.id,
-                name=f'Other {category.name}',
-                url_path=category.url_path,
+            other_category = CategoryView.from_category(
+                category,
+                name_override=f'Other {category.name}',
             )
             child_showcases.append(
                 {
@@ -640,57 +643,17 @@ def _delete_listings_impl(listings):
     upload_dir = current_app.config["UPLOAD_DIR"]
     thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
 
-    original_paths = []
-    temp_paths = []
-    original_thumb_paths = []
-    temp_thumb_paths = []
+    # Collect all images from all listings
+    all_images = []
+    for listing in listings:
+        all_images.extend(listing.images)
 
     # Move all image files to temp directory
-    for listing in listings:
-        for image in listing.images:
-            orig = os.path.join(upload_dir, image.filename)
-            temped = os.path.join(temp_dir, image.filename)
-            orig_thumb = None
-            temped_thumb = None
-
-            if image.thumbnail_filename:
-                orig_thumb = os.path.join(thumbnail_dir, image.thumbnail_filename)
-                temped_thumb = os.path.join(temp_dir, image.thumbnail_filename)
-
-            try:
-                if os.path.exists(orig):
-                    shutil.move(orig, temped)
-                    original_paths.append(orig)
-                    temp_paths.append(temped)
-
-                if orig_thumb and temped_thumb and os.path.exists(orig_thumb):
-                    shutil.move(orig_thumb, temped_thumb)
-                    original_thumb_paths.append(orig_thumb)
-                    temp_thumb_paths.append(temped_thumb)
-            except Exception as e:
-                # Rollback: restore all files that were moved
-                for orig, temped in zip(original_paths, temp_paths):
-                    try:
-                        if os.path.exists(temped):
-                            shutil.move(temped, orig)
-                    except Exception as restore_err:
-                        # Best-effort file restore while rolling back multi-delete
-                        current_app.logger.warning(
-                            "Restore from temp failed (bulk move): %s", restore_err
-                        )
-                for orig_thumb, temped_thumb in zip(
-                    original_thumb_paths, temp_thumb_paths
-                ):
-                    try:
-                        if os.path.exists(temped_thumb):
-                            shutil.move(temped_thumb, orig_thumb)
-                    except Exception as restore_err:
-                        # Best-effort thumbnail restore while rolling back multi-delete
-                        current_app.logger.warning(
-                            "Restore thumbnail from temp failed (bulk move): %s",
-                            restore_err,
-                        )
-                return False, f"Error moving image files: {e}", 0
+    file_moves, success, error_msg = move_image_files_to_temp(
+        all_images, upload_dir, thumbnail_dir, temp_dir
+    )
+    if not success:
+        return False, error_msg, 0
 
     # Delete listings from database
     try:
@@ -699,47 +662,12 @@ def _delete_listings_impl(listings):
         db.session.commit()
     except Exception as e:
         # Rollback: restore all files
-        for orig, temped in zip(original_paths, temp_paths):
-            try:
-                if os.path.exists(temped):
-                    shutil.move(temped, orig)
-            except Exception as restore_err:
-                # Best-effort file restore after DB error in multi-delete
-                current_app.logger.warning(
-                    "Restore from temp failed (bulk db error): %s", restore_err
-                )
-        for orig_thumb, temped_thumb in zip(original_thumb_paths, temp_thumb_paths):
-            try:
-                if os.path.exists(temped_thumb):
-                    shutil.move(temped_thumb, orig_thumb)
-            except Exception as restore_err:
-                # Best-effort thumb restore after DB error in multi-delete
-                current_app.logger.warning(
-                    "Restore thumbnail from temp failed (bulk db error): %s",
-                    restore_err,
-                )
+        restore_files_from_temp(file_moves)
         db.session.rollback()
         return False, f"Database error: {e}", 0
 
     # Clean up temp files
-    for temped in temp_paths:
-        try:
-            if os.path.exists(temped):
-                os.remove(temped)
-        except Exception as cleanup_err:
-            # Best-effort temp cleanup after multi-delete
-            current_app.logger.warning(
-                "Temp remove failed (bulk cleanup): %s", cleanup_err
-            )
-    for temped_thumb in temp_thumb_paths:
-        try:
-            if os.path.exists(temped_thumb):
-                os.remove(temped_thumb)
-        except Exception as cleanup_err:
-            # Best-effort temp cleanup for thumbnails after multi-delete
-            current_app.logger.warning(
-                "Temp remove failed (bulk thumb cleanup): %s", cleanup_err
-            )
+    cleanup_temp_files(file_moves)
 
     return True, None, len(listings)
 
@@ -785,59 +713,27 @@ def _delete_listing_impl(listing_id):
             page_title=listing.title,
         )
 
-    original_paths = []
-    temp_paths = []
-    original_thumb_paths = []
-    temp_thumb_paths = []
+    # Move images to temp
+    file_moves, success, error_msg = move_image_files_to_temp(
+        listing.images, upload_dir, thumbnail_dir, temp_dir
+    )
+    if not success:
+        flash(f"Error moving images: {error_msg}", "warning")
+        return render_template(
+            "listings/listing_detail.html",
+            listing=listing,
+            category=category,
+            category_path=category_path,
+            page_title=listing.title,
+        )
 
-    for image in listing.images:
-        orig = os.path.join(upload_dir, image.filename)
-        temped = os.path.join(temp_dir, image.filename)
-        orig_thumb = None
-        temped_thumb = None
-        if image.thumbnail_filename:
-            orig_thumb = os.path.join(thumbnail_dir, image.thumbnail_filename)
-            temped_thumb = os.path.join(temp_dir, image.thumbnail_filename)
-        try:
-            if os.path.exists(orig):
-                shutil.move(orig, temped)
-                original_paths.append(orig)
-                temp_paths.append(temped)
-                if (
-                    orig_thumb
-                    and temped_thumb
-                    and os.path.exists(orig_thumb)
-                    and os.path.exists(temped_thumb)
-                ):
-                    shutil.move(orig_thumb, temped_thumb)
-                    original_thumb_paths.append(orig_thumb)
-                    temp_thumb_paths.append(temped_thumb)
-        except Exception as e:
-            flash(f"Error moving image {image.filename} to temp: {e}", "warning")
-
+    # Delete listing from database
     try:
         db.session.delete(listing)
         db.session.commit()
     except Exception as e:
-        for orig, temped in zip(original_paths, temp_paths):
-            try:
-                if os.path.exists(temped):
-                    shutil.move(temped, orig)
-            except Exception as restore_err:
-                # Best-effort file restore after single delete DB error
-                current_app.logger.warning(
-                    "Restore from temp failed (single delete): %s", restore_err
-                )
-        for orig_thumb, temped_thumb in zip(original_thumb_paths, temp_thumb_paths):
-            try:
-                if os.path.exists(temped_thumb):
-                    shutil.move(temped_thumb, orig_thumb)
-            except Exception as restore_err:
-                # Best-effort thumb restore after single delete DB error
-                current_app.logger.warning(
-                    "Restore thumbnail from temp failed (single delete): %s",
-                    restore_err,
-                )
+        # Rollback: restore all files
+        restore_files_from_temp(file_moves)
         db.session.rollback()
         flash(
             f"Database error. Listing was not deleted. Files restored. ({e})", "danger"
@@ -850,25 +746,8 @@ def _delete_listing_impl(listing_id):
             page_title=listing.title,
         )
 
-    for temped in temp_paths:
-        try:
-            if os.path.exists(temped):
-                os.remove(temped)
-        except Exception as cleanup_err:
-            # Best-effort temp cleanup after single delete
-            current_app.logger.warning(
-                "Temp remove failed (single delete cleanup): %s", cleanup_err
-            )
-    for temped_thumb in temp_thumb_paths:
-        try:
-            if os.path.exists(temped_thumb):
-                os.remove(temped_thumb)
-        except Exception as cleanup_err:
-            # Best-effort temp cleanup after single delete (thumbnail)
-            current_app.logger.warning(
-                "Temp remove failed (single delete thumb cleanup): %s",
-                cleanup_err,
-            )
+    # Clean up temp files
+    cleanup_temp_files(file_moves)
 
     flash(f"Listing deleted successfully! (Category: {category_path})", "success")
     if request.path.startswith("/admin") and current_user.is_admin:
@@ -1002,39 +881,28 @@ def _edit_listing_impl(listing_id):
             # Handle image deletions: move to temp, do not delete yet
             # (enables rollback on DB error)
             delete_image_ids = request.form.getlist("delete_images")
+            images_to_delete = []
             for img_id in delete_image_ids:
                 image = ListingImage.query.get(int(img_id))
                 if image and image in listing.images:
-                    image_path = os.path.join(upload_dir, image.filename)
-                    temp_path = os.path.join(temp_dir, image.filename)
-                    thumbnail_path = None
-                    temp_thumb_path = None
-                    if image.thumbnail_filename:
-                        thumbnail_path = os.path.join(
-                            thumbnail_dir, image.thumbnail_filename
-                        )
-                        temp_thumb_path = os.path.join(
-                            temp_dir, image.thumbnail_filename
-                        )
-                    try:
-                        if os.path.exists(image_path):
-                            shutil.move(image_path, temp_path)
-                            moved_to_temp.append(
-                                (image_path, temp_path, thumbnail_path, temp_thumb_path)
-                            )
-                        if (
-                            thumbnail_path
-                            and temp_thumb_path
-                            and os.path.exists(thumbnail_path)
-                            and os.path.exists(temp_thumb_path)
-                        ):
-                            shutil.move(thumbnail_path, temp_thumb_path)
-                        db.session.delete(image)
-                    except Exception as e:
-                        flash(
-                            f"Error moving image {image.filename} to temp: {e}",
-                            "warning",
-                        )
+                    images_to_delete.append(image)
+                    db.session.delete(image)
+
+            # Move images marked for deletion to temp
+            moved_to_temp, success, error_msg = move_image_files_to_temp(
+                images_to_delete, upload_dir, thumbnail_dir, temp_dir
+            )
+            if not success:
+                flash(f"Error moving images to temp: {error_msg}", "warning")
+                return render_template(
+                    "listings/listing_form.html",
+                    form=form,
+                    listing=listing,
+                    action="Edit",
+                    page_title=page_title,
+                    category=category,
+                    category_path=category_path,
+                )
 
             # Handle new image uploads: stage in TEMP_DIR until DB commit
             if form.images.data:
@@ -1090,26 +958,8 @@ def _edit_listing_impl(listing_id):
                                         "edit): %s",
                                         cleanup_err,
                                     )
-                            for (
-                                orig_path,
-                                temp_path,
-                                thumbnail_path,
-                                temp_thumb_path,
-                            ) in moved_to_temp:
-                                try:
-                                    if os.path.exists(temp_path):
-                                        shutil.move(temp_path, orig_path)
-                                    if temp_thumb_path and os.path.exists(
-                                        temp_thumb_path
-                                    ):
-                                        shutil.move(temp_thumb_path, thumbnail_path)
-                                except Exception as restore_err:
-                                    # Best-effort file restore; failure is
-                                    # notable but does not crash
-                                    current_app.logger.warning(
-                                        "Restore from temp failed (edit): %s",
-                                        restore_err,
-                                    )
+                            # Restore files that were moved to temp
+                            restore_files_from_temp(moved_to_temp)
                             flash(
                                 f"Failed to create thumbnail for image "
                                 f"'{file.filename}'. Please try again or use "
@@ -1139,33 +989,10 @@ def _edit_listing_impl(listing_id):
                 commit_success = True
             except Exception as e:
                 db.session.rollback()
-                for (
-                    orig_path,
-                    temp_path,
-                    thumbnail_path,
-                    temp_thumb_path,
-                ) in moved_to_temp:
-                    try:
-                        if os.path.exists(temp_path):
-                            shutil.move(temp_path, orig_path)
-                        if temp_thumb_path and os.path.exists(temp_thumb_path):
-                            shutil.move(temp_thumb_path, thumbnail_path)
-                    except Exception as restore_err:
-                        # Best-effort file restore after DB error; log if it fails
-                        current_app.logger.warning(
-                            "Restore from temp failed (db error): %s", restore_err
-                        )
-                for temp_path, _, temp_thumb_path, _ in added_temp_paths:
-                    try:
-                        if os.path.exists(temp_path):
-                            os.remove(temp_path)
-                        if temp_thumb_path and os.path.exists(temp_thumb_path):
-                            os.remove(temp_thumb_path)
-                    except Exception as cleanup_err:
-                        # Best-effort temp cleanup; failure is non-fatal but logged
-                        current_app.logger.warning(
-                            "Temp remove failed (db error cleanup): %s", cleanup_err
-                        )
+                # Restore files that were moved to temp (deleted images)
+                restore_files_from_temp(moved_to_temp)
+                # Clean up temp files for newly added images
+                cleanup_temp_files(added_temp_paths)
                 flash(
                     f"Database error. Changes not saved. Files restored. ({e})",
                     "danger",
@@ -1181,17 +1008,9 @@ def _edit_listing_impl(listing_id):
                 )
 
             if commit_success:
-                for _, temp_path, _, temp_thumb_path in moved_to_temp:
-                    try:
-                        if os.path.exists(temp_path):
-                            os.remove(temp_path)
-                        if temp_thumb_path and os.path.exists(temp_thumb_path):
-                            os.remove(temp_thumb_path)
-                    except Exception as cleanup_err:
-                        # Best-effort temp cleanup; failure is non-fatal but logged
-                        current_app.logger.warning(
-                            "Temp remove failed (post-commit): %s", cleanup_err
-                        )
+                # Clean up temp files for deleted images
+                cleanup_temp_files(moved_to_temp)
+                # Move newly added images from temp to final location
                 for (
                     temp_path,
                     unique_filename,

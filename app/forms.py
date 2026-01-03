@@ -161,8 +161,7 @@ class CategoryForm(FlaskForm):
             )
         if url_name.lower() in RESERVED_CATEGORY_NAMES:
             raise ValidationError(
-                "This name conflicts with system routes; "
-                "choose a different name."
+                "This name conflicts with system routes. Choose a different name."
             )
 
     def validate_parent_id(self, field):

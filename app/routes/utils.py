@@ -11,8 +11,7 @@ at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 Shared route utilities for the classifieds Flask app.
 
 This module contains shared decorators and utility functions for use
-by multiple route Blueprints. Currently, it provides the admin_required
-decorator for restricting access to admin users.
+by multiple route Blueprints.
 """
 
 import random
@@ -118,3 +117,128 @@ def create_thumbnail(image_path, thumbnail_path):
     except Exception as e:
         print(f"Error creating thumbnail: {e}")
         return False
+
+
+def move_image_files_to_temp(images, upload_dir, thumbnail_dir, temp_dir):
+    """
+    Move image files and their thumbnails to temp directory.
+
+    This implements the first step of the temp→commit→cleanup pattern for
+    atomic file operations. Files are moved (not copied) to enable rollback
+    if database commit fails.
+
+    Args:
+        images: List of ListingImage objects to move
+        upload_dir: Source directory for image files
+        thumbnail_dir: Source directory for thumbnail files
+        temp_dir: Destination temp directory
+
+    Returns:
+        tuple: (file_moves, success, error_message)
+            - file_moves: List of tuples (orig_path, temp_path, orig_thumb, temp_thumb)
+            - success: Boolean indicating if all moves succeeded
+            - error_message: String with error details if success=False, None otherwise
+    """
+    import os
+    import shutil
+
+    file_moves = []
+
+    for image in images:
+        orig_path = os.path.join(upload_dir, image.filename)
+        temp_path = os.path.join(temp_dir, image.filename)
+        orig_thumb = None
+        temp_thumb = None
+
+        if image.thumbnail_filename:
+            orig_thumb = os.path.join(thumbnail_dir, image.thumbnail_filename)
+            temp_thumb = os.path.join(temp_dir, image.thumbnail_filename)
+
+        try:
+            # Move image file if it exists
+            if os.path.exists(orig_path):
+                shutil.move(orig_path, temp_path)
+            else:
+                temp_path = None  # Mark as not moved
+
+            # Move thumbnail if it exists
+            if orig_thumb and temp_thumb and os.path.exists(orig_thumb):
+                shutil.move(orig_thumb, temp_thumb)
+            else:
+                temp_thumb = None  # Mark as not moved
+
+            file_moves.append((orig_path, temp_path, orig_thumb, temp_thumb))
+
+        except Exception as e:
+            # Rollback: restore any files we've moved so far
+            restore_files_from_temp(file_moves)
+            return [], False, f"Error moving image {image.filename}: {e}"
+
+    return file_moves, True, None
+
+
+def restore_files_from_temp(file_moves):
+    """
+    Restore files from temp directory back to original locations (rollback).
+
+    Used when database commit fails and we need to undo file movements.
+    This is a best-effort operation - failures are logged but don't raise errors.
+
+    Args:
+        file_moves: List of tuples (orig_path, temp_path, orig_thumb, temp_thumb)
+                   returned from move_image_files_to_temp()
+    """
+    import os
+    import shutil
+
+    for orig_path, temp_path, orig_thumb, temp_thumb in file_moves:
+        # Restore image file
+        if temp_path and os.path.exists(temp_path):
+            try:
+                shutil.move(temp_path, orig_path)
+            except Exception as e:
+                current_app.logger.warning(
+                    f"Failed to restore {orig_path} from temp: {e}"
+                )
+
+        # Restore thumbnail
+        if temp_thumb and os.path.exists(temp_thumb):
+            try:
+                shutil.move(temp_thumb, orig_thumb)
+            except Exception as e:
+                current_app.logger.warning(
+                    f"Failed to restore thumbnail {orig_thumb} from temp: {e}"
+                )
+
+
+def cleanup_temp_files(file_moves):
+    """
+    Delete files from temp directory after successful database commit.
+
+    This is the final step of the temp→commit→cleanup pattern.
+    Failures are logged but don't raise errors (best-effort cleanup).
+
+    Args:
+        file_moves: List of tuples (orig_path, temp_path, orig_thumb, temp_thumb)
+                   returned from move_image_files_to_temp()
+    """
+    import os
+
+    for orig_path, temp_path, orig_thumb, temp_thumb in file_moves:
+        # Delete image from temp
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception as e:
+                current_app.logger.warning(
+                    f"Failed to delete temp file {temp_path}: {e}"
+                )
+
+        # Delete thumbnail from temp
+        if temp_thumb and os.path.exists(temp_thumb):
+            try:
+                os.remove(temp_thumb)
+            except Exception as e:
+                current_app.logger.warning(
+                    f"Failed to delete temp thumbnail {temp_thumb}: {e}"
+                )

@@ -54,8 +54,7 @@ def internal_error(error):
             error_code=500,
             error_name=error_name,
             error_description=(
-                "An unexpected error has occurred. "
-                "Please try again later."
+                "An unexpected error has occurred. Please try again later."
             ),
             page_title=error_name,
         ),
