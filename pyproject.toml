@@ -1,3 +1,59 @@
+[project]
+name = "classifieds"
+version = "0.5.0"
+description = "A modern Flask web application for posting and managing classified ads"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "classifieds contributors"}
+]
+
+dependencies = [
+    "Flask>=3.1.2",
+    "Flask-Bcrypt>=1.0.1",
+    "Flask-LDAP3-Login>=1.0.2",
+    "Flask-Login>=0.6.3",
+    "Flask-Mail>=0.10.0",
+    "Flask-Migrate>=4.1.0",
+    "Flask-SQLAlchemy>=3.1.1",
+    "Flask-WTF>=1.2.2",
+    "email-validator>=2.3.0",
+    "gunicorn>=23.0.0",
+    "Pillow>=12.0.0",
+    "python-dotenv>=1.2.1",
+    "WTForms>=3.2.1",
+    "Faker>=38.2.0",
+    "numpy>=2.2.0",
+    "requests>=2.32.0",
+    "python-slugify>=8.0.4",
+    "SQLAlchemy>=2.0.43",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pyflakes>=3.4.0",
+    "ruff>=0.8.0",
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "mypy>=1.13.0",
+    "pip-tools>=7.5.0",
+    "pre-commit>=4.5.0",
+]
+
+test = [
+    "pytest>=8.0.0",
+    "pytest-cov>=6.0.0",
+    "pytest-flask>=1.3.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
 [tool.black]
 line-length = 88
 target-version = ["py311"]
@@ -12,11 +68,21 @@ multi_line_output = 3
 [tool.ruff]
 line-length = 88
 target-version = "py311"
-# Ignore rules that conflict with Black's formatting choices
+
+[tool.ruff.lint]
 extend-ignore = ["E203", "E501"]
-# enable/disable rules as you prefer; ruff will integrate with pre-commit
 select = ["E", "F", "W", "C", "I"]
 
-# (Optional) keep djhtml settings here for reference; djhtml may not read pyproject by default
 [tool.djhtml]
 tabwidth = 4
+
+[dependency-groups]
+dev = [
+    "pyflakes>=3.4.0",
+    "ruff>=0.8.0",
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "mypy>=1.13.0",
+    "pip-tools>=7.5.0",
+    "pre-commit>=4.5.0",
+]

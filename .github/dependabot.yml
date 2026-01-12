@@ -1,0 +1,53 @@
+version: 2
+updates:
+  # Python dependencies via pip (uv-managed pyproject.toml)
+  # Note: Dependabot uses "pip" ecosystem for all Python package formats,
+  # including pyproject.toml and uv.lock. This is correct even though we use
+  # uv as our package manager. Dependabot does not yet have native "uv" support.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    groups:
+      flask-ecosystem:
+        patterns:
+          - "Flask*"
+          - "flask-*"
+          - "SQLAlchemy*"
+          - "Jinja2"
+          - "Werkzeug"
+          - "WTForms"
+          - "gunicorn"
+      testing-tools:
+        patterns:
+          - "pytest*"
+      dev-tools:
+        patterns:
+          - "ruff"
+          - "black"
+          - "isort"
+          - "mypy*"
+          - "pyflakes"
+          - "pre-commit"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
