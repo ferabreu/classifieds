@@ -309,6 +309,52 @@ LDAP_DOMAIN=
 
 ---
 
+## Running the Application
+
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management (no pip/venv required).
+
+### 1. Install uv (if needed)
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### 2. Sync dependencies
+```bash
+uv sync
+```
+
+### 3. Set environment variables
+- Recommended: create a `.env` file in the project root:
+  ```
+  FLASK_APP=app
+  FLASK_ENV=development
+  ```
+- Or, export them in your shell:
+  ```bash
+  export FLASK_APP=app
+  export FLASK_ENV=development
+  ```
+
+### 4. Run the Flask app
+```bash
+# Prepend the variables, if not previously exported
+# FLASK_APP=app FLASK_ENV=development uv run flask run --debug
+uv run flask run --debug
+```
+
+### 5. Run CLI commands
+```bash
+uv run flask init
+uv run flask backfill-thumbnails
+```
+
+**Note:**
+- Do NOT prefix commands with env vars (e.g., `uv run FLASK_APP=app flask run`)—this will fail. You may, however, prefix uv with vars (`FLASK_APP=app FLASK_ENV=development uv run flask ...`)
+- If you see `ModuleNotFoundError`, run `uv sync` to ensure all dependencies are installed.
+- The `.venv` directory is not needed with uv and can be deleted unless used for other tools.
+
+---
+
 ## Troubleshooting
 
 - **ModuleNotFoundError**: Ensure you activate your venv: `source .venv/bin/activate`
