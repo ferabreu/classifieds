@@ -27,7 +27,7 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 
-from .models import RESERVED_CATEGORY_NAMES, Category, generate_url_name
+from .models import RESERVED_CATEGORY_NAMES, Category, db, generate_url_name
 
 
 class RegistrationForm(FlaskForm):
@@ -180,7 +180,7 @@ class CategoryForm(FlaskForm):
             return
         if parent_id == current.id:
             raise ValidationError("Category cannot be its own parent.")
-        parent = Category.query.get(parent_id)
+        parent = db.session.get(Category, parent_id)
         if parent and parent.is_ancestor_of(current):
             raise ValidationError("Selected parent is a descendant of this category.")
 

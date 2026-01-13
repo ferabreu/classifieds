@@ -14,6 +14,8 @@ Validates that reserved URL names (admin, static, etc.) are properly
 rejected in category creation.
 """
 
+from sqlalchemy import func, select
+
 from app import create_app
 from app.config import TestingConfig
 from app.models import Category, User, db
@@ -53,7 +55,9 @@ def run_tests():
         )
         results['reserved_status'] = resp.status_code
         results['reserved_flash'] = b"conflicts with system routes" in resp.data
-        results['reserved_created'] = Category.query.filter_by(url_name='admin').count()
+        results['reserved_created'] = db.session.scalar(
+            select(func.count()).select_from(Category).filter_by(url_name='admin')
+        )
 
         # 2) Empty-slug: '_____'
         resp = client.post(
@@ -63,7 +67,9 @@ def run_tests():
         )
         results['empty_status'] = resp.status_code
         results['empty_flash'] = b"empty URL segment" in resp.data
-        results['empty_created'] = Category.query.filter_by(url_name='').count()
+        results['empty_created'] = db.session.scalar(
+            select(func.count()).select_from(Category).filter_by(url_name='')
+        )
 
         # 3) Valid pt-BR: 'Eletrônicos' -> 'eletronicos'
         resp = client.post(
@@ -73,9 +79,9 @@ def run_tests():
         )
         results['valid_status'] = resp.status_code
         results['valid_flash'] = b"Category created." in resp.data
-        results['valid_created'] = Category.query.filter_by(
-            url_name='eletronicos'
-        ).count()
+        results['valid_created'] = db.session.scalar(
+            select(func.count()).select_from(Category).filter_by(url_name='eletronicos')
+        )
 
     return results
 

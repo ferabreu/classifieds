@@ -19,6 +19,7 @@ import uuid
 
 import click
 from flask import current_app
+from sqlalchemy import select
 
 from app.models import ListingImage, db
 
@@ -27,9 +28,13 @@ def run_backfill_thumbnails():
     """Generate thumbnails for existing images that don't have them (callable)."""
     from app.routes.utils import create_thumbnail
 
-    images_without_thumbnails = ListingImage.query.filter(
-        ListingImage.thumbnail_filename.is_(None)  # type: ignore
-    ).all()
+    images_without_thumbnails = (
+        db.session.execute(
+            select(ListingImage).filter(ListingImage.thumbnail_filename.is_(None))  # type: ignore
+        )
+        .scalars()
+        .all()
+    )
 
     if not images_without_thumbnails:
         print("No images found that need thumbnail generation.")
