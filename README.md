@@ -111,70 +111,65 @@ classifieds/
 
 ---
 
-## Initial Setup
+## Initial Setup (uv)
 
 ### Requirements
 
 - Python 3.10+
-- pip (Python package manager)
+- [uv](https://docs.astral.sh/uv/) (fast package manager) — install once:
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ```
 
-### 1. Clone and set up venv
+### 1. Clone and install dependencies
 
 ```bash
 git clone <your-repo-url> classifieds
 cd classifieds
-python -m venv .venv
-
-# IMPORTANT: Activate the venv BEFORE installing requirements!
-source .venv/bin/activate
-
-pip install -r requirements.txt
-
-# RECOMMENDED: Reactivate the venv after installing dependencies
-# (This ensures the correct 'flask' command is used and $PATH is updated.)
-deactivate
-source .venv/bin/activate
-
-# (Optional, but recommended) Check that you're using the venv's Python and Flask:
-which python
-which flask
-# Both should point to the venv's bin directory (e.g., .../classifieds/.venv/bin/python)
+curl -LsSf https://astral.sh/uv/install.sh | sh  # if not installed already
+uv sync
 ```
 
----
+uv creates and manages the virtual environment automatically; you do not need `.venv`.
 
-### 2. Configure Environment
+### 2. Configure environment
 
-Copy `.env.example` to `.env` and edit as needed:
+- Recommended: create a `.env` file in the project root (Flask auto-loads it).
+  - Copy from example file `resources/.env.example` and edit values as needed:
+    ```
+    FLASK_APP=app
+    FLASK_ENV=development
+    (...)
+    ```
 
+- Or, export them in your shell:
+  ```bash
+  export FLASK_APP=app
+  export FLASK_ENV=development
+  ```
+
+- Or prefix the variables to the command line:
 ```bash
-cp .env.example .env
+FLASK_APP=app FLASK_ENV=development uv run (...)
 ```
-
-By default, Flask will auto-load `.env` for `flask run` or for `flask` commands.  
-For Gunicorn (production), you must export these variables in your shell, use a process manager (e.g., systemd), or pass them with Docker (see below).
-
----
 
 ### 3. Initialize the app (database and uploads directory)
 
 ```bash
-FLASK_APP=app flask init
+FLASK_APP=app uv run flask init
 ```
 
 This creates:
 - `instance/classifieds.db` (SQLite)
 - `app/static/uploads` (uploaded images)
 - `app/static/uploads/thumbnails` (224x224 thumbnails)
-- `app/static/temp` (temp folder for ACIDized transactions when CRUDing listings)
+- `app/static/temp` (temp folder for ACIDized transactions)
 - Default admin: `admin@classifieds.io` / password: `admin`
 
 ### 3.1. Generate thumbnails for existing images (optional)
 
-If you have existing images from before thumbnail generation was implemented, run:
-
 ```bash
-FLASK_APP=app flask backfill-thumbnails
+FLASK_APP=app uv run flask backfill-thumbnails
 ```
 
 This will generate thumbnails for all existing images that don't have them.
@@ -185,10 +180,8 @@ This will generate thumbnails for all existing images that don't have them.
 
 #### Development
 
-In development, you'll probably want to `source .venv/bin/activate` first.
-
 ```bash
-FLASK_APP=app FLASK_ENV=development flask run --debug
+FLASK_APP=app FLASK_ENV=development uv run flask run --debug
 ```
 Visit [http://localhost:5000](http://localhost:5000)
 
@@ -199,6 +192,16 @@ From the **project root**:
 gunicorn -w 4 -b 0.0.0.0:8000 wsgi:app
 ```
 (Adjust workers/port as needed.)
+
+## Testing
+
+Run the pytest suite (uses in-memory SQLite and TestingConfig):
+
+```bash
+uv run pytest
+```
+
+If imports fail after pulling changes, run `uv sync` to refresh the environment. The `.venv` directory is not needed with uv and can be deleted unless used by other tools.
 
 ---
 
@@ -357,16 +360,10 @@ uv run flask backfill-thumbnails
 
 ## Troubleshooting
 
-- **ModuleNotFoundError**: Ensure you activate your venv: `source .venv/bin/activate`
-- **Database not found**: Run `flask --app app.py init-db`
+- **ModuleNotFoundError**: run `uv sync` to ensure all dependencies are installed.
+- **Database not found**: Run `flask --app app.py init`
 - **Gunicorn import errors**: Always run from the project root (where `wsgi.py` is) and use `gunicorn wsgi:app`
 - **Environment variables not loaded:** For Gunicorn or Docker, ensure you export variables or use a `.env` loader compatible with your process manager.
-- **Using the wrong Flask/Python**: Run `which python` and `which flask` to confirm you're using the venv.
-- **After installing requirements, reactivate your venv:** Sometimes after installing requirements, your shell may still use the global Flask. Run:
-  ```bash
-  deactivate
-  source .venv/bin/activate
-  ```
 
 ---
 
@@ -387,6 +384,6 @@ GPLv2.
 
 ## Author
 
-Created by GitHub Copilot for Fernando Mees Abreu ([https://github.com/ferabreu](https://github.com/ferabreu))
+Code created by GitHub Copilot based on specs by Fernando Mees Abreu ([https://github.com/ferabreu](https://github.com/ferabreu))
 
 ---
