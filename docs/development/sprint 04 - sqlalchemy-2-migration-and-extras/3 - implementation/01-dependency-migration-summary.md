@@ -74,6 +74,16 @@ Stored in: `baseline-versions.txt`
 ✓ Flask app initializes successfully with `uv run`
 ```
 
+## Test Suite (Step 2)
+
+- Added pytest-based integration tests covering auth flows, listings pages, user profile/admin access guards, and category path helpers.
+- Uses in-memory SQLite via TestingConfig with CSRF disabled for tests.
+- Run tests with:
+  ```bash
+  uv run pytest
+  ```
+- If imports fail after pulling updates, run `uv sync` to refresh the environment.
+
 ## Breaking Changes
 
 ### For Developers
