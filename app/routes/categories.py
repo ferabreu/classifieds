@@ -28,6 +28,7 @@ from flask import (
     url_for,
 )
 from flask_login import login_required
+from sqlalchemy import select
 
 from ..forms import CategoryForm
 from ..models import (
@@ -52,11 +53,14 @@ def admin_list():
     Lists all categories for admin management.
     Shows hierarchy: parent and children.
     """
-    categories = Category.query.order_by(Category.name).all()
+    categories = (
+        db.session.execute(select(Category).order_by(Category.name)).scalars().all()
+    )
 
     # Calculate listing count for each category (including descendants)
+    listing_counts = {}
     for c in categories:
-        c.listing_count = _count_listings_recursive(c, categories)
+        listing_counts[c.id] = _count_listings_recursive(c, categories)
 
     forms = {}
     for c in categories:
@@ -71,6 +75,7 @@ def admin_list():
     return render_template(
         "admin/admin_categories.html",
         categories=categories,
+        listing_counts=listing_counts,
         forms=forms,
         page_title="Manage categories",
     )
@@ -87,7 +92,9 @@ def admin_new():
     # Populate parent_id choices: show all categories except self (no actual self yet)
     form.parent_id.choices = [("0", "- None -")] + [
         (str(cat.id), cat.get_full_path())
-        for cat in Category.query.order_by(Category.name).all()
+        for cat in db.session.execute(select(Category).order_by(Category.name))
+        .scalars()
+        .all()
     ]  # type: ignore
     exclude_ids = []  # no category to exclude when creating new
     if form.validate_on_submit():
@@ -130,14 +137,17 @@ def admin_edit(category_id):
     Updates url_name when the category name is altered.
     Prevents setting self or descendant as parent (cycle prevention).
     """
-    category = Category.query.get_or_404(category_id)
+    category = db.get_or_404(Category, category_id)
+
     form = CategoryForm(obj=category)
     # compute ids to exclude (the category itself + all descendants) to avoid cycles
     exclude_ids = category.get_descendant_ids()
 
     # Populate parent_id choices (exclude self + descendants)
     # so the hidden select has valid options
-    all_cats = Category.query.order_by(Category.name).all()
+    all_cats = (
+        db.session.execute(select(Category).order_by(Category.name)).scalars().all()
+    )
     form.parent_id.choices = [("0", "- None -")] + [
         (str(cat.id), cat.get_full_path())
         for cat in all_cats
@@ -202,18 +212,16 @@ def admin_delete(category_id):
     Also deletes all descendant subcategories (cascade).
     Prevents deletion if category or descendants contain listings.
     """
-    category = Category.query.get_or_404(category_id)
+    category = db.get_or_404(Category, category_id)
 
     # Build set of category ids to inspect: target + all descendants
     descendant_ids = set(category.get_descendant_ids() or [])
     ids_to_check = {category.id} | descendant_ids
 
     # Check for any listings in the category or any descendant category
-    existing_listings = (
-        Listing.query.with_entities(Listing.id)
-        .filter(Listing.category_id.in_(ids_to_check))
-        .first()
-    )
+    existing_listings = db.session.execute(
+        select(Listing.id).where(Listing.category_id.in_(ids_to_check))
+    ).first()
     if existing_listings:
         flash(
             "Cannot delete category: it or one of its subcategories contains listings.",
@@ -257,7 +265,7 @@ def api_breadcrumb(category_id):
     """
     if category_id == 0:
         return jsonify([])  # No breadcrumb for root
-    category = Category.query.get_or_404(category_id)
+    category = db.one_or_404(select(Category).where(Category.id == category_id))
     return jsonify([c.to_dict() for c in category.breadcrumb])
 
 
@@ -289,7 +297,11 @@ def _validate_category_inputs(
         return None, f"'{name}' conflicts with system routes and cannot be used."
 
     # Sibling uniqueness (ignore self if editing)
-    existing = Category.query.filter_by(url_name=url_name, parent_id=parent_id).first()
+    existing = db.session.execute(
+        select(Category).where(
+            (Category.url_name == url_name) & (Category.parent_id == parent_id)  # type: ignore
+        )
+    ).scalar_one_or_none()
     if existing and (current_id is None or existing.id != current_id):
         return None, "A category with a similar URL name already exists at this level."
 

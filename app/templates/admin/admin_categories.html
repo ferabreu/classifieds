@@ -26,7 +26,7 @@
                 <tbody>
                     {# Render root categories (no parent), sorted by name #}
                     {% for root in categories|selectattr('parent', 'none')|sort(attribute='name') %}
-                        {{ category_list.render_category_rows(root, categories, include_admin_ui=True) }}
+                        {{ category_list.render_category_rows(root, categories, include_admin_ui=True, listing_counts=listing_counts) }}
                     {% endfor %}
                 </tbody>
             </table>

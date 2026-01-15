@@ -22,6 +22,7 @@ from flask import Flask
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
+from sqlalchemy import select
 
 from .config import DevelopmentConfig, ProductionConfig, TestingConfig
 from .models import Category, User, db
@@ -30,7 +31,7 @@ login_manager = LoginManager()
 mail = Mail()
 
 
-def create_app(config_class=None):
+def create_app(config_class=None):  # noqa: C901
     if config_class is None:
         # Fallback: choose config based on FLASK_ENV
         env = os.getenv("FLASK_ENV", "development").lower()
@@ -67,18 +68,26 @@ def create_app(config_class=None):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        return db.session.execute(
+            select(User).where(User.id == int(user_id))
+        ).scalar_one_or_none()
 
     @app.context_processor
     def inject_navbar_data():
         categories = (
-            Category.query.filter_by(parent_id=None).order_by(Category.name).all()
+            db.session.execute(
+                select(Category)
+                .where(Category.parent_id.is_(None))
+                .order_by(Category.name)
+            )
+            .scalars()
+            .all()
         )
         return {"categories": categories}
 
     @app.context_processor
     def inject_title_separator():
-        return dict(title_separator=" | ")
+        return {"title_separator": " | "}
 
     from .routes.admin import admin_bp
     from .routes.auth import auth_bp
@@ -152,7 +161,9 @@ def create_app(config_class=None):
 
         db.create_all()
 
-        admin = User.query.filter_by(email="admin@classifieds.io").first()
+        admin = db.session.execute(
+            select(User).where(User.email == "admin@classifieds.io")  # type: ignore
+        ).scalar_one_or_none()
         if not admin:
             admin = User(
                 email="admin@classifieds.io",

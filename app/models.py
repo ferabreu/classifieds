@@ -16,13 +16,13 @@ Handles hierarchical categories, user accounts, and listing image management.
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Union
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from slugify import slugify
-from sqlalchemy import event
-from sqlalchemy.orm import Session
+from sqlalchemy import event, select
+from sqlalchemy.orm import Session, scoped_session
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -169,14 +169,35 @@ class Category(db.Model):
         return self.url_name.lower() in RESERVED_CATEGORY_NAMES
 
     @classmethod
-    def get_children(cls, parent_id: Optional[int]):
+    def get_children(cls, parent_id: Optional[int], session: Optional[Union[Session, scoped_session]] = None):  # type: ignore
         """
         Return immediate children for parent_id.
         parent_id == 0 -> return root categories (parent_id IS NULL).
+
+        Args:
+            parent_id: The parent category ID (0 or None for root categories)
+            session: Optional SQLAlchemy session. If not provided, uses db.session
         """
+        if session is None:
+            from . import db
+
+            session = db.session  # type: ignore
+
         if parent_id == 0 or parent_id is None:
-            return cls.query.filter(cls.parent_id.is_(None)).order_by(cls.name).all()
-        return cls.query.filter_by(parent_id=parent_id).order_by(cls.name).all()
+            return (
+                session.execute(  # type: ignore
+                    select(cls).where(cls.parent_id.is_(None)).order_by(cls.name)
+                )
+                .scalars()
+                .all()
+            )
+        return (
+            session.execute(  # type: ignore
+                select(cls).where(cls.parent_id == parent_id).order_by(cls.name)
+            )
+            .scalars()
+            .all()
+        )
 
     def would_create_cycle(
         self, new_parent_id: Optional[int], session: Session
@@ -219,7 +240,7 @@ class Category(db.Model):
         return False
 
     @classmethod
-    def from_path(cls, path_string: str) -> Optional["Category"]:
+    def from_path(cls, path_string: str, session: Optional[Union[Session, scoped_session]] = None) -> Optional["Category"]:  # type: ignore
         """
         Resolve a hierarchical category path to a Category object.
 
@@ -228,6 +249,7 @@ class Category(db.Model):
 
         Args:
             path_string: A slash-separated path like "vehicles/motorcycles"
+            session: Optional SQLAlchemy session. If not provided, uses db.session
 
         Returns:
             The Category object at the end of the path, or None if path is invalid
@@ -239,6 +261,11 @@ class Category(db.Model):
         if not path_string or path_string == "/":
             return None
 
+        if session is None:
+            from . import db
+
+            session = db.session  # type: ignore
+
         # Parse the path into segments
         segments = [segment for segment in path_string.split("/") if segment]
         if not segments:
@@ -246,7 +273,7 @@ class Category(db.Model):
 
         # Load all categories once and build an in-memory lookup
         # keyed by (parent_id, url_name)
-        all_categories = cls.query.all()
+        all_categories = session.execute(select(cls)).scalars().all()  # type: ignore
         lookup: dict[tuple[Optional[int], str], "Category"] = {
             (category.parent_id, category.url_name): category
             for category in all_categories
@@ -281,7 +308,9 @@ class CategoryView:
     url_path: str
 
     @classmethod
-    def from_category(cls, category: Category, name_override: Optional[str] = None) -> 'CategoryView':
+    def from_category(
+        cls, category: Category, name_override: Optional[str] = None
+    ) -> 'CategoryView':
         """
         Create a CategoryView from a Category model instance.
 

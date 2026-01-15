@@ -5,16 +5,16 @@
   Category list macro. Renders a hierarchical category tree as a table for admin interfaces.
 #}
 
-{% macro render_category_rows(category, categories, level=0, include_admin_ui=False) %}
+{% macro render_category_rows(category, categories, level=0, include_admin_ui=False, listing_counts=None) %}
     <tr>
-        {% if include_admin_ui %}<td><input type="radio" name="selected_category_id" value="{{ category.id }}" data-listing-count="{{ category.listing_count }}"></td>{% endif %}
+        {% if include_admin_ui %}<td><input type="radio" name="selected_category_id" value="{{ category.id }}" data-listing-count="{{ listing_counts.get(category.id, 0) if listing_counts else 0 }}"></td>{% endif %}
         <td>
             <span style="display: inline-block; width: {{ (level|int) * 16 }}px;"></span>
             <a href="{{ url_for('listings.category_filtered_listings', category_path=category.url_path) }}">{{ category.name }}</a>
         </td>
-        {% if include_admin_ui %}<td class="text-end">{{ category.listing_count }}</td>{% endif %}
+        {% if include_admin_ui %}<td class="text-end">{{ listing_counts.get(category.id, 0) if listing_counts else 0 }}</td>{% endif %}
     </tr>
     {% for child in categories if child.parent_id == category.id %}
-        {{ render_category_rows(child, categories, level + 1, include_admin_ui=include_admin_ui) }}
+        {{ render_category_rows(child, categories, level + 1, include_admin_ui=include_admin_ui, listing_counts=listing_counts) }}
     {% endfor %}
 {% endmacro %}
