@@ -24,7 +24,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 
 from ..forms import UserEditForm
@@ -98,33 +98,32 @@ def admin_list():
     # This avoids the N+1 problem: instead of 1 query for users + 20 queries for counts,
     # we construct a subquery of listing counts grouped by user_id and join it to users.
     #
-    # NOTE: This uses the legacy .query API for consistency with the existing codebase
-    # (see app/routes/auth.py, app/models.py, etc.). The modern SQLAlchemy 2.0+ approach
-    # would use select() with explicit joins. This can be refactored when the project
-    # upgrades to Flask-SQLAlchemy 3.1+ (which requires SQLAlchemy 2.0+).
-    # See tech debt issue: "Migrate from legacy .query API to modern select() API"
+    # Using SQLAlchemy 2.0 select() API with subquery and outerjoin for aggregation.
     listing_count_subquery = (
-        db.session.query(
+        select(
             Listing.user_id,  # type: ignore
             func.count(Listing.id).label("listing_count"),
-        )  # type: ignore
+        )
         .group_by(Listing.user_id)
         .subquery()
-    )  # type: ignore
+    )
 
     # Join users with the subquery and fetch all columns including listing_count
-    pagination = (
-        User.query.outerjoin(
-            listing_count_subquery, User.id == listing_count_subquery.c.user_id
-        )
-        .add_columns(
+    query = (
+        select(
+            User,
             func.coalesce(listing_count_subquery.c.listing_count, 0).label(
                 "listing_count"
-            )
+            ),
+        )
+        .outerjoin(
+            listing_count_subquery, User.id == listing_count_subquery.c.user_id  # type: ignore
         )
         .order_by(sort_order)
-        .paginate(page=page, per_page=20)  # type: ignore
-    )  # type: ignore
+    )
+
+    # Use db.paginate for pagination (Flask-SQLAlchemy helper)
+    pagination = db.paginate(query, page=page, per_page=20)  # type: ignore
 
     # Extract User objects and attach listing_count as an attribute for template
     users = []
@@ -148,7 +147,7 @@ def admin_list():
 @admin_required
 def admin_profile(user_id):
     """Displays a user's profile page for admin review."""
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     return render_template(
         "users/user_profile.html", user=user, page_title="User profile"
     )
@@ -161,11 +160,14 @@ def admin_edit(user_id):
     Allows admins to edit user details, including admin status.
     Prevents demoting the last admin in the system.
     """
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
+
     form = UserEditForm(obj=user)
     if form.validate_on_submit():
         if form.is_admin.data is False:
-            admins = User.query.filter_by(is_admin=True).count()
+            admins = db.session.execute(
+                select(func.count(User.id)).where(User.is_admin)  # type: ignore
+            ).scalar()
             if admins == 1 and user.is_admin:
                 flash("Cannot remove the last administrator.", "danger")
                 return redirect(url_for("users.admin_edit", user_id=user.id))
@@ -192,16 +194,24 @@ def admin_delete(user_id):
     Allows admins to delete a user, except for the last admin user.
     Also deletes all listings owned by the user and their associated image files.
     """
-    user = User.query.get_or_404(user_id)
-    admins = User.query.filter_by(is_admin=True).count()
+    user = db.get_or_404(User, user_id)
+
+    admins = db.session.execute(
+        select(func.count(User.id)).where(User.is_admin)  # type: ignore
+    ).scalar()
     if admins == 1 and user.is_admin:
         flash("Must have at least one admin user in the system.", "danger")
         return redirect(url_for("users.admin_list"))
 
     # Get all listings owned by the user with their images loaded
     listings = (
-        Listing.query.filter_by(user_id=user_id)
-        .options(joinedload(Listing.images))  # type: ignore
+        db.session.execute(
+            select(Listing)
+            .where(Listing.user_id == user_id)
+            .options(joinedload(Listing.images))  # type: ignore
+        )
+        .scalars()
+        .unique()
         .all()
     )
 

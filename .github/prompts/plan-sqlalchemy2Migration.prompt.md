@@ -12,9 +12,18 @@ Migrate the entire Flask application from the deprecated `.query` API to the mod
 
 4. **Refactor authentication and core utilities** — Migrate `app/routes/auth.py` (5 queries), `app/__init__.py` (critical user loader and context processor), and `app/routes/categories.py` (3 queries), paying special attention to `Category.get_children()` and `Category.from_path()` class methods that need session injection.
 
-5. **Convert complex routes with joins and pagination** — Systematically migrate `app/routes/users.py` (complex subquery with aggregation), `app/routes/listings.py` (18 queries with eager loading), and `app/routes/admin.py` (10 queries), using `db.paginate()` for pagination and explicit `joinedload()` for relationships.
+5. **Convert complex routes with joins and pagination** — Systematically migrate the following files, ensuring all queries use `select()` with proper joins, eager loading, and pagination handling:
+   1. `app/routes/users.py` (complex subquery with aggregation).
+   2. `app/routes/listings.py` (18 queries with eager loading).
+   3. `app/routes/admin.py` (10 queries).
 
-6. **Finalize and validate** — Migrate remaining `app/cli/demo.py` (6 demo queries), run full test suite, compare performance benchmarks, update `docs/development/sprint 04 - sqlalchemy-2-migration-and-extras/` with migration guide, and create rollback documentation.
+6. **Finalize and validate** — Migrate remaining `app/cli/demo.py` (6 demo queries).
+
+7. Run full test suite, compare performance benchmarks.
+
+8. Update `docs/development/sprint 04 - sqlalchemy-2-migration-and-extras/`:
+   1. Update `s04-Summary.md` with reports on steps 4 and 5. Add additional relevant information on any steps as you see fit.
+   2. Add migration guide and create rollback documentation.
 
 ## Further Considerations
 

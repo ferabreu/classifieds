@@ -27,6 +27,7 @@ from flask import (
 from flask_login import current_user, login_required, login_user, logout_user
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer
+from sqlalchemy import select
 
 from ..forms import ForgotPasswordForm, LoginForm, RegistrationForm, ResetPasswordForm
 from ..ldap_auth import authenticate_with_ldap
@@ -55,7 +56,9 @@ def login():
     if form.validate_on_submit():
         email = form.email.data.lower()  # type: ignore
         password = form.password.data
-        user = User.query.filter_by(email=email).first()
+        user = db.session.execute(
+            select(User).where(User.email == email)  # type: ignore
+        ).scalar_one_or_none()
         # Try local authentication
         if user and user.password_hash and user.check_password(password):
             login_user(user)
@@ -93,7 +96,9 @@ def register():
 
     if form.validate_on_submit():
         email = form.email.data.lower()  # type: ignore
-        if User.query.filter_by(email=email).first():
+        if db.session.execute(
+            select(User).where(User.email == email)  # type: ignore
+        ).scalar_one_or_none():
             flash("Email already registered.", "danger")
             return render_template(
                 "register.html", form=form, page_title=register_title
@@ -132,9 +137,9 @@ def forgot_password():
 
     form = ForgotPasswordForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(
-            email=form.email.data.lower()  # type: ignore
-        ).first()
+        user = db.session.execute(
+            select(User).where(User.email == form.email.data.lower())  # type: ignore
+        ).scalar_one_or_none()
         if user and not user.is_ldap_user:
             token = generate_reset_token(user.email)
             reset_url = url_for("auth.reset_password", token=token, _external=True)
@@ -188,7 +193,9 @@ def reset_password(token):
 
     form = ResetPasswordForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=email).first()
+        user = db.session.execute(
+            select(User).where(User.email == email)
+        ).scalar_one_or_none()
         if user:
             user.set_password(form.password.data)
             db.session.commit()
