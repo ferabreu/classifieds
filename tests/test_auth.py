@@ -1,5 +1,7 @@
 from flask import url_for
+from sqlalchemy import select
 
+from app import db
 from app.models import User
 
 
@@ -18,7 +20,9 @@ def test_register_and_login_flow(client, app):
     )
     assert response.status_code == 200
     with app.app_context():
-        created = User.query.filter_by(email="newuser@classifieds.io").first()
+        created = db.session.execute(
+            select(User).where(User.email == "newuser@classifieds.io")
+        ).scalar_one_or_none()
         assert created is not None
 
     # Login with the new user

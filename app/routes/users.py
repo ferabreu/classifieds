@@ -128,8 +128,15 @@ def admin_list():
     # Extract User objects and attach listing_count as an attribute for template
     users = []
     for row in pagination.items:
-        user = row[0]  # User object from first column
-        user.listing_count = row[1]  # listing_count from add_columns
+        # When selecting multiple columns, row is a tuple/Row object
+        # When selecting single entity, row is the entity itself
+        if isinstance(row, tuple):
+            user, listing_count = row
+        else:
+            # If pagination changed behavior, try attribute access
+            user = row
+            listing_count = getattr(row, 'listing_count', 0)
+        user.listing_count = listing_count
         users.append(user)
     pagination.items = users
 
