@@ -129,7 +129,7 @@ Step N+1: Integration Validation
 
 When creating sprint plans or work documentation:
 - Write clear, unambiguous task descriptions
-- Include acceptance cfor the relevant tests (pass/fail)
+- Include acceptance criteria for the relevant tests (pass/fail)
 - Flag any deviations from the plan
 - Ask for confirmation before proceeding to next step if uncertain
 
@@ -169,26 +169,6 @@ After completing each step:
 ---
 
 ## 📚 File-Specific Instructions
-
-This project uses **file-specific instruction files** that apply automatically based on file type:
-
-- **[python-flask.instructions.md](.github/instructions/python-flask.instructions.md)** → Applied to `**/*.py`
-  - Flask blueprints, SQLAlchemy 2.0 patterns, code standards, helper functions
-
-- **[jinja2-templates.instructions.md](.github/instructions/jinja2-templates.instructions.md)** → Applied to `**/templates/**/*.html`
-  - Template structure, macro usage, data preparation patterns
-
-- **[alembic-migrations.instructions.md](.github/instructions/alembic-migrations.instructions.md)** → Applied to `**/migrations/versions/*.py`
-  - SQLite batch mode, NOT NULL backfilling, migration patterns
-
-- **[project-safety.instructions.md](.github/instructions/project-safety.instructions.md)** → Applied to `**/*.py`
-  - ACID file upload pattern, admin user protection, external service checks
-
-These files are automatically included by VS Code when editing matching files. Check them for detailed technical patterns.
-
----
-
-## � File-Specific Instructions
 
 This project uses **file-specific instruction files** that apply automatically based on file type:
 
