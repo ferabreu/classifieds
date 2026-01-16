@@ -6,7 +6,7 @@
 
 ## Migration Steps
 
-- [x] **Step 1:** Modernize dependency management *(Skipped - already using uv)*
+- [x] **Step 1:** Modernize dependency management
 - [x] **Step 2:** Create comprehensive test suite *(14 functional tests existing)*
 - [x] **Step 3:** Migrate low-risk files *(errors.py, maintenance.py, forms.py, scripts)*
 - [x] **Step 4:** Refactor authentication and core utilities
