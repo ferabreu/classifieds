@@ -15,7 +15,7 @@ def test_profile_page_loads_for_logged_in_user(client, app, user):
     )
     response = client.get(url_for("users.profile"))
     assert response.status_code == 200
-    assert b"Profile" in response.data or user.email.encode() in response.data
+    assert b"Profile" in response.data or user["email"].encode() in response.data
 
 
 def test_admin_user_list_requires_admin(client, app, admin_user):
