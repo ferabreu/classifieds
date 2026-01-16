@@ -8,8 +8,6 @@ Welcome to the documentation for the **Classifieds** project! Here you’ll find
 
 - [Getting Started](#getting-started)
 - [Copilot Notes](#copilot-notes)
-- [Conversation History](#conversation-history)
-- [Contributing](#contributing)
 - [Additional Resources](#additional-resources)
 
 ---
@@ -28,20 +26,6 @@ This section contains AI-assisted notes, best practices, and troubleshooting tip
     - [Migrations Best Practices](./copilot-notes/migrations-best-practices.md)
     - [SQLAlchemy Troubleshooting](./copilot-notes/sqlalchemy-troubleshooting.md)
     - _Add more Copilot notes as needed!_
-
----
-
-## Conversation History
-
-A complete log of previous Copilot and developer conversations is available for reference:
-
-- [`conversation_history.txt`](./misc/copilot-conversation-history.txt)
-
----
-
-## Contributing
-
-> _Add guidelines for contributing, reporting issues, and submitting pull requests here._
 
 ---
 
