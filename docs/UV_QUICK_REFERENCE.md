@@ -111,3 +111,42 @@ uv pip tree
 
 - [uv documentation](https://docs.astral.sh/uv/)
 - [pyproject.toml specification](https://peps.python.org/pep-0621/)
+
+
+## 🚀 Common Operations Quick Reference
+
+### Start Development Server
+```bash
+uv run flask run
+```
+
+### Initialize Database
+```bash
+uv run flask init
+```
+
+### Create Migration
+```bash
+uv run flask db migrate -m "description"
+uv run flask db upgrade
+```
+
+### Run Pre-commit Hooks
+```bash
+uv run pre-commit install       # First time setup
+uv run pre-commit run --all-files
+```
+
+### Quality Checklist (Run Before Committing)
+```bash
+# Syntax & Import Check
+python -m pyflakes app migrations scripts wsgi.py
+python -c "import importlib; importlib.import_module('app')"
+
+# Formatter & Linter
+uv run black app/
+uv run isort app/
+uv run ruff check app/
+```
+
+---
