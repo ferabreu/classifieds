@@ -21,8 +21,9 @@ from flask import (
     Blueprint,
     render_template,
 )
+from sqlalchemy import func, select
 
-from ..models import Category, Listing, User
+from ..models import Category, Listing, User, db
 from .decorators import admin_required
 
 admin_bp = Blueprint("admin", __name__)
@@ -35,9 +36,9 @@ admin_bp = Blueprint("admin", __name__)
 @admin_required
 def dashboard():
     """Renders the admin dashboard with statistics on users, categories, listings."""
-    user_count = User.query.count()
-    category_count = Category.query.count()
-    listing_count = Listing.query.count()
+    user_count = db.session.execute(select(func.count(User.id))).scalar_one()
+    category_count = db.session.execute(select(func.count(Category.id))).scalar_one()
+    listing_count = db.session.execute(select(func.count(Listing.id))).scalar_one()
     return render_template(
         "admin/admin_dashboard.html",
         user_count=user_count,

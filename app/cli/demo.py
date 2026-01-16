@@ -30,6 +30,7 @@ import requests
 from dotenv import load_dotenv
 from faker import Faker
 from flask import current_app
+from sqlalchemy import select
 
 from app import db
 from app.cli.maintenance import run_backfill_thumbnails
@@ -234,7 +235,7 @@ def ensure_demo_images(
     return filenames
 
 
-def get_or_create_categories():
+def get_or_create_categories():  # noqa: C901
     """Get existing categories/subcategories from CATEGORY_HIERARCHY,
     or create if missing.
 
@@ -262,9 +263,13 @@ def get_or_create_categories():
             )
 
     # Get or create parent categories
-    categories = Category.query.filter(
-        Category.parent_id.is_(None)  # type: ignore
-    ).all()
+    categories = (
+        db.session.execute(
+            select(Category).where(Category.parent_id.is_(None))  # type: ignore
+        )
+        .scalars()
+        .all()
+    )
     existing_parents = {c.name: c for c in categories}
 
     for parent_name in CATEGORY_HIERARCHY.keys():
@@ -278,9 +283,13 @@ def get_or_create_categories():
         db.session.commit()
 
     # Get or create subcategories
-    subcats = Category.query.filter(
-        Category.parent_id.isnot(None)  # type: ignore
-    ).all()
+    subcats = (
+        db.session.execute(
+            select(Category).where(Category.parent_id.isnot(None))  # type: ignore
+        )
+        .scalars()
+        .all()
+    )
     existing_subcats = {c.name: c for c in subcats}
 
     for parent_name, subcat_names in CATEGORY_HIERARCHY.items():
@@ -317,7 +326,7 @@ def get_or_create_categories():
     default=False,
     help="Use only cached images (do not fetch new images from Unsplash).",
 )
-def demo_data(replace, images_only, cache_only):
+def demo_data(replace, images_only, cache_only):  # noqa: C901
     """
     Seed demo categories, users, listings, and images with realistic data
     using Unsplash or random images (cached). By default, adds more data
@@ -369,7 +378,7 @@ def demo_data(replace, images_only, cache_only):
         thumbnail_dir = current_app.config["THUMBNAIL_DIR"]
 
         # Identify demo listings by marker in description
-        all_listings = Listing.query.all()
+        all_listings = db.session.execute(select(Listing)).scalars().all()
         demo_listings = [
             lst
             for lst in all_listings
@@ -420,13 +429,15 @@ def demo_data(replace, images_only, cache_only):
 
     # Get users for listing assignment
     if DISTRIBUTE_ACROSS_USERS:
-        demo_users = User.query.all()
+        demo_users = db.session.execute(select(User)).scalars().all()
         if not demo_users:
             print("ERROR: No users exist in the database. Aborting.")
             return
         print(f"Distributing listings across {len(demo_users)} existing users.")
     else:
-        demo_user = User.query.filter_by(email=USER_EMAIL).first()
+        demo_user = db.session.execute(
+            select(User).where(User.email == USER_EMAIL)  # type: ignore
+        ).scalar_one_or_none()
         if not demo_user:
             print(
                 f"ERROR: Demo user with email '{USER_EMAIL}' does not exist. Aborting."
@@ -557,9 +568,7 @@ def demo_data(replace, images_only, cache_only):
 
     # Demo images: fetch/reuse Unsplash images for keyword queries
     src_folder = os.path.join(current_app.root_path, DEMO_IMAGES_FOLDER)
-    dest_folder = os.path.join(
-        current_app.root_path, current_app.config["UPLOAD_DIR"]
-    )
+    dest_folder = os.path.join(current_app.root_path, current_app.config["UPLOAD_DIR"])
     os.makedirs(dest_folder, exist_ok=True)
     os.makedirs(thumbnail_dir, exist_ok=True)
 

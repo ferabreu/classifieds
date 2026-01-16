@@ -34,6 +34,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
@@ -57,7 +58,7 @@ listings_bp = Blueprint("listings", __name__)
 @listings_bp.route("/")
 def index():
     # Check if any categories exist (controls "+ Post New Listing" button visibility)
-    any_categories_exist = Category.query.first() is not None
+    any_categories_exist = db.session.execute(select(Category)).first() is not None
 
     # Get selected categories for carousels
     carousel_categories = get_index_carousel_categories()
@@ -72,9 +73,13 @@ def index():
     for category in carousel_categories:
         # Prefer direct category listings first
         direct_listings = (
-            Listing.query.filter_by(category_id=category.id)
-            .order_by(Listing.created_at.desc())
-            .limit(fetch_limit)
+            db.session.execute(
+                select(Listing)
+                .where(Listing.category_id == category.id)  # type: ignore
+                .order_by(Listing.created_at.desc())
+                .limit(fetch_limit)
+            )
+            .scalars()
             .all()
         )
 
@@ -87,9 +92,15 @@ def index():
             if descendant_ids:
                 needed = fetch_limit - len(listings_pool)
                 descendant_listings = (
-                    Listing.query.filter(Listing.category_id.in_(descendant_ids))
-                    .order_by(Listing.created_at.desc())
-                    .limit(max(needed * 2, display_slots))  # small buffer for variety
+                    db.session.execute(
+                        select(Listing)
+                        .where(Listing.category_id.in_(descendant_ids))  # type: ignore
+                        .order_by(Listing.created_at.desc())
+                        .limit(
+                            max(needed * 2, display_slots)
+                        )  # small buffer for variety
+                    )
+                    .scalars()
                     .all()
                 )
                 listings_pool.extend(descendant_listings)
@@ -112,11 +123,14 @@ def category_listings(category_id):
     page = request.args.get("page", 1, type=int)
     per_page = 24
 
-    category = Category.query.get_or_404(category_id)
+    category = db.get_or_404(Category, category_id)
     descendant_ids = category.get_descendant_ids()
-    listings_query = Listing.query.filter(Listing.category_id.in_(descendant_ids))
-    pagination = listings_query.order_by(Listing.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
+    listings_query = select(Listing).where(Listing.category_id.in_(descendant_ids))  # type: ignore
+    pagination = db.paginate(  # type: ignore
+        listings_query.order_by(Listing.created_at.desc()),
+        page=page,
+        per_page=per_page,
+        error_out=False,
     )
     listings = pagination.items
 
@@ -124,7 +138,13 @@ def category_listings(category_id):
 
     # --- Sidebar context additions ---
     # 1. Get all root categories with their children (for sidebar)
-    categories = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
+    categories = (
+        db.session.execute(
+            select(Category).where(Category.parent_id.is_(None)).order_by(Category.name)  # type: ignore
+        )
+        .scalars()
+        .all()
+    )
     # 2. Compute ancestor IDs for expansion using breadcrumb property
     ancestor_ids = [cat.id for cat in category.breadcrumb[:-1]]
     expanded_ids = ancestor_ids  # List of IDs to auto-expand
@@ -150,7 +170,13 @@ def category_filtered_listings(category_path):
 
     # --- Sidebar context additions ---
     # 1. Get all root categories with their children (for sidebar)
-    categories = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
+    categories = (
+        db.session.execute(
+            select(Category).where(Category.parent_id.is_(None)).order_by(Category.name)  # type: ignore
+        )
+        .scalars()
+        .all()
+    )
     # 2. Compute ancestor IDs for expansion using breadcrumb property
     ancestor_ids = [cat.id for cat in category.breadcrumb[:-1]]
     expanded_ids = ancestor_ids  # List of IDs to auto-expand
@@ -175,9 +201,13 @@ def category_filtered_listings(category_path):
         ):
             # Fetch listings for this child
             direct_listings = (
-                Listing.query.filter_by(category_id=child_category.id)
-                .order_by(Listing.created_at.desc())
-                .limit(fetch_limit)
+                db.session.execute(
+                    select(Listing)
+                    .where(Listing.category_id == child_category.id)  # type: ignore
+                    .order_by(Listing.created_at.desc())
+                    .limit(fetch_limit)
+                )
+                .scalars()
                 .all()
             )
 
@@ -192,9 +222,13 @@ def category_filtered_listings(category_path):
                 if descendant_ids:
                     needed = fetch_limit - len(listings_pool)
                     descendant_listings = (
-                        Listing.query.filter(Listing.category_id.in_(descendant_ids))
-                        .order_by(Listing.created_at.desc())
-                        .limit(max(needed * 2, display_slots))
+                        db.session.execute(
+                            select(Listing)
+                            .where(Listing.category_id.in_(descendant_ids))  # type: ignore
+                            .order_by(Listing.created_at.desc())
+                            .limit(max(needed * 2, display_slots))
+                        )
+                        .scalars()
                         .all()
                     )
                     listings_pool.extend(descendant_listings)
@@ -209,9 +243,13 @@ def category_filtered_listings(category_path):
         # Add showcase for listings directly in this intermediate category
         # (not in children)
         direct_category_listings = (
-            Listing.query.filter_by(category_id=category.id)
-            .order_by(Listing.created_at.desc())
-            .limit(fetch_limit)
+            db.session.execute(
+                select(Listing)
+                .where(Listing.category_id == category.id)  # type: ignore
+                .order_by(Listing.created_at.desc())
+                .limit(fetch_limit)
+            )
+            .scalars()
             .all()
         )
 
@@ -246,9 +284,12 @@ def category_filtered_listings(category_path):
         per_page = 24
 
         descendant_ids = category.get_descendant_ids()
-        listings_query = Listing.query.filter(Listing.category_id.in_(descendant_ids))
-        pagination = listings_query.order_by(Listing.created_at.desc()).paginate(
-            page=page, per_page=per_page, error_out=False
+        listings_query = select(Listing).where(Listing.category_id.in_(descendant_ids))  # type: ignore
+        pagination = db.paginate(  # type: ignore
+            listings_query.order_by(Listing.created_at.desc()),
+            page=page,
+            per_page=per_page,
+            error_out=False,
         )
         listings = pagination.items
 
@@ -267,7 +308,7 @@ def category_filtered_listings(category_path):
 
 @listings_bp.route("/listing/<int:listing_id>")
 def listing_detail(listing_id):
-    listing = Listing.query.get_or_404(listing_id)
+    listing = db.get_or_404(Listing, listing_id)
     category = listing.category
     category_path = category.get_full_path() if category else None
 
@@ -282,7 +323,7 @@ def listing_detail(listing_id):
 
 @listings_bp.route("/new", methods=["GET", "POST"])
 @login_required
-def create_listing():
+def create_listing():  # noqa: C901
     form = ListingForm()
     # For new listing, ensure category field is empty so JS shows only root dropdown
     if request.method == "GET":
@@ -312,7 +353,9 @@ def create_listing():
         )
 
     # Populate form category choices with hierarchical names, add blank option
-    categories = Category.query.order_by(Category.name).all()
+    categories = (
+        db.session.execute(select(Category).order_by(Category.name)).scalars().all()
+    )
     form.category.choices = [("", "Select...")] + [
         (str(cat.id), cat.get_full_path()) for cat in categories
     ]  # type: ignore
@@ -320,7 +363,9 @@ def create_listing():
     if request.method == "POST":
         form.category.choices = [("", "Select...")] + [
             (str(cat.id), cat.get_full_path())
-            for cat in Category.query.order_by(Category.name)
+            for cat in db.session.execute(
+                select(Category).order_by(Category.name)
+            ).scalars()
         ]  # type: ignore
         if form.validate_on_submit():
             # Convert category to int if selected
@@ -573,7 +618,9 @@ def admin_listings():
     sort_column = sort_column_map.get(sort, Listing.created_at)
     sort_order = sort_column.asc() if direction == "asc" else sort_column.desc()
 
-    pagination = Listing.query.order_by(sort_order).paginate(page=page, per_page=20)
+    pagination = db.paginate(  # type: ignore
+        select(Listing).order_by(sort_order), page=page, per_page=20
+    )
     listings = pagination.items
 
     return render_template(
@@ -604,8 +651,13 @@ def delete_selected_listings():
         return redirect(url_for("listings.admin_listings"))
 
     listings = (
-        Listing.query.options(joinedload(Listing.images))  # type: ignore
-        .filter(Listing.id.in_(selected_ids))
+        db.session.execute(
+            select(Listing)
+            .options(joinedload(Listing.images))  # type: ignore
+            .where(Listing.id.in_(selected_ids))  # type: ignore
+        )
+        .scalars()
+        .unique()
         .all()
     )
 
@@ -673,7 +725,7 @@ def _delete_listings_impl(listings):
 
 
 def _delete_listing_impl(listing_id):
-    listing = Listing.query.get_or_404(listing_id)
+    listing = db.get_or_404(Listing, listing_id)
     category = listing.category
     category_path = category.get_full_path() if category else None
 
@@ -755,8 +807,8 @@ def _delete_listing_impl(listing_id):
     return redirect(url_for("listings.index"))
 
 
-def _edit_listing_impl(listing_id):
-    listing = Listing.query.get_or_404(listing_id)
+def _edit_listing_impl(listing_id):  # noqa: C901
+    listing = db.get_or_404(Listing, listing_id)
     page_title = "Edit listing"
     category = listing.category
     category_path = category.get_full_path() if category else None
@@ -797,14 +849,18 @@ def _edit_listing_impl(listing_id):
         )
 
     # Populate form choices
-    categories = Category.query.order_by(Category.name).all()
+    categories = (
+        db.session.execute(select(Category).order_by(Category.name)).scalars().all()
+    )
     form = ListingForm()
     form.category.choices = [(cat.id, cat.get_full_path()) for cat in categories]
 
     if request.method == "POST":
         form.category.choices = [
             (cat.id, cat.get_full_path())
-            for cat in Category.query.order_by(Category.name)
+            for cat in db.session.execute(
+                select(Category).order_by(Category.name)
+            ).scalars()
         ]
         if form.validate_on_submit():
             # Backend checks for None on required fields (PyLance type safety)

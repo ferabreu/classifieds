@@ -21,9 +21,7 @@ Migrate the entire Flask application from the deprecated `.query` API to the mod
 
 7. Run full test suite, compare performance benchmarks.
 
-8. Update `docs/development/sprint 04 - sqlalchemy-2-migration-and-extras/`:
-   1. Update `s04-Summary.md` with reports on steps 4 and 5. Add additional relevant information on any steps as you see fit.
-   2. Add migration guide and create rollback documentation.
+8. Update `docs/development/sprint 04 - sqlalchemy-2-migration-and-extras/4 - verification/s04-Summary.md` as needed to make it a verification report for the entire sprint.
 
 ## Further Considerations
 
