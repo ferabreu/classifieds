@@ -8,6 +8,7 @@ Tests cover:
 """
 
 import pytest
+from sqlalchemy import func, select
 
 from app import db
 from app.forms import CategoryForm
@@ -16,8 +17,9 @@ from app.models import Category
 
 @pytest.fixture()
 def categories_hierarchy(app):
-    """Create a category hierarchy: Root -> Parent -> Child -> Grandchild
+    """Create a category hierarchy: Parent -> Child -> Grandchild
     Returns IDs instead of objects to avoid session detachment issues.
+    Note: 'root' category is created separately (not connected to hierarchy).
     """
     with app.app_context():
         root = Category(name="Root", url_name="root")
@@ -108,14 +110,14 @@ class TestDatabaseLevelCycleProtection:
             child.parent_id = child.id
 
             # Flush should fail due to cycle detection listener
-            from sqlalchemy.exc import IntegrityError
-
             try:
                 db.session.flush()
                 db.session.rollback()
                 pytest.fail("Database should have prevented self-parent cycle at flush")
-            except (IntegrityError, Exception):
-                # Expected: cycle detection should prevent flush
+            except Exception as e:
+                # Expected: cycle detection listener should raise an exception
+                # Verify this is a cycle detection error (not some other database error)
+                assert "cycle" in str(e).lower(), f"Unexpected error: {e}"
                 db.session.rollback()
 
             # Verify the change was rolled back
@@ -131,7 +133,9 @@ class TestIntegrationCycleProtection:
         with app.app_context():
             grandchild = db.session.get(Category, categories_hierarchy["grandchild_id"])
             root = db.session.get(Category, categories_hierarchy["root_id"])
-            original_count = db.session.query(Category).count()
+            original_count = db.session.execute(
+                select(func.count()).select_from(Category)
+            ).scalar()
 
             # Edit grandchild to have root as parent
             grandchild.parent_id = root.id
@@ -140,4 +144,7 @@ class TestIntegrationCycleProtection:
             # Verify change was applied
             grandchild = db.session.get(Category, categories_hierarchy["grandchild_id"])
             assert grandchild.parent_id == root.id
-            assert db.session.query(Category).count() == original_count
+            current_count = db.session.execute(
+                select(func.count()).select_from(Category)
+            ).scalar()
+            assert current_count == original_count

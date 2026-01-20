@@ -1,4 +1,4 @@
-User: Then, keep the manual check. You may implement the plan.
+**ferabreu:** Then, keep the manual check. You may implement the plan.
 
 GitHub Copilot: Created 3 todos
 

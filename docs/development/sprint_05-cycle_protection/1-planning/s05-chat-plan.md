@@ -1,4 +1,4 @@
-User: I need a plan/prompt file to instruct an AI Agent to solve the issue https://github.com/ferabreu/classifieds/issues/50 . The description of the issue may be outdated, so it's necessary to check the current code to evaluate the problem and figure out what should be done to solve it. If you have doubts or need additional clarification, just ask me.
+**ferabreu:** I need a plan/prompt file to instruct an AI Agent to solve the issue https://github.com/ferabreu/classifieds/issues/50 . The description of the issue may be outdated, so it's necessary to check the current code to evaluate the problem and figure out what should be done to solve it. If you have doubts or need additional clarification, just ask me.
 
 GitHub Copilot: I'll help you create a plan/prompt file for solving GitHub issue #50. Let me first research the issue and examine the current code to understand what needs to be done. 
 
@@ -60,7 +60,7 @@ Cycle protection exists but has a critical bug: the form validator compares stri
 
 Does this align with what you had in mind? Any adjustments to scope, or clarifications on those considerations?
 
-User: #createFile the plan as is into an untitled file (`untitled:plan-${camelCaseName}.prompt.md` without frontmatter) for further refinement.
+**ferabreu:** #createFile the plan as is into an untitled file (`untitled:plan-${camelCaseName}.prompt.md` without frontmatter) for further refinement.
 
 GitHub Copilot: Created [](untitled:plan-cycleProtection.prompt.md)
 
@@ -68,7 +68,7 @@ Done! The plan is now in `untitled:plan-cycleProtection.prompt.md` ready for ref
 
 Made changes.
 
-User: I have edited considerations 1 and 2, about tests and error messages. However, I don't understand what you mean by the third item. What functions in `app/routes/categories.py` would become redundant? Are you sure the code would become unnecessary?
+**ferabreu:** I have edited considerations 1 and 2, about tests and error messages. However, I don't understand what you mean by the third item. What functions in `app/routes/categories.py` would become redundant? Are you sure the code would become unnecessary?
 
 GitHub Copilot: Let me check the current plan file and examine the routes to clarify that consideration. 
 
