@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isEditing && parentId && String(parentId) !== '0') {
                 const currentOpt = document.createElement('option');
                 currentOpt.value = String(parentId);
-                currentOpt.textContent = 'Current level';
+                currentOpt.textContent = '- None -';
                 dropdown.appendChild(currentOpt);
             }
             items.forEach(function(cat) {

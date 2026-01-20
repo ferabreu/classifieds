@@ -171,9 +171,11 @@ class CategoryForm(FlaskForm):
         Assumes the form sets `self._obj` to the Category instance
         when editing (common pattern).
         """
-        parent_id = field.data
-        if not parent_id:
+        parent_id_str = field.data
+        if not parent_id_str or parent_id_str == "0":
             return
+        # Convert string from SelectField to integer for comparison
+        parent_id = int(parent_id_str)
         current = getattr(self, "_obj", None)
         if current is None:
             # creating a new category; nothing else to check
