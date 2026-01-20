@@ -174,14 +174,24 @@ class CategoryForm(FlaskForm):
         parent_id_str = field.data
         if not parent_id_str or parent_id_str == "0":
             return
+
         # Convert string from SelectField to integer for comparison
-        parent_id = int(parent_id_str)
+        try:
+            parent_id = int(parent_id_str)
+        except (TypeError, ValueError):
+            raise ValidationError("Invalid parent category selection.")
+
         current = getattr(self, "_obj", None)
+
+        # creating a new category; nothing else to check
         if current is None:
-            # creating a new category; nothing else to check
             return
+
+        # prevent self-parenting
         if parent_id == current.id:
             raise ValidationError("Category cannot be its own parent.")
+
+        # prevent selecting a descendant as parent
         parent = db.session.get(Category, parent_id)
         if parent and parent.is_ancestor_of(current):
             raise ValidationError("Selected parent is a descendant of this category.")

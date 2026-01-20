@@ -1,4 +1,4 @@
-User: Read the attached plan and implement step 5, please.
+**ferabreu:** Read the attached plan and implement step 5, please.
 
 GitHub Copilot: I'll implement Step 5 of the plan, which involves reorganizing users.py with all user-related routes and updating related templates.
 
@@ -163,7 +163,7 @@ Step 5 is now complete!
 
 Made changes.
 
-User: I think the self-service routes have not been correctly refactored. I'm accessing "my profile" page now, and the URL in the browser is `/users/profile`. By the plan, it should be `/profile`.
+**ferabreu:** I think the self-service routes have not been correctly refactored. I'm accessing "my profile" page now, and the URL in the browser is `/users/profile`. By the plan, it should be `/profile`.
 
 GitHub Copilot: You're right! The issue is that `users_bp` needs to be registered without a URL prefix in __init__.py. Let me check the current registration and fix it: 
 

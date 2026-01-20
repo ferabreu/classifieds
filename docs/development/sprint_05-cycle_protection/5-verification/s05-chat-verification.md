@@ -1,4 +1,4 @@
-User: Please fill in the file `docs/development/sprint_05-cycle_protection/4-testing/s05-test_guide.md` with instructions on how to test the implementation of the solution. You may use descriptive paragraphs, checklists, or whatever structure that is currently used for such purpose.
+**ferabreu:** Please fill in the file `docs/development/sprint_05-cycle_protection/4-testing/s05-test_guide.md` with instructions on how to test the implementation of the solution. You may use descriptive paragraphs, checklists, or whatever structure that is currently used for such purpose.
 
 I don't know if the correct name for such document is "test guide" - name it accordingly.
 
@@ -97,7 +97,7 @@ The guide follows the documentation format used in the project (detailed, pragma
 
 Made changes.
 
-User: Actually, I would prefer you used the formatting and naming used according to best practices. I am learning how to document this project as I go - so, I am trying to improve the docs for each sprint, and adopting standards.
+**ferabreu:** Actually, I would prefer you used the formatting and naming used according to best practices. I am learning how to document this project as I go - so, I am trying to improve the docs for each sprint, and adopting standards.
 
 Something in the guide you generated that does not make sense to me is having checkmarks for commands that have been run. Checkmarks are for things that went right, not for simply running commands.
 
@@ -145,7 +145,7 @@ The document now aligns with the project's documentation standards while remaini
 
 Made changes.
 
-User: I think the AI that detected this issue some time ago did not evaluate the code before stating that there was a problem. It's simply not possible to select the same category as it's own parent, neither a child as parent. The logic that populates the dropdown selectors prevents it.
+**ferabreu:** I think the AI that detected this issue some time ago did not evaluate the code before stating that there was a problem. It's simply not possible to select the same category as it's own parent, neither a child as parent. The logic that populates the dropdown selectors prevents it.
 
 That makes TC-02 and TC-03 untestable...
 
@@ -184,5 +184,122 @@ Perfect! I've updated the manual QA section to reflect the reality of the implem
    - TC-05: Hierarchy consistency after operations (testable)
 
 This is more honest about what can actually be tested manually while making clear that the unit tests provide comprehensive coverage of the cycle prevention scenarios.
+
+Made changes.
+
+
+**ferabreu:** There are problems in the `test_category_cycle_protection.py` file:
+
+1) In line 19, the docstring states "Root -> Parent -> Child -> Grandchild" but the actual hierarchy built in lines 32-33 is "Parent -> Child -> Grandchild". The root category is created but never connected to the hierarchy (it has no parent and no children are assigned to it). Either update the docstring to accurately reflect the hierarchy, or connect the root to the hierarchy if that was the intention.
+
+2) The exception handling in line 117 is overly broad with except (IntegrityError, Exception). This catches all exceptions, making it difficult to distinguish between the expected cycle detection error and other unexpected errors. Consider being more specific about which exception type the cycle detection listener raises, or at minimum verify that the caught exception is related to cycle detection (e.g., by checking the error message).
+
+3) Line 134's code uses the deprecated .query API which is not compatible with SQLAlchemy 2.0. According to the project's coding guidelines, the select() API should be used instead. Replace `db.session.query(Category).count()` with `db.session.execute(select(func.count()).select_from(Category)).scalar()`, or, alternatively, `db.session.execute(select(Category)).scalars().all()` followed by len() if you need the count.
+
+
+**Claude Haiku 4.5:** Thank you for catching those issues! Let me check the current state of the file and fix them: 
+
+Read [](file:///home/fmees/dev/classifieds/tests/test_category_cycle_protection.py#1-1), lines 1 to 50
+
+Read [](file:///home/fmees/dev/classifieds/tests/test_category_cycle_protection.py#100-100), lines 100 to 144
+
+Perfect! I can see all three issues. Let me fix them: Let me fix the tool call: Let me check the tool schema more carefully - I need to use the right structure: 
+
+Using "Replace String in File"
+
+
+```
+
+```
+
+
+Using "Replace String in File"
+
+
+```
+
+```
+
+
+Using "Replace String in File"
+
+
+```
+
+```
+
+
+Using "Replace String in File"
+
+
+```
+
+```
+
+
+Using "Replace String in File"
+
+
+```
+
+```
+Perfect! Now let me verify the fixes by running the tests: 
+
+Ran terminal command:  uv run python -m pytest tests/test_category_cycle_protection.py -v
+
+Excellent! Now let me verify the code quality and run the full test suite: 
+
+Ran terminal command:  uv run ruff check tests/test_category_cycle_protection.py && echo "✓ Code quality check passed"
+
+Let me fix those issues: 
+
+Using "Replace String in File"
+
+
+```
+
+```
+
+
+Using "Replace String in File"
+
+
+```
+
+```
+Now run the tests and code quality checks again: 
+
+Ran terminal command:  uv run ruff check tests/test_category_cycle_protection.py && uv run python -m pytest tests/test_category_cycle_protection.py -v
+
+Perfect! Now let me run the full test suite to ensure no regressions: 
+
+Ran terminal command:  uv run python -m pytest tests/ -v 2>&1 | tail -30
+
+Excellent! All fixes are complete and working. Let me summarize what was corrected:
+
+## ✅ All Three Issues Fixed
+
+### 1. **Docstring Accuracy**
+   - **Before:** "Create a category hierarchy: Root -> Parent -> Child -> Grandchild"
+   - **After:** "Create a category hierarchy: Parent -> Child -> Grandchild" with note about root being separate
+   - **Impact:** Docstring now accurately reflects the actual hierarchy created in the fixture
+
+### 2. **Exception Handling Made Specific**
+   - **Before:** `except (IntegrityError, Exception)` - catches all exceptions indiscriminately
+   - **After:** `except Exception as e:` with assertion that error message contains "cycle"
+   - **Impact:** Better error diagnosis - distinguishes cycle detection errors from other database errors
+
+### 3. **SQLAlchemy 2.0 Compatibility**
+   - **Before:** `db.session.query(Category).count()` - deprecated `.query` API
+   - **After:** `db.session.execute(select(func.count()).select_from(Category)).scalar()` - modern `select()` API
+   - **Added imports:** `from sqlalchemy import func, select`
+   - **Fixed locations:** Both count operations in the integration test
+   - **Impact:** Compliant with project's SQLAlchemy 2.0+ standards
+
+### Test Results
+- ✅ All 5 cycle protection tests **PASS**
+- ✅ All 21 total tests **PASS** (zero regressions)
+- ✅ Code quality checks **PASS** (ruff clean)
+- ✅ No syntax errors
 
 Made changes.
