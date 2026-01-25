@@ -66,7 +66,8 @@ When working on multi-step projects (sprints, migrations, features):
 1. **Create Work Plan**
    - Define scope: what needs to be built/changed
    - Break down into logical, testable steps
-   - Use `manage_todo_list` tool to track progress
+   - Maintain a persistent task list to track progress and plan sub-tasks.
+     - Use any available progress-tracking tool (e.g., `manage_todo_list`, `update_task_list`, or `write_todos`) to track progress.
    - Get developer approval on overall approach
 
 2. **Define Test Plan Based on Work Plan**
