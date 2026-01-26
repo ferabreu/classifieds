@@ -25,12 +25,12 @@ from app.models import Category, Listing, db
 utils_bp = Blueprint("utils", __name__)
 
 
-def get_index_carousel_categories():
+def get_index_showcase_categories():
     """
-    Retrieve up to N categories for displaying in index page carousels.
+    Retrieve up to N categories for displaying in index page showcases.
 
     Strategy:
-    - If INDEX_CAROUSEL_CATEGORIES is explicitly configured, use those category IDs
+    - If INDEX_SHOWCASE_CATEGORIES is explicitly configured, use those category IDs
       (filtered to only include categories with listings).
     - Otherwise, query top 2N categories by listing count, randomly select N from them,
       and filter out categories with no listings.
@@ -39,8 +39,8 @@ def get_index_carousel_categories():
         list: Up to N Category objects with listings, in no particular order.
               Empty list if no categories with listings exist.
     """
-    carousel_count = current_app.config.get("INDEX_CAROUSEL_COUNT", 4)
-    explicit_categories = current_app.config.get("INDEX_CAROUSEL_CATEGORIES")
+    showcase_count = current_app.config.get("INDEX_SHOWCASE_COUNT", 4)
+    explicit_categories = current_app.config.get("INDEX_SHOWCASE_CATEGORIES")
 
     if explicit_categories:
         # Use explicitly configured category IDs, filtered to only those with listings
@@ -48,10 +48,10 @@ def get_index_carousel_categories():
             Category.id.in_(explicit_categories),
             Category.listings.any(),
         ).all()
-        return categories[:carousel_count]
+        return categories[:showcase_count]
 
     # Auto-select: query top 2N categories by listing count
-    top_count = carousel_count * 2
+    top_count = showcase_count * 2
     category_listing_counts = (
         db.session.query(
             Category.id,
@@ -68,7 +68,7 @@ def get_index_carousel_categories():
     category_ids = [cat_id for cat_id, count in category_listing_counts if count > 0]
 
     # Randomly select up to N from the top 2N
-    selected_ids = random.sample(category_ids, min(carousel_count, len(category_ids)))
+    selected_ids = random.sample(category_ids, min(showcase_count, len(category_ids)))
 
     # Fetch and return the selected categories
     selected_categories = Category.query.filter(Category.id.in_(selected_ids)).all()

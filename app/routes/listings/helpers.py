@@ -39,7 +39,7 @@ def get_index_showcase_categories():
     Retrieve up to N categories for displaying in index page showcases.
 
     Strategy:
-    - If INDEX_CAROUSEL_CATEGORIES is explicitly configured, use those category IDs
+    - If INDEX_SHOWCASE_CATEGORIES is explicitly configured, use those category IDs
       (filtered to only include categories with listings).
     - Otherwise, query top 2N categories by listing count, randomly select N from them,
       and filter out categories with no listings.
@@ -48,11 +48,11 @@ def get_index_showcase_categories():
         list: Up to N Category objects with listings, in no particular order.
               Empty list if no categories with listings exist.
 
-    Note: Config keys still use "CAROUSEL" naming for backward compatibility.
+    Note: Config keys still use "SHOWCASE" naming for backward compatibility.
           These will be renamed to "SHOWCASE" in a future refactor.
     """
-    showcase_count = current_app.config.get("INDEX_CAROUSEL_COUNT", 4)
-    explicit_categories = current_app.config.get("INDEX_CAROUSEL_CATEGORIES")
+    showcase_count = current_app.config.get("INDEX_SHOWCASE_COUNT", 4)
+    explicit_categories = current_app.config.get("INDEX_SHOWCASE_CATEGORIES")
 
     if explicit_categories:
         # Use explicitly configured category IDs, filtered to only those with listings
