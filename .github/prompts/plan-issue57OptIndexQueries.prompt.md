@@ -194,7 +194,7 @@ app/routes/listings/
 - No orphaned imports remain
 - Utils file contains only generic utilities (thumbnails, file operations)
 
-### Phase 4: Write Automated Tests
+### Phase 4: Write and Run Automated Tests
 
 **Target files:** `tests/conftest.py`, `tests/test_listings.py`
 
@@ -227,25 +227,27 @@ app/routes/listings/
 
 ### Phase 5: Documentation and Verification
 
-15. **Update code comments**
+15. **Run all tests to verify no regressions.**
+   - Execute full test suite
+   - Ensure all tests pass without modification
+   - Verify no deprecated methods or anti-patterns introduced
+
+16. **Update code comments**
    - Document the batch query optimization in helper function
    - Add inline comments explaining the grouping/shuffling logic
 
-16. **Manual QA verification**
+17. **Manual QA verification**
    - Load index page and verify showcases display correctly
    - Navigate to intermediate category pages (e.g., `/goods/musical-instruments`)
    - Verify child showcases display correctly
    - Verify "Other {category}" section appears when appropriate
    - Test with empty categories, categories with few listings, etc.
 
-17. **Performance measurement (optional but recommended)**
-   - Use Flask-DebugToolbar or similar to measure query times before/after
-   - Document the improvement in queries and response time
-
 **Acceptance criteria for Phase 5:**
-- Code is well-documented
+- All tests pass without modification
+- Code comments and documentation updated
 - Manual QA confirms correct behavior
-- Performance improvement documented
+- Code is well-documented
 
 ---
 

@@ -10,70 +10,15 @@ at the request of Fernando "ferabreu" Mees Abreu (https://github.com/ferabreu).
 
 Shared route utilities for the classifieds Flask app.
 
-This module contains shared decorators and utility functions for use
-by multiple route Blueprints.
+This module contains shared utility functions for use by multiple route Blueprints.
+Utilities include image/thumbnail processing and ACID file operations for atomic
+database/filesystem commits.
 """
-
-import random
 
 from flask import Blueprint, current_app
 from PIL import Image
-from sqlalchemy import func
-
-from app.models import Category, Listing, db
 
 utils_bp = Blueprint("utils", __name__)
-
-
-def get_index_showcase_categories():
-    """
-    Retrieve up to N categories for displaying in index page showcases.
-
-    Strategy:
-    - If INDEX_SHOWCASE_CATEGORIES is explicitly configured, use those category IDs
-      (filtered to only include categories with listings).
-    - Otherwise, query top 2N categories by listing count, randomly select N from them,
-      and filter out categories with no listings.
-
-    Returns:
-        list: Up to N Category objects with listings, in no particular order.
-              Empty list if no categories with listings exist.
-    """
-    showcase_count = current_app.config.get("INDEX_SHOWCASE_COUNT", 4)
-    explicit_categories = current_app.config.get("INDEX_SHOWCASE_CATEGORIES")
-
-    if explicit_categories:
-        # Use explicitly configured category IDs, filtered to only those with listings
-        categories = Category.query.filter(
-            Category.id.in_(explicit_categories),
-            Category.listings.any(),
-        ).all()
-        return categories[:showcase_count]
-
-    # Auto-select: query top 2N categories by listing count
-    top_count = showcase_count * 2
-    category_listing_counts = (
-        db.session.query(
-            Category.id,
-            func.count(Listing.id).label("listing_count"),
-        )
-        .outerjoin(Listing)
-        .group_by(Category.id)
-        .order_by(func.count(Listing.id).desc())
-        .limit(top_count)
-        .all()
-    )
-
-    # Extract category IDs from results (only those with at least 1 listing)
-    category_ids = [cat_id for cat_id, count in category_listing_counts if count > 0]
-
-    # Randomly select up to N from the top 2N
-    selected_ids = random.sample(category_ids, min(showcase_count, len(category_ids)))
-
-    # Fetch and return the selected categories
-    selected_categories = Category.query.filter(Category.id.in_(selected_ids)).all()
-
-    return selected_categories
 
 
 def create_thumbnail(image_path, thumbnail_path):
