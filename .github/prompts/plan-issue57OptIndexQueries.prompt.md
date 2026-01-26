@@ -1,9 +1,9 @@
-# Optimize Index Page Carousel Queries (Issue #57)
+# Optimize Showcase Queries (Issue #57)
 
-**Date:** 2026-01-25  
+**Date:** 2026-01-25 (Updated: 2026-01-26)  
 **Author:** GitHub Copilot (Claude Sonnet 4.5) 
 **Issue:** https://github.com/ferabreu/classifieds/issues/57  
-**Goal:** Reduce index page carousel queries from 7-13 queries to ≤2 queries
+**Goal:** Reduce showcase queries from 7-13+ queries to ≤2 queries per route
 
 ---
 
@@ -17,27 +17,42 @@ You are an experienced developer versed in software development best practices w
 
 ### Current State
 
-The index page (`/`) displays carousel showcases for multiple categories. The current implementation in `app/routes/listings.py` (lines 60-103) uses an N+1 query pattern:
+**Two routes use the same N+1 query pattern:**
 
-**Query breakdown with 6 carousel categories:**
-- **Query 0:** `Category.query.first()` - Redundant check if categories exist (1 query)
-- **Per carousel category (N categories):**
-  - **Query 1+N:** Fetch direct listings: `Listing.query.filter_by(category_id=category.id)...` (1 query per category)
-  - **Query 2+N:** Conditionally fetch descendant listings if needed: `Listing.query.filter(Listing.category_id.in_(descendant_ids))...` (1 query per category with descendants)
+1. **Index route (`/`)** - lines 60-115 in `app/routes/listings.py`
+   - Displays showcases for top-level categories
+   
+2. **Category page route (`/<path:category_path>`)** - lines 185-265 in `app/routes/listings.py`
+   - Displays showcases for child categories when viewing intermediate categories (e.g., `/goods/musical-instruments`)
+   - Also fetches "Other {category}" listings for the parent category itself
 
-**Total queries:**
-- Best case: 1 + 6 = **7 queries** (all categories have enough direct listings)
-- Worst case: 1 + (6 × 2) = **13 queries** (all categories need descendant fallback)
+Both routes use an N+1 query pattern:
+
+Both routes use an N+1 query pattern:
+
+**Query breakdown example (6 showcase categories):**
+- **Per showcase category (N categories):**
+  - **Query 1+N:** Fetch direct listings: `select(Listing).where(Listing.category_id == category.id)...` (1 query per category)
+  - **Query 2+N:** Conditionally fetch descendant listings if needed: `select(Listing).where(Listing.category_id.in_(descendant_ids))...` (1 query per category with insufficient direct listings)
+
+**Total queries per route:**
+- Best case: **6 queries** (all categories have enough direct listings)
+- Worst case: **12 queries** (all categories need descendant fallback)
+- Category page adds **1 more query** for "Other {category}" listings: **7-13 total**
+
+**Code duplication:** The showcase-building logic is duplicated between both routes (lines 70-114 and lines 202-242), making the codebase harder to maintain.
 
 ### Root Cause
 
-Loop-based querying instead of batch operations. Each category triggers separate database queries for fetching listings, instead of fetching all needed listings in 1-2 batch queries and grouping results in Python.
+1. **Loop-based querying** instead of batch operations - each category triggers separate database queries
+2. **Code duplication** - identical logic exists in two places, violating DRY principle
 
 ### Impact
 
-- Performance degradation on index page load
-- Scales poorly as number of carousel categories increases
+- Performance degradation on both index and category pages
+- Scales poorly as number of showcases increases
 - Unnecessary database round-trips
+- Maintenance burden from duplicated code
 
 ---
 
@@ -45,17 +60,70 @@ Loop-based querying instead of batch operations. Each category triggers separate
 
 Use the `manage_todo_list` tool to track progress through these phases. Mark tasks as in-progress when starting, completed immediately after finishing.
 
-### Phase 1: Refactor Batch Queries
+### Phase 0: Restructure Listings Blueprint as Package
 
-**Target file:** `app/routes/listings.py` (index route, lines 60-103)
+**Goal:** Convert single-file `app/routes/listings.py` into a package structure for better organization.
 
-1. **Remove redundant category check**
-   - Delete `Category.query.first()` check (line ~60)
-   - Use `len(carousel_categories) > 0` instead
+**Target structure:**
+```
+app/routes/listings/
+  __init__.py      # Blueprint registration + route imports
+  routes.py        # All route handlers (@listings_bp.route decorators)
+  helpers.py       # All helper functions
+```
+
+1. **Create directory and files**
+   - Create `app/routes/listings/` directory
+   - Create `__init__.py` with blueprint registration
+   - Create `routes.py` for route handlers
+   - Create `helpers.py` for helper functions
+
+2. **Move route handlers to `routes.py`**
+   - Move all `@listings_bp.route(...)` decorated functions
+   - Keep imports and route logic together
+   - Import blueprint from `__init__.py`
+
+3. **Move helpers to `helpers.py`**
+   - Move `_delete_listings_impl()`, `_delete_listing_impl()`, `_edit_listing_impl()`
+   - Move `get_index_showcase_categories()` from `app/routes/utils.py` (renamed from `get_index_carousel_categories()`)
+   - Add all necessary imports (models, db, SQLAlchemy constructs)
+
+4. **Update `__init__.py`**
+   - Create blueprint: `listings_bp = Blueprint("listings", __name__)`
+   - Import routes to register them: `from . import routes  # noqa: F401, E402`
+   - Export blueprint for app registration
+
+5. **Update import statements**
+   - `app/__init__.py`: No change needed (still `from .routes.listings import listings_bp`)
+   - `app/routes/users.py`: Change to `from .listings.helpers import _delete_listings_impl`
+
+6. **Delete old file**
+   - Remove `app/routes/listings.py` after verifying all code is migrated
+
+7. **Run tests to verify**
+   - Execute test suite to ensure no regressions
+   - Verify all routes still accessible
+   - Check that helper imports work correctly
+
+**Acceptance criteria for Phase 0:**
+- Blueprint package structure created
+- All routes functional (no 404s or import errors)
+- Helper function imports working in `users.py`
+- All existing tests pass
+- Old `listings.py` removed
+
+### Phase 1: Create Reusable Helper Function
+
+**Target file:** `app/routes/listings/helpers.py`
+
+1. **Create `build_category_showcases()` helper function**
+   - Input: list of categories, display_slots, fetch_limit
+   - Output: list of dicts with `{"category": Category, "listings": [Listing, ...]}`
+   - Extract the common showcase-building logic into a single reusable function
 
 2. **Implement batch direct listings fetch**
-   - Extract all carousel category IDs into a list
-   - Use single query: `filter(Listing.category_id.in_(carousel_category_ids))`
+   - Extract all category IDs into a list
+   - Use single query: `filter(Listing.category_id.in_(category_ids))`
    - Order by `created_at.desc()` 
    - Fetch all direct listings in one query
 
@@ -74,129 +142,171 @@ Use the `manage_todo_list` tool to track progress through these phases. Mark tas
    - Select first N items after shuffling
    - Maintain existing display_slots logic
 
-6. **Verify identical behavior**
-   - Ensure carousel data structure passed to template is unchanged
+6. **Add comprehensive docstring**
+   - Document the function's purpose, parameters, return value
+   - Note that maximum 2 queries are executed (direct + optional descendants)
+
+**Acceptance criteria for Phase 1:**
+- Helper function created in `app/routes/listings/helpers.py`
+- Maximum 2 queries executed per function call (direct + optional descendants)
+- Returns identical data structure to existing code
+- Comprehensive docstring included
+
+### Phase 2: Refactor Both Routes to Use Helper
+
+**Target file:** `app/routes/listings/routes.py`
+
+7. **Refactor index route (`/`)**
+   - Import `build_category_showcases` from `.helpers`
+   - Replace loop-based showcase building with helper function call
+   - Remove redundant `db.session.execute(select(Category)).first()` check
+   - Use `len(showcase_categories) > 0` instead
+   - Verify template receives identical data structure
+
+8. **Refactor category_filtered_listings route (`/<path:category_path>`)**
+   - Import `build_category_showcases` from `.helpers`
+   - Replace child showcase loop with helper function call
+   - Keep "Other {category}" direct listings fetch separate (it's a single query, not N+1)
+   - Verify template receives identical data structure
+
+9. **Verify identical behavior**
+   - Ensure showcase data structure passed to templates is unchanged
    - No template modifications required
    - User-facing behavior must be identical
 
-**Acceptance criteria for Phase 1:**
-- Code refactored in `app/routes/listings.py`
-- Maximum 2 queries executed for carousel data (direct + optional descendants)
+**Acceptance criteria for Phase 2:**
+- Both routes refactored to use helper function
+- Code duplication eliminated
 - Existing functionality preserved
+- No template changes needed
 
-### Phase 2: Write Automated Tests
+### Phase 3: Update Utils File
+
+**Target file:** `app/routes/utils.py`
+
+10. **Remove `get_index_showcase_categories()` from utils.py**
+    - Function has been moved to `app/routes/listings/helpers.py` (and renamed from `get_index_carousel_categories()`)
+    - Remove function definition and any related imports (if now unused)
+    - Verify no other files import this function from utils
+
+**Acceptance criteria for Phase 3:**
+- `get_index_showcase_categories()` removed from utils.py
+- No orphaned imports remain
+- Utils file contains only generic utilities (thumbnails, file operations)
+
+### Phase 4: Write Automated Tests
 
 **Target files:** `tests/conftest.py`, `tests/test_listings.py`
 
-7. **Create carousel test fixtures in `conftest.py`**
-   - Fixture: `carousel_categories` - Creates 3-6 categories with varied characteristics
-   - Fixture: `carousel_listings` - Creates listings distributed across categories
+11. **Create showcase test fixtures in `conftest.py`**
+   - Fixture: `showcase_categories` - Creates 3-6 categories with varied characteristics
+   - Fixture: `showcase_listings` - Creates listings distributed across categories
    - Fixture: `category_with_children` - Parent category with child categories for descendant fallback testing
    - Keep fixtures minimal (focus on correctness, not scale)
 
-8. **Write query count verification test**
+12. **Write query count verification test for index route**
    - Enable query tracking in test: `app.config['TESTING'] = True`
    - Use `flask_sqlalchemy.get_debug_queries()` to capture queries
    - Request index page route
-   - Assert total queries for carousel data ≤ 2
-   - Document test with clear comments explaining what it verifies
+   - Assert query count ≤ 2 for showcase data (excluding unrelated queries like session checks)
 
-9. **Write functional correctness tests**
-   - Test: Each carousel category displays correct listings
-   - Test: Randomization produces varied results (multiple requests show different orderings)
-   - Test: Display slots limit is respected (max N items per carousel)
+13. **Write query count verification test for category page route**
+   - Similar to above, but test `/<path:category_path>` with intermediate category
+   - Assert query count ≤ 3 (2 for child showcases + 1 for "Other" listings)
 
-10. **Write descendant fallback test**
-    - Create category with no direct listings but descendants with listings
-    - Request index page
-    - Assert descendant listings appear in that category's carousel
-    - Verify batch query optimization still applies
-
-11. **Verify existing tests pass**
-    - Run all tests in `tests/test_listings.py`
-    - Ensure no regressions
-    - All existing tests must pass without modification
-
-**Acceptance criteria for Phase 2:**
-- New test fixtures created
-- Query count test passes (≤2 queries)
-- Functional correctness tests pass
-- Descendant fallback test passes
-- All existing tests pass unchanged
-
-### Phase 3: Execute Manual QA
-
-12. **Visual carousel inspection**
-    - Start development server
-    - Load index page in browser
-    - Verify all carousels render correctly
-    - Check carousel titles, "See all" links, listing cards
-
-13. **Randomization verification**
-    - Refresh page multiple times (5+ refreshes)
-    - Observe that listing order changes per carousel
-    - Verify randomization is per-category (different categories show different random selections)
-
-14. **Descendant fallback verification**
-    - Identify or create category with no direct listings but has descendants with listings
-    - Load index page
-    - Verify carousel shows descendant listings for that category
-
-15. **Responsive behavior check**
-    - Test page on desktop viewport (1920x1080)
-    - Test page on tablet viewport (768x1024)
-    - Test page on mobile viewport (375x667)
-    - Verify carousel cards wrap/resize appropriately
-
-16. **Navigation link verification**
-    - Click "See all" link for each carousel
-    - Verify navigation to correct category page
-    - Verify listing count on category page matches expected results
-
-**Acceptance criteria for Phase 3:**
-- All manual QA steps completed
-- No visual regressions observed
-- Randomization working as expected
-- Descendant fallback working correctly
-- Responsive behavior intact
-- Navigation links functional
-
-### Phase 4: Review and Update Instruction Files
-
-17. **Evaluate pattern documentation need**
-    - Review the batch-query-with-Python-grouping pattern implemented
-    - Determine if this pattern is reusable for future query optimizations
-    - Decision criteria:
-      - Is this pattern applicable to other routes? (e.g., category page with child showcases)
-      - Does it represent a general optimization technique?
-      - Would future developers benefit from documented guidance?
-
-18. **Update instruction file if warranted**
-    - If decision is YES: Add section to `.github/instructions/python-flask.instructions.md`
-    - Section title: "Query Optimization: Batch Fetching with Python-Side Grouping"
-    - Content should include:
-      - When to use this pattern (N+1 query scenarios)
-      - Key principles (minimize database round-trips, group in Python)
-      - Reference to this implementation as example
-      - Trade-offs (memory vs query count)
-    - If decision is NO: Document reasoning in sprint notes
+14. **Write functional correctness tests**
+   - Test showcase data structure matches expected format
+   - Test randomization produces varied results
+   - Test descendant fallback works when direct listings are insufficient
+   - Test "Other {category}" listings appear correctly
 
 **Acceptance criteria for Phase 4:**
-- Pattern evaluation completed
-- Decision documented
-- Instruction file updated if applicable
+- Query count tests pass with ≤2 queries for index, ≤3 for category pages
+- Functional tests verify correct behavior
+- Tests are maintainable and well-documented
+
+### Phase 5: Documentation and Verification
+
+15. **Update code comments**
+   - Document the batch query optimization in helper function
+   - Add inline comments explaining the grouping/shuffling logic
+
+16. **Manual QA verification**
+   - Load index page and verify showcases display correctly
+   - Navigate to intermediate category pages (e.g., `/goods/musical-instruments`)
+   - Verify child showcases display correctly
+   - Verify "Other {category}" section appears when appropriate
+   - Test with empty categories, categories with few listings, etc.
+
+17. **Performance measurement (optional but recommended)**
+   - Use Flask-DebugToolbar or similar to measure query times before/after
+   - Document the improvement in queries and response time
+
+**Acceptance criteria for Phase 5:**
+- Code is well-documented
+- Manual QA confirms correct behavior
+- Performance improvement documented
+
+---
+
+## Future Considerations (Out of Scope)
+
+### Routing Structure Simplification
+
+**Observation:** The current routing structure has conceptual overlap:
+- `/` - shows root-level showcases
+- `/<path:category_path>` - shows child showcases OR listings depending on category type
+
+**Potential improvement:** Consider unifying these routes in a future refactor:
+- A single route could handle both cases by treating "/" as "root level browsing"
+- This would simplify the codebase and make the URL structure more consistent
+
+**Why not now:**
+- Routing changes are architectural and carry higher risk
+- Issue #57 is specifically about query optimization, not routing refactor
+- URL pattern changes could affect SEO and existing bookmarks
+- Should be planned as a separate issue/sprint with dedicated testing
+
+**Recommendation:** Create a separate GitHub issue to track routing structure improvements after this optimization is complete and stable.
 
 ---
 
 ## Implementation Requirements
 
+### Helper Function Specification
+
+**Function signature:**
+```python
+def build_category_showcases(
+    categories: list[Category],
+    display_slots: int,
+    fetch_limit: int
+) -> list[dict[str, Any]]:
+    """
+    Build showcase data for multiple categories using batch queries.
+    
+    Fetches listings for all categories in maximum 2 database queries:
+    1. Direct listings for all categories (batch query)
+    2. Descendant listings for categories needing fallback (conditional batch query)
+    
+    Args:
+        categories: List of Category objects to build showcases for
+        display_slots: Number of listings to display per showcase
+        fetch_limit: Number of listings to fetch per category (for variety before randomization)
+    
+    Returns:
+        List of dicts with structure: {"category": Category, "listings": [Listing, ...]}
+        Listings are randomized per category and limited to display_slots.
+    """
+```
+
 ### Batch Query Strategy
 
-**Direct listings:**
-```
-Use: filter(Listing.category_id.in_(carousel_category_ids))
+**Direct listings query:**
+```python
+Use: filter(Listing.category_id.in_(showcase_category_ids))
 Order: by created_at.desc()
-Result: Single query fetching all direct listings for all carousel categories
+Result: Single query fetching all direct listings for all showcase categories
 ```
 
 **Descendant listings (conditional):**
@@ -232,7 +342,7 @@ Result: Each category maintains independent randomization
 
 - User-facing behavior: MUST be identical to current implementation
 - Template compatibility: NO template changes required
-- Data structure: carousel_categories list with embedded showcase_listings must match current format
+- Data structure: `category_showcases` list with embedded `showcase_listings` must match current format (note: variable name will change from `category_carousels` to `category_showcases`)
 - Edge cases: Handle empty categories, categories with only descendants, single-listing categories
 
 ---
@@ -251,12 +361,12 @@ Assertion: len([q for q in queries if 'listing' in q.statement.lower()]) <= 2
 
 ### Minimal Fixtures
 
-**carousel_categories fixture:**
+**showcase_categories fixture:**
 - Create 3-6 categories with varied characteristics
 - At least one category with child categories
 - At least one category with no direct listings (for descendant fallback test)
 
-**carousel_listings fixture:**
+**showcase_listings fixture:**
 - Create 10-30 total listings distributed across categories
 - Some categories with many listings (10+)
 - Some categories with few listings (1-2)
@@ -270,16 +380,16 @@ Assertion: len([q for q in queries if 'listing' in q.statement.lower()]) <= 2
 ### Test Cases
 
 **Query count test:**
-- Setup: carousel_categories and carousel_listings fixtures
+- Setup: showcase_categories and showcase_listings fixtures
 - Action: GET request to index route
 - Capture: get_debug_queries()
 - Assert: ≤2 queries for listing data (exclude category/user queries)
 
 **Functional correctness tests:**
-- Test: Each carousel displays listings from correct category
-- Test: Listing count per carousel respects display_slots limit
+- Test: Each showcase displays listings from correct category
+- Test: Listing count per showcase respects display_slots limit
 - Test: Response status is 200
-- Test: Carousel data structure matches expected format
+- Test: Showcase data structure matches expected format
 
 **Randomization test:**
 - Setup: Category with 10+ listings
@@ -290,7 +400,7 @@ Assertion: len([q for q in queries if 'listing' in q.statement.lower()]) <= 2
 **Descendant fallback test:**
 - Setup: category_with_children fixture (parent has no listings, children have listings)
 - Action: GET request to index route
-- Assert: Parent category's carousel shows child category listings
+- Assert: Parent category's showcase shows child category listings
 - Assert: Query count still ≤2
 
 **Regression test:**
@@ -306,19 +416,19 @@ Assertion: len([q for q in queries if 'listing' in q.statement.lower()]) <= 2
 **Visual Inspection:**
 1. Start development server: `flask run`
 2. Open browser to `http://localhost:5000/`
-3. Inspect each carousel:
-   - [ ] Carousel title displays category name
+3. Inspect each showcase:
+   - [ ] Showcase title displays category name
    - [ ] "See all" link is present and correctly formatted
    - [ ] Listing cards render with thumbnail, title, price
    - [ ] No broken images or missing data
 4. Check page layout:
    - [ ] No layout shifts or rendering issues
-   - [ ] Carousels are properly spaced
+   - [ ] Showcases are properly spaced
    - [ ] Overall page aesthetics unchanged
 
 **Randomization Testing:**
 1. Refresh page (F5 or Cmd+R)
-2. Note order of listings in first carousel
+2. Note order of listings in first showcase
 3. Refresh 4 more times
 4. Verify:
    - [ ] Listing order changes between refreshes
@@ -329,26 +439,26 @@ Assertion: len([q for q in queries if 'listing' in q.statement.lower()]) <= 2
 1. Identify category with no direct listings (check admin panel or database)
 2. Verify that category has child categories with listings
 3. Load index page
-4. Check that category's carousel:
+4. Check that category's showcase:
    - [ ] Displays listings (from descendants)
    - [ ] Shows correct listing cards
    - [ ] "See all" link works
 
 **Responsive Behavior:**
 1. Desktop (1920x1080):
-   - [ ] Carousels display multiple cards per row
+   - [ ] Showcases display multiple cards per row
    - [ ] Layout is clean and properly aligned
 2. Tablet (768x1024):
-   - [ ] Carousels adapt to narrower width
+   - [ ] Showcases adapt to narrower width
    - [ ] Cards resize appropriately
    - [ ] No horizontal scroll
 3. Mobile (375x667):
-   - [ ] Carousels display single or stacked cards
-   - [ ] Touch scrolling works if carousel has horizontal scroll
+   - [ ] Showcases display single or stacked cards
+   - [ ] Touch scrolling works if showcase has horizontal scroll
    - [ ] Text remains readable
 
 **Navigation Verification:**
-1. Click "See all" link for each carousel category
+1. Click "See all" link for each showcase category
 2. Verify:
    - [ ] Navigates to correct category page
    - [ ] Category page displays all listings for that category
@@ -360,14 +470,14 @@ Assertion: len([q for q in queries if 'listing' in q.statement.lower()]) <= 2
 ## Success Criteria Summary
 
 ### Automated Tests
-- [ ] Query count test passes (≤2 queries for carousel data)
+- [ ] Query count test passes (≤2 queries for showcase data)
 - [ ] Functional correctness tests pass
 - [ ] Randomization test passes
 - [ ] Descendant fallback test passes
 - [ ] All existing tests pass unchanged
 
 ### Manual QA
-- [ ] Visual carousel inspection: PASS
+- [ ] Visual showcase inspection: PASS
 - [ ] Randomization verification: PASS
 - [ ] Descendant fallback verification: PASS
 - [ ] Responsive behavior check: PASS
