@@ -1,7 +1,7 @@
 # Optimize Index Page Carousel Queries (Issue #57)
 
 **Date:** 2026-01-25  
-**Author:** GitHub Copilot  
+**Author:** GitHub Copilot (Claude Sonnet 4.5) 
 **Issue:** https://github.com/ferabreu/classifieds/issues/57  
 **Goal:** Reduce index page carousel queries from 7-13 queries to ≤2 queries
 
