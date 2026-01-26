@@ -17,6 +17,8 @@ import os
 import random
 import shutil
 import uuid
+from collections import defaultdict
+from typing import TypedDict
 
 from flask import current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user
@@ -32,6 +34,13 @@ from ..utils import (
     move_image_files_to_temp,
     restore_files_from_temp,
 )
+
+
+class CategoryShowcase(TypedDict):
+    """Type definition for category showcase dictionary."""
+
+    category: Category
+    listings: list[Listing]
 
 
 def get_index_showcase_categories():
@@ -88,13 +97,120 @@ def get_index_showcase_categories():
     selected_ids = random.sample(category_ids, min(showcase_count, len(category_ids)))
 
     # Fetch and return the selected categories
-    selected_categories = (
+    return (
         db.session.execute(select(Category).where(Category.id.in_(selected_ids)))
         .scalars()
         .all()
     )
 
-    return selected_categories
+
+def build_category_showcases(  # noqa: C901
+    categories: list[Category],
+    display_slots: int,
+    fetch_limit: int,
+) -> list[CategoryShowcase]:
+    """
+    Build showcase data for multiple categories using batch queries.
+
+    This function optimizes showcase building by fetching listings for all
+    categories in maximum 2 database queries instead of N+1 queries:
+    1. Direct listings for all categories (single batch query)
+    2. Descendant listings for categories needing fallback (conditional batch query)
+
+    The function then groups listings in Python and applies per-category
+    randomization to maintain the existing user experience.
+
+    Args:
+        categories: List of Category objects to build showcases for
+        display_slots: Number of listings to display per showcase (final output size)
+        fetch_limit: Number of listings to fetch per category (for variety before randomization)
+
+    Returns:
+        List of dicts with structure: {"category": Category, "listings": [Listing, ...]}
+        Each category's listings are randomized and limited to display_slots.
+        Only categories with listings are included in the output.
+
+    Performance:
+        - Best case: 1 query (all categories have sufficient direct listings)
+        - Typical case: 2 queries (direct + descendant fallback for some categories)
+        - Worst case: 2 queries (all categories need descendant fallback)
+    """
+    if not categories:
+        return []
+
+    # Phase 1: Batch fetch direct listings for all categories
+    category_ids = [cat.id for cat in categories]
+    direct_listings = (
+        db.session.execute(
+            select(Listing)
+            .where(Listing.category_id.in_(category_ids))
+            .order_by(Listing.created_at.desc())
+        )
+        .scalars()
+        .all()
+    )
+
+    # Phase 2: Group listings by category_id in Python
+    listings_by_category = defaultdict(list)
+    for listing in direct_listings:
+        listings_by_category[listing.category_id].append(listing)
+
+    # Phase 3: Identify categories needing descendant fallback
+    categories_needing_descendants = []
+    for category in categories:
+        direct_count = len(listings_by_category[category.id])
+        if direct_count < fetch_limit:
+            categories_needing_descendants.append(category)
+
+    # Phase 4: Batch fetch descendant listings if needed
+    if categories_needing_descendants:
+        # Collect all descendant IDs for categories needing them
+        all_descendant_ids = set()
+        for category in categories_needing_descendants:
+            descendant_ids = category.get_descendant_ids()
+            # Exclude the category itself (already fetched in direct query)
+            descendant_ids = [cid for cid in descendant_ids if cid != category.id]
+            all_descendant_ids.update(descendant_ids)
+
+        if all_descendant_ids:
+            descendant_listings = (
+                db.session.execute(
+                    select(Listing)
+                    .where(Listing.category_id.in_(list(all_descendant_ids)))
+                    .order_by(Listing.created_at.desc())
+                )
+                .scalars()
+                .all()
+            )
+
+            # Map descendant listings back to parent categories
+            # A descendant listing can belong to multiple parent showcases
+            for category in categories_needing_descendants:
+                descendant_ids = category.get_descendant_ids()
+                descendant_ids_set = {
+                    cid for cid in descendant_ids if cid != category.id
+                }
+                for listing in descendant_listings:
+                    if listing.category_id in descendant_ids_set:
+                        listings_by_category[category.id].append(listing)
+
+    # Phase 5: Build final showcase list with randomization
+    showcases = []
+    for category in categories:
+        listings_pool = listings_by_category[category.id]
+
+        # Limit pool to fetch_limit for memory efficiency
+        if len(listings_pool) > fetch_limit:
+            listings_pool = listings_pool[:fetch_limit]
+
+        if listings_pool:
+            # Randomize per category
+            random.shuffle(listings_pool)
+            # Select top N for display
+            selected_listings = listings_pool[:display_slots]
+            showcases.append({"category": category, "listings": selected_listings})
+
+    return showcases
 
 
 def _delete_listings_impl(listings):
