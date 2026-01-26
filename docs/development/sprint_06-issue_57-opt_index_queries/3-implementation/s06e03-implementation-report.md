@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-26  
 **GitHub Issue:** https://github.com/ferabreu/classifieds/issues/57  
-**Plan File:** [plan-issue57OptIndexQueries.prompt.md](../../.github/prompts/plan-issue57OptIndexQueries.prompt.md)
+**Plan File:** [plan-issue57OptIndexQueries.prompt.md](../../docs/development/sprint_06-issue_57-opt_index_queries/2-prompts/plan-issue57OptIndexQueries.prompt.md)
 
 ---
 
