@@ -12,6 +12,8 @@ SQLAlchemy models for the classifieds Flask app.
 
 Defines User, Category, Listing, and ListingImage entities.
 Handles hierarchical categories, user accounts, and listing image management.
+
+Uses SQLAlchemy 2.0+ patterns with Mapped[] type hints and relationship() with back_populates.
 """
 
 from dataclasses import dataclass
@@ -21,9 +23,8 @@ from typing import Optional, Union
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 from slugify import slugify
-from sqlalchemy import event, select
-from sqlalchemy.orm import Session, scoped_session
-from sqlalchemy.orm.attributes import InstrumentedAttribute
+from sqlalchemy import ForeignKey, String, Text, event, select
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship, scoped_session
 from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
@@ -37,29 +38,33 @@ class Category(db.Model):
     The url_name field stores URL-safe category names for clean hierarchical paths.
     """
 
-    __allow_unmapped__ = True
+    __tablename__ = "category"
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), nullable=False)
-    url_name = db.Column(db.String(128), nullable=False, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(64))
+    url_name: Mapped[str] = mapped_column(String(128), index=True)
+    sort_order: Mapped[int] = mapped_column(default=0)
+
     # Recursive fields for multi-level categories
-    parent_id: InstrumentedAttribute[Optional[int]] = db.Column(
-        db.Integer, db.ForeignKey("category.id"), nullable=True
+    parent_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("category.id"), nullable=True
     )
-    parent = db.relationship(
+    parent: Mapped[Optional["Category"]] = relationship(
         "Category",
-        remote_side=[id],
+        remote_side="Category.id",
         back_populates="children",
         foreign_keys=[parent_id],
-    )  # type: ignore[assignment]
-    children = db.relationship(
+    )
+    children: Mapped[list["Category"]] = relationship(
         "Category",
         back_populates="parent",
         foreign_keys=[parent_id],
         cascade="all, delete-orphan",
-    )  # type: ignore[assignment]
-    listings = db.relationship("Listing", backref="category", lazy=True)
-    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    )
+    listings: Mapped[list["Listing"]] = relationship(
+        "Listing", back_populates="category", lazy=True
+    )
+
     __table_args__ = (
         db.UniqueConstraint("name", "parent_id", name="_cat_parent_uc"),
         db.UniqueConstraint("url_name", "parent_id", name="_cat_url_name_parent_uc"),
@@ -335,14 +340,19 @@ class User(UserMixin, db.Model):
     Stores authentication details and user profile info.
     """
 
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
-    first_name = db.Column(db.String(64), nullable=False)
-    last_name = db.Column(db.String(64), nullable=False)
-    is_ldap_user = db.Column(db.Boolean, default=False)
-    is_admin = db.Column(db.Boolean, default=False)
-    listings = db.relationship("Listing", backref="owner", lazy=True)
+    __tablename__ = "user"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(120), unique=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    first_name: Mapped[str] = mapped_column(String(64))
+    last_name: Mapped[str] = mapped_column(String(64))
+    is_ldap_user: Mapped[bool] = mapped_column(default=False)
+    is_admin: Mapped[bool] = mapped_column(default=False)
+
+    listings: Mapped[list["Listing"]] = relationship(
+        "Listing", back_populates="owner", lazy=True
+    )
 
     def __init__(
         self,
@@ -377,18 +387,24 @@ class Listing(db.Model):
     Includes metadata, relationship to user, category, and associated images.
     """
 
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(64), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    price = db.Column(db.Float, default=0)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey("category.id"), nullable=False)
-    category_id: InstrumentedAttribute[int]
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    images = db.relationship(
-        "ListingImage", backref="listing", cascade="all, delete-orphan"
+    __tablename__ = "listing"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(64))
+    description: Mapped[str] = mapped_column(Text)
+    price: Mapped[float] = mapped_column(default=0.0)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    category_id: Mapped[int] = mapped_column(ForeignKey("category.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc)
     )
-    # user = db.relationship('User', backref='listings')
+
+    # Relationships
+    owner: Mapped["User"] = relationship("User", back_populates="listings")
+    category: Mapped["Category"] = relationship("Category", back_populates="listings")
+    images: Mapped[list["ListingImage"]] = relationship(
+        "ListingImage", back_populates="listing", cascade="all, delete-orphan"
+    )
 
     def __init__(
         self,
@@ -412,18 +428,19 @@ class ListingImage(db.Model):
     Supports cascade deletion alongside listings.
     """
 
-    id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(256), nullable=False)
-    thumbnail_filename = db.Column(db.String(256), nullable=True)
-    listing_id = db.Column(
-        db.Integer,
-        db.ForeignKey(
-            "listing.id", name="fk_listingimage_listing_id", ondelete="CASCADE"
-        ),
-        nullable=False,
+    __tablename__ = "listing_image"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    filename: Mapped[str] = mapped_column(String(256))
+    thumbnail_filename: Mapped[Optional[str]] = mapped_column(
+        String(256), nullable=True
     )
-    # The listing attribute on ListingImage will be available automatically
-    # due to the backref in Listing
+    listing_id: Mapped[int] = mapped_column(
+        ForeignKey("listing.id", name="fk_listingimage_listing_id", ondelete="CASCADE")
+    )
+
+    # Relationship
+    listing: Mapped["Listing"] = relationship("Listing", back_populates="images")
 
     def __init__(
         self,
