@@ -44,64 +44,29 @@ from .helpers import (
     _delete_listing_impl,
     _delete_listings_impl,
     _edit_listing_impl,
+    build_category_showcases,
     get_index_showcase_categories,
 )
 
 
 @listings_bp.route("/")
 def index():
-    # Check if any categories exist (controls "+ Post New Listing" button visibility)
-    any_categories_exist = db.session.execute(select(Category)).first() is not None
-
     # Get selected categories for showcases
     showcase_categories = get_index_showcase_categories()
 
-    # Build showcase data: for each category, fetch listings and randomize
+    # Check if any categories exist (controls "+ Post New Listing" button visibility)
+    any_categories_exist = len(showcase_categories) > 0
+
+    # Build showcase data using batch query helper
     items_per_showcase = current_app.config.get("INDEX_SHOWCASE_ITEMS_PER_CATEGORY", 10)
     # The UI shows up to 5 cards per row on ultrawide; fetch only what's useful
     display_slots = min(items_per_showcase, 5)
     # Fetch a bit extra for variety without over-querying
     fetch_limit = max(display_slots * 2, items_per_showcase)
-    category_showcases = []
-    for category in showcase_categories:
-        # Prefer direct category listings first
-        direct_listings = (
-            db.session.execute(
-                select(Listing)
-                .where(Listing.category_id == category.id)  # type: ignore
-                .order_by(Listing.created_at.desc())
-                .limit(fetch_limit)
-            )
-            .scalars()
-            .all()
-        )
 
-        listings_pool = list(direct_listings)
-
-        # If not enough to fill the row, pull from descendants to fill gaps
-        if len(listings_pool) < fetch_limit:
-            descendant_ids = category.get_descendant_ids()
-            descendant_ids = [cid for cid in descendant_ids if cid != category.id]
-            if descendant_ids:
-                needed = fetch_limit - len(listings_pool)
-                descendant_listings = (
-                    db.session.execute(
-                        select(Listing)
-                        .where(Listing.category_id.in_(descendant_ids))  # type: ignore
-                        .order_by(Listing.created_at.desc())
-                        .limit(
-                            max(needed * 2, display_slots)
-                        )  # small buffer for variety
-                    )
-                    .scalars()
-                    .all()
-                )
-                listings_pool.extend(descendant_listings)
-
-        if listings_pool:
-            random.shuffle(listings_pool)
-            listings = listings_pool[:display_slots]
-            category_showcases.append({"category": category, "listings": listings})
+    category_showcases = build_category_showcases(
+        showcase_categories, display_slots, fetch_limit
+    )
 
     return render_template(
         "index.html",
@@ -187,51 +152,13 @@ def category_filtered_listings(category_path):
         display_slots = min(items_per_showcase, 6)  # Up to 6 child categories
         fetch_limit = max(display_slots * 2, items_per_showcase)
 
-        # Build showcases for each child category
-        child_showcases = []
-        for child_category in sorted(
+        # Build showcases for each child category using batch query helper
+        sorted_children = sorted(
             category.children, key=lambda c: c.name  # type: ignore[arg-type]
-        ):
-            # Fetch listings for this child
-            direct_listings = (
-                db.session.execute(
-                    select(Listing)
-                    .where(Listing.category_id == child_category.id)  # type: ignore
-                    .order_by(Listing.created_at.desc())
-                    .limit(fetch_limit)
-                )
-                .scalars()
-                .all()
-            )
-
-            listings_pool = list(direct_listings)
-
-            # If not enough, pull from descendants of this child
-            if len(listings_pool) < fetch_limit:
-                descendant_ids = child_category.get_descendant_ids()
-                descendant_ids = [
-                    cid for cid in descendant_ids if cid != child_category.id
-                ]
-                if descendant_ids:
-                    needed = fetch_limit - len(listings_pool)
-                    descendant_listings = (
-                        db.session.execute(
-                            select(Listing)
-                            .where(Listing.category_id.in_(descendant_ids))  # type: ignore
-                            .order_by(Listing.created_at.desc())
-                            .limit(max(needed * 2, display_slots))
-                        )
-                        .scalars()
-                        .all()
-                    )
-                    listings_pool.extend(descendant_listings)
-
-            if listings_pool:
-                random.shuffle(listings_pool)
-                listings = listings_pool[:display_slots]
-                child_showcases.append(
-                    {"category": child_category, "listings": listings}
-                )
+        )
+        child_showcases = build_category_showcases(
+            sorted_children, display_slots, fetch_limit
+        )
 
         # Add showcase for listings directly in this intermediate category
         # (not in children)
