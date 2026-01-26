@@ -30,7 +30,7 @@ from sqlalchemy.orm import joinedload
 from ..forms import UserEditForm
 from ..models import Listing, User, db
 from .decorators import admin_required
-from .listings import _delete_listings_impl
+from .listings.helpers import _delete_listings_impl
 
 users_bp = Blueprint("users", __name__)
 
