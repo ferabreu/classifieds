@@ -478,7 +478,7 @@ def _edit_listing_impl(listing_id):  # noqa: C901
             delete_image_ids = request.form.getlist("delete_images")
             images_to_delete = []
             for img_id in delete_image_ids:
-                image = ListingImage.query.get(int(img_id))
+                image = db.session.get(ListingImage, int(img_id))
                 if image and image in listing.images:
                     images_to_delete.append(image)
                     db.session.delete(image)
