@@ -57,7 +57,7 @@ def index():
     showcase_categories = get_index_showcase_categories()
 
     # Build showcase data: for each category, fetch listings and randomize
-    items_per_showcase = current_app.config.get("INDEX_CAROUSEL_ITEMS_PER_CATEGORY", 10)
+    items_per_showcase = current_app.config.get("INDEX_SHOWCASE_ITEMS_PER_CATEGORY", 10)
     # The UI shows up to 5 cards per row on ultrawide; fetch only what's useful
     display_slots = min(items_per_showcase, 5)
     # Fetch a bit extra for variety without over-querying
@@ -105,7 +105,7 @@ def index():
 
     return render_template(
         "index.html",
-        category_carousels=category_showcases,
+        category_showcases=category_showcases,
         any_categories_exist=any_categories_exist,
         page_title="",
     )
@@ -182,7 +182,7 @@ def category_filtered_listings(category_path):
     if category.children and not force_listings_view:
         # Intermediate category: show showcase of child categories
         items_per_showcase = current_app.config.get(
-            "INDEX_CAROUSEL_ITEMS_PER_CATEGORY", 10
+            "INDEX_SHOWCASE_ITEMS_PER_CATEGORY", 10
         )
         display_slots = min(items_per_showcase, 6)  # Up to 6 child categories
         fetch_limit = max(display_slots * 2, items_per_showcase)
@@ -261,7 +261,7 @@ def category_filtered_listings(category_path):
 
         return render_template(
             "index.html",
-            category_carousels=child_showcases,
+            category_showcases=child_showcases,
             selected_category=category,
             category_path=category.get_full_path(),
             categories=categories,

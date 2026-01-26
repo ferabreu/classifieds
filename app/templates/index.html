@@ -2,7 +2,7 @@
   Template written and annotated by GitHub Copilot at the request of Fernando "ferabreu" Mees Abreu.
   See LICENSE file in the project root for full license information.
 
-  Index/category browsing page. Displays listings grid, carousels of child categories, or category showcases.
+  Index/category browsing page. Displays listings grid, showcases of child categories, or category showcases.
 #}
 
 {% extends "base.html" %}
@@ -18,9 +18,9 @@
         </div>
     {% endif %}
 
-    {# Check if this is the index page (carousels) or a category page (grid) #}
-    {% if category_carousels is defined %}
-        {# INDEX PAGE: Display carousels #}
+    {# Check if this is the index page (showcases) or a category page (grid) #}
+    {% if category_showcases is defined %}
+        {# INDEX PAGE: Display showcases #}
         {% if not any_categories_exist %}
             {# No categories exist at all #}
             <div class="category-row-content">
@@ -28,7 +28,7 @@
                     No categories available. Please contact the administrator to add categories.
                 </div>
             </div>
-        {% elif category_carousels|length == 0 %}
+        {% elif category_showcases|length == 0 %}
             {# Categories exist but none have listings #}
             <div class="category-row-content">
                 <p class="alert alert-info alert-heading mb-4">No listings found.</p>
@@ -45,27 +45,27 @@
             {% endif %}
 
             {# Render showcase rows for each category #}
-            {% for carousel_item in category_carousels %}
+            {% for showcase_item in category_showcases %}
                 <div class="category-row-section mb-5">
                     <div class="category-row-content">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h3 class="mb-0">
-                                {% if carousel_item.category.name.startswith('Other ') %}
-                                    <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path, view='listings') }}" class="text-decoration-none category-title-link">
-                                        {{ carousel_item.category.name }}
+                                {% if showcase_item.category.name.startswith('Other ') %}
+                                    <a href="{{ url_for('listings.category_filtered_listings', category_path=showcase_item.category.url_path, view='listings') }}" class="text-decoration-none category-title-link">
+                                        {{ showcase_item.category.name }}
                                     </a>
                                 {% else %}
-                                    <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path) }}" class="text-decoration-none category-title-link">
-                                        {{ carousel_item.category.name }}
+                                    <a href="{{ url_for('listings.category_filtered_listings', category_path=showcase_item.category.url_path) }}" class="text-decoration-none category-title-link">
+                                        {{ showcase_item.category.name }}
                                     </a>
                                 {% endif %}
                             </h3>
-                            {% if carousel_item.category.name.startswith('Other ') %}
-                                <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path, view='listings') }}" class="text-decoration-none see-all-link">
+                            {% if showcase_item.category.name.startswith('Other ') %}
+                                <a href="{{ url_for('listings.category_filtered_listings', category_path=showcase_item.category.url_path, view='listings') }}" class="text-decoration-none see-all-link">
                                     <span class="see-all-text">See all </span>→
                                 </a>
                             {% else %}
-                                <a href="{{ url_for('listings.category_filtered_listings', category_path=carousel_item.category.url_path) }}" class="text-decoration-none see-all-link">
+                                <a href="{{ url_for('listings.category_filtered_listings', category_path=showcase_item.category.url_path) }}" class="text-decoration-none see-all-link">
                                     <span class="see-all-text">See all </span>→
                                 </a>
                             {% endif %}
@@ -73,35 +73,35 @@
 
                         <div class="category-showcase-container">
                             <div class="d-flex gap-4">
-                            {% for listing in carousel_item.listings %}
-                                <div class="flex-shrink-0" style="width: 192px;">
-                                    <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}" class="text-decoration-none text-reset">
-                                        <div class="card card-dimensions">
-                                            <img src="{{
-                                                      url_for('static', filename=('uploads/thumbnails/' ~ listing.images[0].thumbnail_filename
-                                                      if listing.images and listing.images[0].thumbnail_filename
-                                                      else 'img/no-image-thumbnail.png'))
-                                                      }}"
-                                                 class="card-img-top card-img-top-fit"
-                                                 alt="{{ listing.title }}"
-                                            >
+                                {% for listing in showcase_item.listings %}
+                                    <div class="flex-shrink-0" style="width: 192px;">
+                                        <a href="{{ url_for('listings.listing_detail', listing_id=listing.id) }}" class="text-decoration-none text-reset">
+                                            <div class="card card-dimensions">
+                                                <img src="{{
+                                                          url_for('static', filename=('uploads/thumbnails/' ~ listing.images[0].thumbnail_filename
+                                                          if listing.images and listing.images[0].thumbnail_filename
+                                                          else 'img/no-image-thumbnail.png'))
+                                                          }}"
+                                                     class="card-img-top card-img-top-fit"
+                                                     alt="{{ listing.title }}"
+                                                >
 
-                                            <div class="card-body">
-                                                <h6 class="card-title mb-2">{{ listing.title }}</h6>
-                                                <h5 class="card-subtitle fw-bold">
-                                                    {% if listing.price %}
-                                                        ${{ "%.2f"|format(listing.price) }}
-                                                    {% else %}
-                                                        Free
-                                                    {% endif %}
-                                                </h5>
+                                                <div class="card-body">
+                                                    <h6 class="card-title mb-2">{{ listing.title }}</h6>
+                                                    <h5 class="card-subtitle fw-bold">
+                                                        {% if listing.price %}
+                                                            ${{ "%.2f"|format(listing.price) }}
+                                                        {% else %}
+                                                            Free
+                                                        {% endif %}
+                                                    </h5>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </a>
-                                </div>
-                            {% endfor %}
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            </div>
                         </div>
-                    </div>
                     </div>
                 </div>
             {% endfor %}
