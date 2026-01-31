@@ -1,9 +1,9 @@
--- SQL script to create 60 items, each with 4 associated files from your provided list.
+-- SQL script to create 60 listings, each with 4 associated files from your provided list.
 
-DELETE FROM item;
+DELETE FROM listing;
 
--- === ITEMS ===
-INSERT INTO item (title, description, price, user_id, type_id, category_id, created_at) VALUES
+-- === LISTINGS ===
+INSERT INTO listing (title, description, price, user_id, type_id, category_id, created_at) VALUES
 ('Sofa', 'Comfortable blue 3-seat sofa.', 299.99, 1, 1, 1, CURRENT_TIMESTAMP),
 ('Coffee Maker', 'Brews 12 cups, programmable.', 45.00, 2, 1, 3, CURRENT_TIMESTAMP),
 ('Mountain Bike', '21-speed, aluminum frame.', 150.00, 3, 1, 5, CURRENT_TIMESTAMP),
@@ -65,10 +65,10 @@ INSERT INTO item (title, description, price, user_id, type_id, category_id, crea
 ('French Tutoring', 'Beginner to intermediate.', 32.00, 2, 2, 6, CURRENT_TIMESTAMP),
 ('Toaster Oven', 'Convection, 2 racks.', 38.00, 3, 1, 7, CURRENT_TIMESTAMP);
 
--- === ITEM FILES ===
--- Each item gets 4 consecutive files from the supplied list
+-- === LISTING IMAGES ===
+-- Each listing gets 4 consecutive files from the supplied list
 
-INSERT INTO item_image (filename, item_id) VALUES
+INSERT INTO listing_image (filename, listing_id) VALUES
 ('01e01246-5b14-4db6-9b51-8a582e8e0b33.png', 1),
 ('80a1a2c0-c548-47a2-87b6-280b511b6d56.jpg', 1),
 ('06d957b1-eea3-4544-8bab-0638aad456ee.png', 1),

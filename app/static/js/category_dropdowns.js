@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Helper to create a dropdown
-    // Returns a Promise that resolves to a dropdown element if there are selectable items, or null if none.
+    // Returns a Promise that resolves to a dropdown element if there are selectable categories, or null if none.
     function createDropdown(level, parentId, selectedId) {
         // Track token for this level
         latestRequestToken[level] = (latestRequestToken[level] || 0) + 1;
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             if (!data || data.length === 0) {
-                // No items at all -> do not render a dropdown
+                // No categories at all -> do not render a dropdown
                 return null;
             }
             // Apply excludeIds filter first; normalize cat.id to string for comparison

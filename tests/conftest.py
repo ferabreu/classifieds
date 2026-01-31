@@ -102,8 +102,8 @@ def showcase_categories(app, user):
         # Create listings for Electronics (12 listings)
         for i in range(12):
             listing = Listing(
-                title=f"Electronics Item {i+1}",
-                description=f"Description for electronics item {i+1}",
+                title=f"Electronics Listing {i+1}",
+                description=f"Description for electronics listing {i+1}",
                 price=10.0 + i,
                 user_id=user["id"],
                 category_id=electronics.id,
@@ -124,8 +124,8 @@ def showcase_categories(app, user):
         # Create listings for Sports (6 listings)
         for i in range(6):
             listing = Listing(
-                title=f"Sports Item {i+1}",
-                description=f"Description for sports item {i+1}",
+                title=f"Sports Listing {i+1}",
+                description=f"Description for sports listing {i+1}",
                 price=15.0 + i,
                 user_id=user["id"],
                 category_id=sports.id,
