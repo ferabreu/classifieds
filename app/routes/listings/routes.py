@@ -58,11 +58,11 @@ def index():
     any_categories_exist = len(showcase_categories) > 0
 
     # Build showcase data using batch query helper
-    items_per_showcase = current_app.config.get("INDEX_SHOWCASE_LISTINGS_PER_CATEGORY", 10)
+    listings_per_showcase = current_app.config.get("INDEX_SHOWCASE_LISTINGS_PER_CATEGORY", 10)
     # The UI shows up to 5 cards per row on ultrawide; fetch only what's useful
-    display_slots = min(items_per_showcase, 5)
+    display_slots = min(listings_per_showcase, 5)
     # Fetch a bit extra for variety without over-querying
-    fetch_limit = max(display_slots * 2, items_per_showcase)
+    fetch_limit = max(display_slots * 2, listings_per_showcase)
 
     category_showcases = build_category_showcases(
         showcase_categories, display_slots, fetch_limit
@@ -146,11 +146,11 @@ def category_filtered_listings(category_path):
     # Check if this is an intermediate category (has children) or a leaf category
     if category.children and not force_listings_view:
         # Intermediate category: show showcase of child categories
-        items_per_showcase = current_app.config.get(
+        listings_per_showcase = current_app.config.get(
             "INDEX_SHOWCASE_LISTINGS_PER_CATEGORY", 10
         )
-        display_slots = min(items_per_showcase, 6)  # Up to 6 child categories
-        fetch_limit = max(display_slots * 2, items_per_showcase)
+        display_slots = min(listings_per_showcase, 6)  # Up to 6 child categories
+        fetch_limit = max(display_slots * 2, listings_per_showcase)
 
         # Build showcases for each child category using batch query helper
         sorted_children = sorted(
