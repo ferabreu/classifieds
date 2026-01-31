@@ -26,7 +26,7 @@
 function getSelectedId(radioName) {
     const selected = document.querySelector(`input[name="${radioName}"]:checked`);
     if (!selected) {
-        alert('Please select a listing first.');
+        alert('Please select an item first.');
         return null;
     }
     return selected.value;
@@ -42,7 +42,7 @@ function handleEdit(editUrlTemplate, radioName) {
 function handleDelete(deleteUrlTemplate, radioName, entityLabel) {
     const selected = document.querySelector(`input[name="${radioName}"]:checked`);
     if (!selected) {
-        alert('Please select a listing first.');
+        alert('Please select an item first.');
         return;
     }
 
@@ -52,7 +52,7 @@ function handleDelete(deleteUrlTemplate, radioName, entityLabel) {
     const dataAttribute = selected.getAttribute('data-listing-count');
     const listingCount = dataAttribute ? parseInt(dataAttribute, 10) : 0;
 
-    const baseLabel = entityLabel && typeof entityLabel === 'string' ? entityLabel : 'listing';
+    const baseLabel = entityLabel && typeof entityLabel === 'string' ? entityLabel : 'item';
     let message = `Delete this ${baseLabel}?`;
     if (listingCount > 0) {
         message += `\n\nWarning: The selected ${baseLabel} has ${listingCount} associated listing(s). These will also be deleted.`;
