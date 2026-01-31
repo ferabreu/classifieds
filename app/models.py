@@ -382,7 +382,7 @@ class User(UserMixin, db.Model):
 
 class Listing(db.Model):
     """
-    Listing model for items posted in classifieds.
+    Listing model for classifieds postings.
 
     Includes metadata, relationship to user, category, and associated images.
     """

@@ -57,9 +57,9 @@ class Config:
     THUMBNAIL_SIZE = (224, 224)
 
     # Index page showcase configuration
-    # Number of showcase items on index page (4-12 recommended, 20 max)
+    # Number of showcase listings on index page (4-12 recommended, 20 max)
     INDEX_SHOWCASE_COUNT = 6
-    # Number of items per category in showcase (5 recommended)
+    # Number of listings per category in showcase (5 recommended)
     INDEX_SHOWCASE_ITEMS_PER_CATEGORY = 5
 
     # INDEX_SHOWCASE_CATEGORIES: list of category IDs to display,
