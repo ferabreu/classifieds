@@ -1,8 +1,27 @@
 # Plan: Entity-Based Blueprint Refactoring with Service Layer Pattern
 
-**Objective**: Comprehensive, global refactoring of the entire Flask application from monolithic architecture to entity-based blueprint structure with service layer pattern. This affects EVERY part of the application - models, forms, routes, templates, tests, and migrations.
+**Date:** 2026-02-01 (Updated: 2026-02-02)  
+**Author:** GitHub Copilot (Claude Sonnet 4.5), updated by ferabreu 
+**Issue:** https://github.com/ferabreu/classifieds/issues/87  
+**Goal:** Refactor codebase to entity-based Flask's Blueprint pattern with Service Layer architecture
 
-**Core Principles** (Apply Throughout):
+---
+
+## Agent Role
+
+You are an experienced developer versed in software development best practices with excellent knowledge of the Pythonic Way. You will optimize database query performance by refactoring an N+1 query pattern into efficient batch operations while maintaining identical user-facing behavior.
+
+---
+
+## Objective
+
+Comprehensive, global refactoring of the entire Flask application from monolithic architecture to entity-based blueprint structure with service layer pattern. This affects EVERY part of the application - models, forms, routes, templates, tests, and migrations.
+
+---
+
+## Core Principles (Apply Throughout):
+
+- **NO DEPRECATED METHODS**: Use current best practices (SQLAlchemy 2.x, Flask latest patterns)
 - **Service Layer Pattern**: Models = data definitions, Services = business logic/orchestration, Routes = thin HTTP handlers, Helpers = technical utilities (even if just 1 function)
 - **String References**: Use `relationship("ModelName", back_populates="attribute")` for all cross-entity relationships (SQLAlchemy 2.x standard, prevents circular imports)
 - **Bidirectional Relationships**: Add reciprocal `back_populates` on both sides per SQLAlchemy 2.x standard (Category.listings ↔ Listing.category, User.listings ↔ Listing.owner)
@@ -11,15 +30,15 @@
 - **Data Structures**: Services return data dictionaries (flexible, matches current pattern)
 - **Current Standards**: SQLAlchemy 2.x with `Mapped[]` type hints, no deprecated methods
 
+---
+
 ## Steps
 
 ### 0. Preparation: Tests, documentation, and migration audit
 
-Check if performance/N+1 query tests exist in `tests/` directory (especially for showcase/pagination logic); if missing, create `tests/test_performance.py` with tests verifying no N+1 queries in listing showcases and category queries using SQLAlchemy query counting; create test fixtures in `tests/conftest.py` for services layer testing (mock Category, User, Listing objects, mock db session); update `docs/tree.md` to reflect the new entity-based structure matching the target tree exactly; audit ALL migration files in `migrations/versions/` and update any import statements from old paths (`from app.models import`) to new entity paths (`from app.categories.models import Category`, `from app.users.models import User`, `from app.listings.models import Listing, ListingImage`) - migrations must continue to work; append to `.github/instructions/python-flask.instructions.md` a new section "Entity Creation Pattern" documenting the standard structure for new entities: package with `__init__.py` (blueprint factory with `template_folder='templates'`), `models.py` (SQLAlchemy models with string references), `forms.py` (WTForms), `services.py` (business logic returning dicts), `routes/` package with `__init__.py`/`admin.py`/`public.py`/`helpers.py` (as needed), `templates/entityname/` directory; document blueprint registration order requirement in same file.
+Create test fixtures in `tests/conftest.py` for services layer testing (mock Category, User, Listing objects, mock db session); audit ALL migration files in `migrations/versions/` and update any import statements from old paths (`from app.models import`) to new entity paths (`from app.categories.models import Category`, `from app.users.models import User`, `from app.listings.models import Listing, ListingImage`) - migrations must continue to work; append to `.github/instructions/python-flask.instructions.md` a new section "Entity Creation Pattern" documenting the standard structure for new entities: package with `__init__.py` (blueprint factory with `template_folder='templates'`), `models.py` (SQLAlchemy models with string references), `forms.py` (WTForms), `services.py` (business logic returning dicts), `routes/` package with `__init__.py`/`admin.py`/`public.py`/`helpers.py` (as needed), `templates/entityname/` directory; document blueprint registration order requirement in same file.
 
 **Test**: run existing test suite to establish baseline, verify migrations can still run with updated imports
-
-**Commit**: "refactor: preparation - tests, docs, and migration audit"
 
 ---
 
@@ -28,8 +47,6 @@ Check if performance/N+1 query tests exist in `tests/` directory (especially for
 Create `app/extensions.py` with `db = SQLAlchemy()`, `login_manager = LoginManager()`, `mail = Mail()`, `migrate = Migrate()` extracted from `app/__init__.py` and `app/models.py`; create `app/shared/` package with `__init__.py`, `utils.py` moving all functions from `app/routes/utils.py` (`generate_thumbnail`, `commit_file`, `rollback_file`, `finalize_file`, `cleanup_temp_files`, `move_image_files_to_temp`, `restore_files_from_temp`) and `decorators.py` extracting `admin_required`, `login_required` from `app/routes/decorators.py`; update `app/__init__.py` to import from extensions with proper initialization order (`db.init_app(app)` before any model imports to prevent circular imports).
 
 **Test**: run app startup, verify no import errors or circular import warnings, check that no module imports create cycles
-
-**Commit**: "refactor: create extensions and shared utilities foundation"
 
 ---
 
@@ -48,8 +65,6 @@ Update `app/__init__.py` to import `from app.auth import auth_bp` and register i
 
 **Test**: app starts with no circular imports, login flow (local and LDAP if configured), registration with validation, password reset with email, password reset with flash fallback, logout
 
-**Commit**: "refactor: extract auth entity with service layer"
-
 ---
 
 ### 3. Categories entity: Extract with hierarchy services
@@ -65,8 +80,6 @@ Create `app/categories/` package with:
 Register `categories_bp` in `app/__init__.py`.
 
 **Test**: app starts with no circular imports, category CRUD operations, hierarchy validation prevents cycles, reserved name validation, listing count in tree, API endpoints return correct JSON, breadcrumb generation
-
-**Commit**: "refactor: extract categories entity with hierarchy services"
 
 ---
 
@@ -84,8 +97,6 @@ Update `login_manager.user_loader` in `app/__init__.py` to import `from app.user
 
 **Test**: app starts with no circular imports, user profile view and edit, admin user list with pagination and sorting, admin user edit, user deletion blocked if last admin, user deletion cascade checks for listings, login_manager.user_loader works
 
-**Commit**: "refactor: extract users entity with validation services"
-
 ---
 
 ### 5. Listings entity: Refactor with showcase services
@@ -102,8 +113,6 @@ Register `listings_bp` in `app/__init__.py`.
 
 **Test**: app starts with no circular imports, listing CRUD with images and thumbnails, category filtering works, showcase display with configured categories, admin bulk operations, image upload with ACID file operations, no N+1 queries in showcase loading (verify with performance tests from Step 0)
 
-**Commit**: "refactor: extract listings entity with showcase services"
-
 ---
 
 ### 6. Main blueprint: Global pages reusing services
@@ -115,8 +124,6 @@ Create `app/main/` package with:
 Keep shared templates in `app/templates/` root directory (base.html, error.html, index.html remain global NOT moved, macros/ directory stays global, admin/dashboard.html stays global - these are NOT entity-specific); configure main_bp template_folder to point to shared app/templates; register `main_bp` in `app/__init__.py`.
 
 **Test**: app starts with no circular imports, index page displays showcases correctly using listings service, error pages render (404/500/403), admin dashboard shows statistics, shared templates and macros work
-
-**Commit**: "refactor: create main blueprint reusing listings services"
 
 ---
 
@@ -142,8 +149,6 @@ Comprehensively update `app/__init__.py`:
 - Verify no circular imports in initialization order
 
 **Test**: app starts with no circular imports, all routes accessible at correct paths, context processors work (navbar categories, title separator injected), blueprint order correct (listings doesn't shadow other routes)
-
-**Commit**: "refactor: update app factory with critical blueprint registration order"
 
 ---
 
@@ -173,8 +178,6 @@ Run syntax checker, import validator, code formatter (black, isort).
 
 Run full test suite including performance tests from Step 0; verify no N+1 queries in critical paths; verify all migrations still work with updated imports.
 
-**Commit**: "refactor: update imports globally and remove obsolete files"
-
 ---
 
 ## Success Criteria
@@ -189,3 +192,5 @@ Run full test suite including performance tests from Step 0; verify no N+1 queri
 - ✅ Template organization follows entity-based pattern
 - ✅ SQLAlchemy 2.x patterns with bidirectional relationships
 - ✅ No N+1 queries in showcase/pagination logic
+
+---
